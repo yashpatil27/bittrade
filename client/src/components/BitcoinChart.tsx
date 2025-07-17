@@ -31,11 +31,30 @@ interface PriceUpdateData {
 const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [transitioning, setTransitioning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState('90d');
   const [priceChangePercent, setPriceChangePercent] = useState<number>(0);
   const [currentLivePrice, setCurrentLivePrice] = useState<number | null>(null);
   const [isLivePrice, setIsLivePrice] = useState(false);
+
+  // Fetch initial price from API (Redis cache)
+  useEffect(() => {
+    const fetchInitialPrice = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/api/bitcoin/current');
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentLivePrice(data.btc_usd_price);
+          console.log('🔄 Fetched initial Bitcoin price from API:', data.btc_usd_price);
+        }
+      } catch (error) {
+        console.error('Error fetching initial Bitcoin price:', error);
+      }
+    };
+
+    fetchInitialPrice();
+  }, []);
 
   // Listen for WebSocket price updates
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
@@ -60,7 +79,12 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   useEffect(() => {
     const loadBitcoinData = async () => {
       try {
-        setLoading(true);
+        // Only show loading on initial load, not on tab switches
+        if (chartData.length === 0) {
+          setLoading(true);
+        } else {
+          setTransitioning(true);
+        }
         setError(null);
 
         // Fetch data from API
@@ -89,7 +113,9 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
           };
         });
 
+        // Update chart data immediately
         setChartData(formattedData);
+        setTransitioning(false);
 
         // Use API price change if available, otherwise calculate manually
         if (apiData.price_change_pct !== null) {
@@ -232,37 +258,44 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
       </div>
 
       {/* Chart */}
-      <div className="h-48">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a5b4fc" stopOpacity={0.3} />
-                <stop offset="50%" stopColor="#a5b4fc" stopOpacity={0.1} />
-                <stop offset="100%" stopColor="#a5b4fc" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
-            <YAxis 
-              hide={true}
-              domain={['dataMin - 1000', 'dataMax + 1000']}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="price"
-              stroke="#a5b4fc"
-              strokeWidth={2}
-              fill="url(#colorGradient)"
-              dot={false}
-              activeDot={{ 
-                r: 4, 
-                fill: '#a5b4fc',
-                stroke: '#1f2937',
-                strokeWidth: 2
-              }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+      <div className="h-48 relative">
+        <div className={`absolute inset-0 transition-opacity duration-300 ${
+          transitioning ? 'opacity-50' : 'opacity-100'
+        }`}>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#a5b4fc" stopOpacity={0.3} />
+                  <stop offset="50%" stopColor="#a5b4fc" stopOpacity={0.1} />
+                  <stop offset="100%" stopColor="#a5b4fc" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <YAxis 
+                hide={true}
+                domain={['dataMin - 1000', 'dataMax + 1000']}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="price"
+                stroke="#a5b4fc"
+                strokeWidth={2}
+                fill="url(#colorGradient)"
+                dot={false}
+                activeDot={{ 
+                  r: 4, 
+                  fill: '#a5b4fc',
+                  stroke: '#1f2937',
+                  strokeWidth: 2
+                }}
+                animationDuration={transitioning ? 0 : 800}
+                animationEasing="ease-in-out"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+        
       </div>
 
       {/* Tab Navigation */}

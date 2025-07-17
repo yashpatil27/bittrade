@@ -6,6 +6,13 @@ module.exports = {
     database: process.env.DB_NAME || 'bittrade'
   },
   
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: process.env.REDIS_PORT || 6379,
+    password: process.env.REDIS_PASSWORD || null,
+    db: process.env.REDIS_DB || 0
+  },
+  
   apis: {
     coingecko: 'https://api.coingecko.com/api/v3',
     fearGreed: 'https://api.alternative.me/fng/'

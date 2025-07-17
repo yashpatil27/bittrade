@@ -28,8 +28,8 @@ CREATE TABLE users (
 );
 CREATE INDEX idx_users_created_at ON users(created_at DESC);
 
--- Operations table (Unified activity log for all operations)
-CREATE TABLE operations (
+-- Transactions table (Unified activity log for all transactions)
+CREATE TABLE transactions (
   id INT PRIMARY KEY AUTO_INCREMENT,
   user_id INT NOT NULL,
   type ENUM(
@@ -50,28 +50,28 @@ CREATE TABLE operations (
   limit_price INT,                       -- Target price for limit orders (INR per BTC)
   
   -- Relationships
-  parent_id INT,                         -- For DCA installments or related operations
-  loan_id INT,                          -- Reference to loan for loan operations
+  parent_id INT,                         -- For DCA installments or related transactions
+  loan_id INT,                          -- Reference to loan for loan transactions
   
   -- Scheduling
-  scheduled_at TIMESTAMP,               -- When operation should execute
-  executed_at TIMESTAMP,                -- When operation was executed
-  expires_at TIMESTAMP,                 -- When operation expires
+  scheduled_at TIMESTAMP,               -- When transaction should execute
+  executed_at TIMESTAMP,                -- When transaction was executed
+  expires_at TIMESTAMP,                 -- When transaction expires
   cancelled_at TIMESTAMP,
   cancellation_reason VARCHAR(255) NULL,
 
   -- Metadata
-  notes TEXT,                           -- Additional operation details
+  notes TEXT,                           -- Additional transaction details
   
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (parent_id) REFERENCES operations(id) ON DELETE SET NULL,
-  INDEX idx_user_operations (user_id, created_at DESC),
+  FOREIGN KEY (parent_id) REFERENCES transactions(id) ON DELETE SET NULL,
+  INDEX idx_user_transactions (user_id, created_at DESC),
   INDEX idx_status_scheduled (status, scheduled_at),
   INDEX idx_type_status (type, status),
-  INDEX idx_operations_loan_id (loan_id),
-  INDEX idx_operations_created_at (created_at DESC)
+  INDEX idx_transactions_loan_id (loan_id),
+  INDEX idx_transactions_created_at (created_at DESC)
 );
 
 -- Active Plans table (For recurring operations like DCA)

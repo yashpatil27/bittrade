@@ -29,9 +29,30 @@ async function initDB() {
 
 // API Routes
 
-// Get current Bitcoin data
+// Get current Bitcoin data (with Redis cache fallback)
 app.get('/api/bitcoin/current', async (req, res) => {
   try {
+    // Try Redis cache first for instant response
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cachedPrice = await global.dataService.redis.get('latest_btc_price');
+        if (cachedPrice) {
+          const bitcoinData = JSON.parse(cachedPrice);
+          const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
+          
+          return res.json({
+            ...bitcoinData,
+            buy_rate_inr: rates.buy_rate_inr,
+            sell_rate_inr: rates.sell_rate_inr,
+            cached: true
+          });
+        }
+      } catch (redisError) {
+        console.error('Redis cache error, falling back to database:', redisError);
+      }
+    }
+    
+    // Fallback to database
     const [rows] = await db.execute(
       'SELECT * FROM bitcoin_data ORDER BY created_at DESC LIMIT 1'
     );
@@ -47,7 +68,56 @@ app.get('/api/bitcoin/current', async (req, res) => {
   }
 });
 
-// Get Bitcoin chart data
+// Get market rates (instant from Redis cache)
+app.get('/api/market-rates', async (req, res) => {
+  try {
+    // Try Redis cache first for instant response
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cachedPrice = await global.dataService.redis.get('latest_btc_price');
+        if (cachedPrice) {
+          const bitcoinData = JSON.parse(cachedPrice);
+          const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
+          
+          return res.json({
+            btc_usd_price: rates.btc_usd_price,
+            buy_rate_inr: rates.buy_rate_inr,
+            sell_rate_inr: rates.sell_rate_inr,
+            timestamp: new Date().toISOString(),
+            cached: true
+          });
+        }
+      } catch (redisError) {
+        console.error('Redis cache error, falling back to database:', redisError);
+      }
+    }
+    
+    // Fallback to database
+    const [rows] = await db.execute(
+      'SELECT btc_usd_price FROM bitcoin_data ORDER BY created_at DESC LIMIT 1'
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No Bitcoin data found' });
+    }
+    
+    const bitcoinData = rows[0];
+    const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
+    
+    res.json({
+      btc_usd_price: rates.btc_usd_price,
+      buy_rate_inr: rates.buy_rate_inr,
+      sell_rate_inr: rates.sell_rate_inr,
+      timestamp: new Date().toISOString(),
+      cached: false
+    });
+  } catch (error) {
+    console.error('Error fetching market rates:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get Bitcoin chart data (with Redis cache fallback)
 app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
   try {
     const { timeframe } = req.params;
@@ -57,6 +127,31 @@ app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
       return res.status(400).json({ error: 'Invalid timeframe' });
     }
     
+    // Try Redis cache first for instant response
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cacheKey = `chart_data_${timeframe}`;
+        const cachedData = await global.dataService.redis.get(cacheKey);
+        if (cachedData) {
+          const chartData = JSON.parse(cachedData);
+          
+          // Parse price_data if it's a string
+          if (chartData.price_data && typeof chartData.price_data === 'string') {
+            chartData.price_data = JSON.parse(chartData.price_data);
+          }
+          
+          console.log(`📦 Served ${timeframe} chart data from Redis cache`);
+          return res.json({
+            ...chartData,
+            cached: true
+          });
+        }
+      } catch (redisError) {
+        console.error(`Redis cache error for ${timeframe} chart data, falling back to database:`, redisError);
+      }
+    }
+    
+    // Fallback to database
     const [rows] = await db.execute(
       'SELECT * FROM bitcoin_chart_data WHERE timeframe = ? ORDER BY last_updated DESC LIMIT 1',
       [timeframe]
@@ -73,7 +168,38 @@ app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
       chartData.price_data = JSON.parse(chartData.price_data);
     }
     
-    res.json(chartData);
+    // Cache the data in Redis for future requests
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const ttlMap = {
+          '1d': 3600,    // 1 hour
+          '7d': 21600,   // 6 hours
+          '30d': 43200,  // 12 hours
+          '90d': 64800,  // 18 hours
+          '365d': 86400  // 24 hours
+        };
+        
+        const cacheKey = `chart_data_${timeframe}`;
+        const ttl = ttlMap[timeframe] || 3600;
+        
+        // Cache the raw database data (before parsing price_data)
+        const cacheData = {
+          ...rows[0],  // Use original row data
+          cached: true
+        };
+        
+        await global.dataService.redis.set(cacheKey, JSON.stringify(cacheData), 'EX', ttl);
+        console.log(`📦 Cached ${timeframe} chart data from database request (TTL: ${ttl}s)`);
+      } catch (redisError) {
+        console.error(`Error caching ${timeframe} chart data:`, redisError);
+      }
+    }
+    
+    console.log(`🗄️ Served ${timeframe} chart data from database`);
+    res.json({
+      ...chartData,
+      cached: false
+    });
   } catch (error) {
     console.error('Error fetching chart data:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -240,7 +366,7 @@ const io = new Server(httpServer, {
 });
 
 // Socket.IO connection handling
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log(`📡 Client connected: ${socket.id}`);
   
   // Send current Bitcoin data immediately upon connection
@@ -248,6 +374,28 @@ io.on('connection', (socket) => {
     message: 'Connected to BitTrade WebSocket',
     timestamp: new Date().toISOString()
   });
+  
+  // Send cached Bitcoin price immediately if available
+  if (global.dataService && global.dataService.redis) {
+    try {
+      const cachedPrice = await global.dataService.redis.get('latest_btc_price');
+      if (cachedPrice) {
+        const bitcoinData = JSON.parse(cachedPrice);
+        const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
+        
+        socket.emit('btc_price_update', {
+          btc_usd_price: rates.btc_usd_price,
+          buy_rate_inr: rates.buy_rate_inr,
+          sell_rate_inr: rates.sell_rate_inr,
+          timestamp: new Date().toISOString()
+        });
+        
+        console.log(`🔄 Sent cached Bitcoin price to ${socket.id}: $${bitcoinData.btc_usd_price}`);
+      }
+    } catch (error) {
+      console.error('Error sending cached price to client:', error);
+    }
+  }
   
   // Handle client disconnect
   socket.on('disconnect', (reason) => {
@@ -278,7 +426,13 @@ async function startServer() {
   // Start the data service with Socket.IO integration
   const dataService = new DataService(io);
   global.dataService = dataService;
-  dataService.start().catch(console.error);
+  await dataService.start();
+  
+  // Broadcast initial Bitcoin price immediately after service starts
+  await dataService.broadcastInitialPrice();
+  
+  // Cache existing chart data from database to Redis for instant access
+  await dataService.cacheExistingChartData();
   
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 BitTrade API Server running on port ${PORT}`);

@@ -19,12 +19,40 @@ interface PriceUpdateData {
 const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate }) => {
   const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
   const [isLive, setIsLive] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch initial data from API (Redis cache)
+  useEffect(() => {
+    const fetchInitialRates = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:3001/api/market-rates');
+        if (response.ok) {
+          const data = await response.json();
+          setPriceData({
+            btc_usd_price: data.btc_usd_price,
+            buy_rate_inr: data.buy_rate_inr,
+            sell_rate_inr: data.sell_rate_inr,
+            timestamp: data.timestamp
+          });
+          console.log('🔄 Fetched initial market rates from API:', data);
+        }
+      } catch (error) {
+        console.error('Error fetching initial market rates:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialRates();
+  }, []);
 
   // Listen for WebSocket price updates as per notes/state.txt
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
     console.log('📡 Received btc_price_update:', data);
     setPriceData(data);
     setIsLive(true);
+    setLoading(false);
   });
 
   // Use WebSocket data only - no fallback to mock data

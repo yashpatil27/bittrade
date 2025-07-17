@@ -1,11 +1,13 @@
 const mysql = require('mysql2/promise');
 const axios = require('axios');
 const cron = require('node-cron');
+const { createClient } = require('redis');
 const config = require('../config/config');
 
 class DataService {
   constructor(io = null) {
     this.db = null;
+    this.redis = null;
     this.io = io; // Socket.IO instance for broadcasting
     this.lastBtcPrice = null; // Track last price to detect changes
     this.settings = { buy_multiplier: 91, sell_multiplier: 88 }; // Cache settings
@@ -13,13 +15,29 @@ class DataService {
 
   async connect() {
     try {
+      // Connect to MySQL
       this.db = await mysql.createConnection(config.database);
       console.log('Connected to MySQL database');
+      
+      // Connect to Redis
+      this.redis = createClient({
+        host: config.redis.host,
+        port: config.redis.port,
+        password: config.redis.password,
+        db: config.redis.db
+      });
+      
+      this.redis.on('error', (err) => {
+        console.error('Redis connection error:', err);
+      });
+      
+      await this.redis.connect();
+      console.log('Connected to Redis cache');
       
       // Load initial settings
       await this.loadSettings();
     } catch (error) {
-      console.error('Database connection failed:', error);
+      console.error('Database/Redis connection failed:', error);
       throw error;
     }
   }
@@ -28,6 +46,11 @@ class DataService {
     if (this.db) {
       await this.db.end();
       console.log('Database connection closed');
+    }
+    
+    if (this.redis) {
+      await this.redis.quit();
+      console.log('Redis connection closed');
     }
   }
 
@@ -91,6 +114,89 @@ class DataService {
     console.log(`📡 Connected clients: ${this.io.engine.clientsCount}`);
   }
 
+  // Broadcast initial Bitcoin price from database
+  // This ensures clients get the latest data immediately after connecting
+  async broadcastInitialPrice() {
+    if (!this.io) {
+      console.log('⚠️  No WebSocket connection available for initial broadcast');
+      return;
+    }
+    
+    if (!this.db) {
+      console.log('⚠️  No database connection available for initial broadcast');
+      return;
+    }
+    
+    try {
+      // Get the latest Bitcoin data from database
+      const [rows] = await this.db.execute(
+        'SELECT btc_usd_price FROM bitcoin_data ORDER BY created_at DESC LIMIT 1'
+      );
+      
+      if (rows.length > 0) {
+        const btcUsdPrice = rows[0].btc_usd_price;
+        this.lastBtcPrice = btcUsdPrice; // Set to avoid duplicate broadcast
+        this.broadcastPriceUpdate(btcUsdPrice);
+        console.log(`🔄 Initial Bitcoin price broadcasted: $${btcUsdPrice}`);
+      } else {
+        console.log('⚠️  No Bitcoin data found in database for initial broadcast');
+      }
+    } catch (error) {
+      console.error('Error broadcasting initial price:', error);
+    }
+  }
+
+  // Cache existing chart data from database to Redis on startup
+  async cacheExistingChartData() {
+    if (!this.redis || !this.db) {
+      console.log('⚠️  Redis or database not available for initial chart caching');
+      return;
+    }
+
+    const timeframes = ['1d', '7d', '30d', '90d', '365d'];
+    const ttlMap = {
+      '1d': 3600,    // 1 hour
+      '7d': 21600,   // 6 hours
+      '30d': 43200,  // 12 hours
+      '90d': 64800,  // 18 hours
+      '365d': 86400  // 24 hours
+    };
+
+    for (const timeframe of timeframes) {
+      try {
+        // Get latest chart data from database
+        const [rows] = await this.db.execute(
+          'SELECT * FROM bitcoin_chart_data WHERE timeframe = ? ORDER BY last_updated DESC LIMIT 1',
+          [timeframe]
+        );
+
+        if (rows.length > 0) {
+          const chartData = rows[0];
+          const cacheKey = `chart_data_${timeframe}`;
+          const ttl = ttlMap[timeframe];
+
+          // Convert the database row to the same format as fetchBitcoinChartData
+          const formattedData = {
+            timeframe: chartData.timeframe,
+            price_data: chartData.price_data,
+            data_points_count: chartData.data_points_count,
+            price_change_pct: chartData.price_change_pct,
+            date_from: chartData.date_from,
+            date_to: chartData.date_to,
+            last_updated: chartData.last_updated
+          };
+
+          await this.redis.set(cacheKey, JSON.stringify(formattedData), 'EX', ttl);
+          console.log(`📦 Cached existing ${timeframe} chart data in Redis (TTL: ${ttl}s)`);
+        } else {
+          console.log(`⚠️  No existing ${timeframe} chart data found in database`);
+        }
+      } catch (error) {
+        console.error(`Error caching existing ${timeframe} chart data:`, error);
+      }
+    }
+  }
+
   // Fetch Bitcoin data from CoinGecko
   async fetchBitcoinData() {
     try {
@@ -145,6 +251,9 @@ class DataService {
         bitcoinData.ath_date,
         bitcoinData.ath_change_pct
       ]);
+      
+      // Cache the latest Bitcoin price in Redis
+      await this.redis.set('latest_btc_price', JSON.stringify(bitcoinData));
 
       // Check if price changed and broadcast update
       // This implements the trigger condition from notes/state.txt
@@ -309,6 +418,27 @@ chartData.price_change_pct,
         chartData.date_from,
         chartData.date_to
       ]);
+
+      // Cache the chart data in Redis with appropriate TTL
+      if (this.redis) {
+        const ttlMap = {
+          '1d': 3600,    // 1 hour
+          '7d': 21600,   // 6 hours
+          '30d': 43200,  // 12 hours
+          '90d': 64800,  // 18 hours
+          '365d': 86400  // 24 hours
+        };
+        
+        const cacheKey = `chart_data_${timeframe}`;
+        const ttl = ttlMap[timeframe] || 3600; // Default to 1 hour if timeframe not found
+        
+        try {
+          await this.redis.set(cacheKey, JSON.stringify(chartData), 'EX', ttl);
+          console.log(`📦 Cached ${timeframe} chart data in Redis (TTL: ${ttl}s)`);
+        } catch (redisError) {
+          console.error(`Error caching ${timeframe} chart data in Redis:`, redisError);
+        }
+      }
 
       // Keep only last 2 records for this timeframe
       await this.db.execute(`
