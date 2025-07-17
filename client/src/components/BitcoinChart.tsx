@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-import bitcoinChartData from '../data/bitcoinChartData.json';
 
 interface ChartData {
-  timestamp: number;
+  timestamp: string;
   price: number;
   date: string;
   time: string;
+}
+
+interface ApiChartData {
+  timeframe: string;
+  price_data: Array<{ timestamp: string; price: number }>;
+  price_change_pct: string | null;
+  data_points_count: number;
+  last_updated: string;
 }
 
 interface BitcoinChartProps {
@@ -18,37 +24,43 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState('1W');
-  const [priceChange, setPriceChange] = useState<{ value: number; percent: number }>({ value: 0, percent: 0 });
+  const [selectedTab, setSelectedTab] = useState('90d');
+  const [priceChangePercent, setPriceChangePercent] = useState<number>(0);
 
   const tabs = [
-    { id: '1D', label: '1D' },
-    { id: '1W', label: '1W' },
-    { id: '1M', label: '1M' },
-    { id: '3M', label: '3M' },
-    { id: '1Y', label: '1Y' }
+    { id: '1d', label: '1D', apiTimeframe: '1d' },
+    { id: '7d', label: '1W', apiTimeframe: '7d' },
+    { id: '30d', label: '1M', apiTimeframe: '30d' },
+    { id: '90d', label: '3M', apiTimeframe: '90d' },
+    { id: '365d', label: '1Y', apiTimeframe: '365d' }
   ];
 
   useEffect(() => {
-    const loadBitcoinData = () => {
+    const loadBitcoinData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Use local Bitcoin price data
-        const data = bitcoinChartData as { prices: [number, number][]; market_caps: [number, number][]; total_volumes: [number, number][] };
+        // Fetch data from API
+        const response = await fetch(`http://localhost:3001/api/bitcoin/chart/${selectedTab}`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch chart data: ${response.status}`);
+        }
+
+        const apiData: ApiChartData = await response.json();
         
         // Transform the data for the chart
-        const formattedData: ChartData[] = data.prices.map(([timestamp, price]: [number, number]) => {
-          const date = new Date(timestamp);
+        const formattedData: ChartData[] = apiData.price_data.map((item) => {
+          const date = new Date(item.timestamp);
           return {
-            timestamp,
-            price: Math.round(price / 83), // Convert INR to USD (approx rate)
-            date: date.toLocaleDateString('en-IN', { 
+            timestamp: item.timestamp,
+            price: item.price,
+            date: date.toLocaleDateString('en-US', { 
               month: 'short', 
               day: 'numeric' 
             }),
-            time: date.toLocaleTimeString('en-IN', { 
+            time: date.toLocaleTimeString('en-US', { 
               hour: '2-digit', 
               minute: '2-digit' 
             })
@@ -57,14 +69,18 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
 
         setChartData(formattedData);
 
-        // Calculate price change
-        if (formattedData.length > 0) {
-          const firstPrice = formattedData[0].price;
-          const lastPrice = formattedData[formattedData.length - 1].price;
-          const change = lastPrice - firstPrice;
-          const changePercent = (change / firstPrice) * 100;
-          
-          setPriceChange({ value: change, percent: changePercent });
+        // Use API price change if available, otherwise calculate manually
+        if (apiData.price_change_pct !== null) {
+          const apiChangePercent = parseFloat(apiData.price_change_pct);
+          setPriceChangePercent(apiChangePercent);
+        } else {
+          // Fallback: calculate manually if API doesn't have price change
+          if (formattedData.length > 0) {
+            const firstPrice = formattedData[0].price;
+            const lastPrice = formattedData[formattedData.length - 1].price;
+            const changePercent = ((lastPrice - firstPrice) / firstPrice) * 100;
+            setPriceChangePercent(changePercent);
+          }
         }
 
       } catch (err) {
@@ -75,7 +91,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     };
 
     loadBitcoinData();
-  }, []);
+  }, [selectedTab]);
 
   const formatPrice = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -130,7 +146,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
             ))}
           </div>
         </div>
-        <div className="h-80 bg-gray-800 rounded-lg animate-pulse"></div>
+        <div className="h-48 bg-gray-800 rounded-lg animate-pulse"></div>
       </div>
     );
   }
@@ -148,7 +164,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   }
 
   const currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].price : 0;
-  const isPositive = priceChange.value >= 0;
+  const isPositive = priceChangePercent >= 0;
 
   return (
     <div className={`bg-black rounded-lg p-1 ${className}`}>
@@ -160,14 +176,9 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
             <span className="text-xl font-semibold text-white">
               {formatPrice(currentPrice)}
             </span>
-            <div className={`flex items-center space-x-1 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-              {isPositive ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
+            <div className={`${isPositive ? 'text-green-400' : 'text-red-400'}`}>
               <span className="text-xs font-light">
-                {isPositive ? '+' : ''}{formatPrice(priceChange.value)} ({priceChange.percent.toFixed(2)}%)
+                {isPositive ? '+' : ''}{priceChangePercent.toFixed(2)}%
               </span>
             </div>
           </div>

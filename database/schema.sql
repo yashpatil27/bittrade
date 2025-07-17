@@ -135,26 +135,17 @@ CREATE TABLE settings (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- Bitcoin data table (unchanged)
+-- Bitcoin data table (cleaned up)
 CREATE TABLE bitcoin_data (
   id INT PRIMARY KEY AUTO_INCREMENT,
   
   -- Price Data (Updated every 30 seconds)
   btc_usd_price INT NOT NULL,
-  price_change_24h INT DEFAULT NULL,
-  price_change_24h_pct DECIMAL(8,2) DEFAULT NULL,
   
   -- Market Data
   market_cap_usd BIGINT UNSIGNED NULL,
   volume_24h_usd BIGINT UNSIGNED NULL,
   high_24h_usd INT DEFAULT NULL,
-  low_24h_usd INT DEFAULT NULL,
-  
-  -- Price Changes (All Timeframes)
-  price_change_1h_pct DECIMAL(8,2) DEFAULT NULL,
-  price_change_7d_pct DECIMAL(8,2) DEFAULT NULL,
-  price_change_30d_pct DECIMAL(8,2) DEFAULT NULL,
-  price_change_1y_pct DECIMAL(8,2) DEFAULT NULL,
   
   -- All-Time Records
   ath_usd INT DEFAULT NULL,

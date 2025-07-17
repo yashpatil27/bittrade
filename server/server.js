@@ -67,7 +67,11 @@ app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
     }
     
     const chartData = rows[0];
-    chartData.price_data = JSON.parse(chartData.price_data);
+    
+    // Parse price_data as JSON, but keep other fields as-is
+    if (chartData.price_data && typeof chartData.price_data === 'string') {
+      chartData.price_data = JSON.parse(chartData.price_data);
+    }
     
     res.json(chartData);
   } catch (error) {

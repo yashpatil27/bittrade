@@ -44,16 +44,9 @@ class DataService {
 
       return {
         btc_usd_price: Math.round(marketData.current_price.usd), // Store as dollars
-        price_change_24h: Math.round(marketData.price_change_24h),
-        price_change_24h_pct: marketData.price_change_percentage_24h,
         market_cap_usd: marketData.market_cap.usd,
         volume_24h_usd: marketData.total_volume.usd,
         high_24h_usd: Math.round(marketData.high_24h.usd),
-        low_24h_usd: Math.round(marketData.low_24h.usd),
-        price_change_1h_pct: marketData.price_change_percentage_1h_in_currency?.usd || null,
-        price_change_7d_pct: marketData.price_change_percentage_7d_in_currency?.usd || null,
-        price_change_30d_pct: marketData.price_change_percentage_30d_in_currency?.usd || null,
-        price_change_1y_pct: marketData.price_change_percentage_1y_in_currency?.usd || null,
         ath_usd: Math.round(marketData.ath.usd),
         ath_date: marketData.ath_date.usd ? new Date(marketData.ath_date.usd).toISOString().split('T')[0] : null,
         ath_change_pct: marketData.ath_change_percentage.usd
@@ -72,25 +65,16 @@ class DataService {
       // Insert new data
       const insertQuery = `
         INSERT INTO bitcoin_data (
-          btc_usd_price, price_change_24h, price_change_24h_pct,
-          market_cap_usd, volume_24h_usd, high_24h_usd, low_24h_usd,
-          price_change_1h_pct, price_change_7d_pct, price_change_30d_pct,
-          price_change_1y_pct, ath_usd, ath_date, ath_change_pct
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          btc_usd_price, market_cap_usd, volume_24h_usd, high_24h_usd,
+          ath_usd, ath_date, ath_change_pct
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
 
       await this.db.execute(insertQuery, [
         bitcoinData.btc_usd_price,
-        bitcoinData.price_change_24h,
-        bitcoinData.price_change_24h_pct,
         bitcoinData.market_cap_usd,
         bitcoinData.volume_24h_usd,
         bitcoinData.high_24h_usd,
-        bitcoinData.low_24h_usd,
-        bitcoinData.price_change_1h_pct,
-        bitcoinData.price_change_7d_pct,
-        bitcoinData.price_change_30d_pct,
-        bitcoinData.price_change_1y_pct,
         bitcoinData.ath_usd,
         bitcoinData.ath_date,
         bitcoinData.ath_change_pct
