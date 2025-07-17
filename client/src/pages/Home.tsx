@@ -1,28 +1,21 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Eye, EyeOff, Zap, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
-import { mockBalance, mockMarketData, mockTransactions, formatINR, formatBTC, formatCompactNumber, getTimeAgo } from '../data/mockData';
+import { mockMarketData, mockTransactions } from '../data/mockData';
 
 interface HomeProps {
   setModalOpen: (open: boolean) => void;
 }
 
 const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
-  const [showBalance, setShowBalance] = React.useState(true);
   const [marketData] = React.useState(mockMarketData);
-  const [balance] = React.useState(mockBalance);
   const [recentTxns] = React.useState(mockTransactions.slice(0, 5));
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
-
-  const toggleBalanceVisibility = () => {
-    setShowBalance(!showBalance);
-  };
 
   const handleBuyClick = () => {
     setModalType('buy');
