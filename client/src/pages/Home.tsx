@@ -5,6 +5,7 @@ import TransactionList from '../components/TransactionList';
 import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
+import Balance from '../components/Balance';
 import { mockTransactions } from '../data/mockData';
 
 interface HomeProps {
@@ -58,6 +59,9 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
         <div className="px-4 py-3 space-y-3">
         {/* Bitcoin Price Chart */}
         <BitcoinChart className="bg-black" />
+        
+        {/* Balance */}
+        <Balance />
         
         {/* Market Rate */}
         <MarketRate 

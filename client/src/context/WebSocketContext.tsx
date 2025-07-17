@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getWebSocketUrl } from '../utils/api';
 
 interface WebSocketContextType {
   socket: Socket | null;
@@ -20,7 +21,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
   useEffect(() => {
     // Initialize Socket.IO connection
-    const socketInstance = io('http://localhost:3001', {
+    const socketInstance = io(getWebSocketUrl(), {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       autoConnect: true,

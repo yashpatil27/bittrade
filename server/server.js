@@ -330,22 +330,71 @@ app.post('/api/transactions', async (req, res) => {
   }
 });
 
-// Get user portfolio/balance (mock data)
-app.get('/api/portfolio', async (req, res) => {
+// Get user balance (real data with Redis caching)
+app.get('/api/balance', authenticateToken, async (req, res) => {
   try {
-    // Mock portfolio data
-    const portfolio = {
-      btc_balance: 0.00128,
-      usd_balance: 150.75,
-      total_invested: 500,
-      current_value: 547.32,
-      profit_loss: 47.32,
-      profit_loss_percentage: 9.46
-    };
+    const userId = req.user.id; // Fixed: use 'id' instead of 'userId'
     
-    res.json(portfolio);
+    // Debug logging
+    console.log('🔍 Balance request - req.user:', req.user);
+    console.log('🔍 Balance request - userId:', userId);
+    
+    if (!userId) {
+      console.error('❌ UserId is undefined in balance request');
+      return res.status(400).json({ error: 'User ID not found in token' });
+    }
+    
+    // Check if Redis is available
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const redisKey = `user_balance_${userId}`;
+        
+        // Try to fetch balance from Redis
+        const cachedData = await global.dataService.redis.get(redisKey);
+        if (cachedData) {
+          console.log('💾 Balance served from Redis cache:', redisKey);
+          return res.json(JSON.parse(cachedData));
+        }
+      } catch (redisError) {
+        console.error('Redis error, falling back to database:', redisError);
+      }
+    }
+    
+    // If not cached, fetch real balance data from database
+    const [rows] = await db.execute(
+      'SELECT available_inr, available_btc, reserved_inr, reserved_btc, collateral_btc, borrowed_inr, interest_accrued FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    const balanceData = rows[0];
+    
+    // Cache the fetched balance in Redis (if available)
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const redisKey = `user_balance_${userId}`;
+        await global.dataService.redis.set(redisKey, JSON.stringify(balanceData), 'EX', 60 * 10); // Cache for 10 minutes
+        console.log('💾 Balance cached in Redis:', redisKey);
+      } catch (redisError) {
+        console.error('Error caching balance in Redis:', redisError);
+      }
+    }
+    
+    // Return raw satoshi values - conversions will be handled at display level
+    res.json({
+      available_inr: balanceData.available_inr,
+      available_btc: balanceData.available_btc,
+      reserved_inr: balanceData.reserved_inr,
+      reserved_btc: balanceData.reserved_btc,
+      collateral_btc: balanceData.collateral_btc,
+      borrowed_inr: balanceData.borrowed_inr,
+      interest_accrued: balanceData.interest_accrued
+    });
   } catch (error) {
-    console.error('Error fetching portfolio:', error);
+    console.error('Error fetching balance:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -370,9 +419,47 @@ const io = new Server(httpServer, {
   }
 });
 
+// Store user socket mappings
+const userSockets = new Map(); // userId -> Set of socket.id
+
 // Socket.IO connection handling
 io.on('connection', async (socket) => {
   console.log(`📡 Client connected: ${socket.id}`);
+  
+  // Handle user authentication for WebSocket
+  socket.on('authenticate', async (token) => {
+    try {
+      const jwt = require('jsonwebtoken');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bittrade_secret_key_2024');
+      
+      socket.userId = decoded.id; // Fixed: use 'id' instead of 'userId'
+      socket.userEmail = decoded.email;
+      
+      // Add to user socket mapping
+      if (!userSockets.has(decoded.id)) {
+        userSockets.set(decoded.id, new Set());
+      }
+      userSockets.get(decoded.id).add(socket.id);
+      
+      console.log(`🔐 User authenticated: ${decoded.email} (${socket.id})`);
+      
+      // Send initial balance data after authentication
+      await sendUserBalanceUpdate(decoded.id);
+      
+      socket.emit('authentication_success', {
+        message: 'WebSocket authenticated successfully',
+        userId: decoded.id, // Fixed: use 'id' instead of 'userId'
+        email: decoded.email
+      });
+      
+    } catch (error) {
+      console.error('WebSocket authentication failed:', error);
+      socket.emit('authentication_error', {
+        message: 'Authentication failed',
+        error: error.message
+      });
+    }
+  });
   
   // Send current Bitcoin data immediately upon connection
   socket.emit('connection_established', {
@@ -405,6 +492,17 @@ io.on('connection', async (socket) => {
   // Handle client disconnect
   socket.on('disconnect', (reason) => {
     console.log(`📡 Client disconnected: ${socket.id} (${reason})`);
+    
+    // Clean up user socket mapping
+    if (socket.userId) {
+      const userSocketSet = userSockets.get(socket.userId);
+      if (userSocketSet) {
+        userSocketSet.delete(socket.id);
+        if (userSocketSet.size === 0) {
+          userSockets.delete(socket.userId);
+        }
+      }
+    }
   });
   
   // Handle client errors
@@ -412,6 +510,60 @@ io.on('connection', async (socket) => {
     console.error(`📡 Socket error for ${socket.id}:`, error);
   });
 });
+
+// Function to send balance update to specific user
+async function sendUserBalanceUpdate(userId) {
+  try {
+    // Validate userId
+    if (!userId) {
+      console.error('❌ sendUserBalanceUpdate: userId is undefined');
+      return;
+    }
+    
+    console.log(`🔍 Sending balance update for userId: ${userId}`);
+    
+    // Fetch balance data from database
+    const [rows] = await db.execute(
+      'SELECT available_inr, available_btc, reserved_inr, reserved_btc, collateral_btc, borrowed_inr, interest_accrued FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (rows.length === 0) {
+      console.log(`❌ User ${userId} not found for balance update`);
+      return;
+    }
+
+    const balanceData = rows[0];
+    console.log(`💰 Sending balance update for user ${userId}:`, balanceData);
+
+    // Update Redis cache with fresh balance data
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const redisKey = `user_balance_${userId}`;
+        await global.dataService.redis.set(redisKey, JSON.stringify(balanceData), 'EX', 60 * 10); // Cache for 10 minutes
+        console.log(`💾 Balance cache updated in Redis: ${redisKey}`);
+      } catch (redisError) {
+        console.error('Error updating balance cache in Redis:', redisError);
+      }
+    }
+
+    // Emit update to all sockets of the user
+    const userSocketSet = userSockets.get(userId);
+    if (userSocketSet && userSocketSet.size > 0) {
+      userSocketSet.forEach((socketId) => {
+        io.to(socketId).emit('user_balance_update', {
+          ...balanceData,
+          timestamp: new Date().toISOString()
+        });
+      });
+      console.log(`📡 Balance update sent to ${userSocketSet.size} client(s) for user ${userId}`);
+    } else {
+      console.log(`⚠️  No active connections for user ${userId}`);
+    }
+  } catch (error) {
+    console.error(`Error sending balance update for user ${userId}:`, error);
+  }
+}
 
 // Function to broadcast data to all connected clients
 function broadcastToClients(eventName, data) {
@@ -423,6 +575,7 @@ function broadcastToClients(eventName, data) {
 
 // Make broadcast function available globally
 global.broadcastToClients = broadcastToClients;
+global.sendUserBalanceUpdate = sendUserBalanceUpdate;
 
 // Start server
 async function startServer() {

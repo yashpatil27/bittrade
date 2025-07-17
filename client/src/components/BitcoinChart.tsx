@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useWebSocketEvent } from '../context/WebSocketContext';
 import AnimatedNumber from './AnimatedNumber';
+import { getApiUrl } from '../utils/api';
 
 interface ChartData {
   timestamp: string;
@@ -37,13 +38,13 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   const [selectedTab, setSelectedTab] = useState('90d');
   const [priceChangePercent, setPriceChangePercent] = useState<number>(0);
   const [currentLivePrice, setCurrentLivePrice] = useState<number | null>(null);
-  const [isLivePrice, setIsLivePrice] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Fetch initial price from API (Redis cache)
   useEffect(() => {
     const fetchInitialPrice = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/bitcoin/current');
+        const response = await fetch(`${getApiUrl()}/api/bitcoin/current`);
         if (response.ok) {
           const data = await response.json();
           setCurrentLivePrice(data.btc_usd_price);
@@ -61,12 +62,6 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
     console.log('📈 BitcoinChart received btc_price_update:', data);
     setCurrentLivePrice(data.btc_usd_price);
-    setIsLivePrice(true);
-    
-    // Reset live indicator after 3 seconds
-    setTimeout(() => {
-      setIsLivePrice(false);
-    }, 3000);
   });
 
   const tabs = [
@@ -81,7 +76,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     const loadBitcoinData = async () => {
       try {
         // Only show loading on initial load, not on tab switches
-        if (chartData.length === 0) {
+        if (isInitialLoad) {
           setLoading(true);
         } else {
           setTransitioning(true);
@@ -89,7 +84,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
         setError(null);
 
         // Fetch data from API
-        const response = await fetch(`http://localhost:3001/api/bitcoin/chart/${selectedTab}`);
+        const response = await fetch(`${getApiUrl()}/api/bitcoin/chart/${selectedTab}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch chart data: ${response.status}`);
@@ -116,7 +111,16 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
 
         // Update chart data immediately
         setChartData(formattedData);
-        setTransitioning(false);
+        
+        // Mark initial load as complete
+        if (isInitialLoad) {
+          setIsInitialLoad(false);
+        }
+        
+        // Reset transitioning state after a short delay to allow animation
+        setTimeout(() => {
+          setTransitioning(false);
+        }, 50);
 
         // Use API price change if available, otherwise calculate manually
         if (apiData.price_change_pct !== null) {
@@ -140,7 +144,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     };
 
     loadBitcoinData();
-  }, [selectedTab, chartData.length]);
+  }, [selectedTab, isInitialLoad]);
 
   const formatPrice = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -230,24 +234,14 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
         <div>
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold text-white">Bitcoin Price</h3>
-            {isLivePrice && (
-              <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-xs text-green-400">Live</span>
-              </div>
-            )}
           </div>
           <div className="flex items-center space-x-2 mt-1">
-            <span className={`text-xl font-semibold ${
-              isLivePrice ? 'text-green-400' : 'text-white'
-            } transition-colors duration-300`}>
+            <span className="text-xl font-semibold text-white">
               <AnimatedNumber 
                 value={currentPrice}
                 formatNumber={(value) => formatPrice(value)}
                 duration={600}
-                className={`text-xl font-semibold ${
-                  isLivePrice ? 'text-green-400' : 'text-white'
-                } transition-colors duration-300`}
+                className="text-xl font-semibold text-white"
               />
             </span>
             <div className={`${isRealTimePositive ? 'text-green-400' : 'text-red-400'}`}>
@@ -255,11 +249,6 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
                 {isRealTimePositive ? '+' : ''}{displayPriceChange.toFixed(2)}%
               </span>
             </div>
-            {currentLivePrice && (
-              <span className="text-xs text-gray-400">
-                Real-time
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -296,7 +285,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
                   stroke: '#1f2937',
                   strokeWidth: 2
                 }}
-                animationDuration={transitioning ? 0 : 800}
+                animationDuration={isInitialLoad ? 0 : 800}
                 animationEasing="ease-in-out"
               />
             </AreaChart>

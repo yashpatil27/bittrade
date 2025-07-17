@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useWebSocketEvent } from '../context/WebSocketContext';
 import AnimatedNumber from './AnimatedNumber';
+import { getApiUrl } from '../utils/api';
 
 interface MarketRateProps {
   className?: string;
@@ -19,7 +20,6 @@ interface PriceUpdateData {
 
 const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate }) => {
   const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
-  const [isLive, setIsLive] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Fetch initial data from API (Redis cache)
@@ -27,7 +27,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     const fetchInitialRates = async () => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:3001/api/market-rates');
+        const response = await fetch(`${getApiUrl()}/api/market-rates`);
         if (response.ok) {
           const data = await response.json();
           setPriceData({
@@ -52,7 +52,6 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
     console.log('📡 Received btc_price_update:', data);
     setPriceData(data);
-    setIsLive(true);
     setLoading(false);
   });
 
@@ -125,12 +124,6 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-base font-medium text-white">Market Rates</h3>
         <div className="flex items-center space-x-2">
-          {isLive && (
-            <div className="flex items-center space-x-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs text-green-400">Live</span>
-            </div>
-          )}
           {currentBtcPrice > 0 && (
             <span className="text-xs text-gray-400">
               $<AnimatedNumber 

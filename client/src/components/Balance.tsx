@@ -1,0 +1,179 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Wallet, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useWebSocket } from '../context/WebSocketContext';
+import AnimatedNumber from './AnimatedNumber';
+import { getApiUrl } from '../utils/api';
+import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
+
+interface BalanceData {
+  available_inr: number;
+  available_btc: number;
+  reserved_inr: number;
+  reserved_btc: number;
+  collateral_btc: number;
+  borrowed_inr: number;
+  interest_accrued: number;
+}
+
+interface BalanceProps {
+  className?: string;
+}
+
+const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
+  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showBalances, setShowBalances] = useState(true);
+  const { isAuthenticated, token } = useAuth();
+  const { socket, isConnected } = useWebSocket();
+
+  // Function to fetch balance from REST API
+  const fetchBalance = useCallback(async () => {
+    if (!isAuthenticated || !token) return;
+    
+    try {
+      const response = await fetch(`${getApiUrl()}/api/balance`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setBalanceData(data);
+      } else {
+        console.error('Error fetching balance:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching balance:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, token]);
+
+  // Handle WebSocket balance updates
+  const handleBalanceUpdate = useCallback((data: BalanceData) => {
+    console.log('📊 Received balance update:', data);
+    setBalanceData(data);
+    setLoading(false);
+  }, []);
+
+  // Initial balance fetch on component mount
+  useEffect(() => {
+    fetchBalance();
+  }, [fetchBalance]);
+
+  // WebSocket authentication and event handling
+  useEffect(() => {
+    if (socket && isConnected && isAuthenticated && token) {
+      // Authenticate the WebSocket connection
+      socket.emit('authenticate', token);
+      
+      // Listen for balance updates
+      socket.on('user_balance_update', handleBalanceUpdate);
+      
+      // Listen for authentication success
+      socket.on('authentication_success', (data) => {
+        console.log('🔐 WebSocket authenticated:', data);
+      });
+      
+      // Listen for authentication errors
+      socket.on('authentication_error', (error) => {
+        console.error('🔐 WebSocket authentication failed:', error);
+      });
+      
+      // Cleanup listeners on unmount
+      return () => {
+        socket.off('user_balance_update', handleBalanceUpdate);
+        socket.off('authentication_success');
+        socket.off('authentication_error');
+      };
+    }
+  }, [socket, isConnected, isAuthenticated, token, handleBalanceUpdate]);
+
+
+  if (!isAuthenticated) {
+    return (
+      <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
+        <div className="text-center py-3">
+          <p className="text-gray-400 text-sm">Please log in to view balance</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading || !balanceData) {
+    return (
+      <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
+        <div className="flex items-center space-x-2 mb-3">
+          <Wallet className="w-4 h-4 text-brand" />
+          <h3 className="text-sm font-medium text-white">Balance</h3>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-12 bg-gray-700 rounded animate-pulse"></div>
+          <div className="h-12 bg-gray-700 rounded animate-pulse"></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <Wallet className="w-4 h-4 text-brand" />
+          <h3 className="text-sm font-medium text-white">Balance</h3>
+        </div>
+        <button
+          onClick={() => setShowBalances(!showBalances)}
+          className="p-1 hover:bg-gray-800 rounded transition-colors"
+        >
+          {showBalances ? (
+            <Eye className="w-4 h-4 text-gray-400 hover:text-white" />
+          ) : (
+            <EyeOff className="w-4 h-4 text-gray-400 hover:text-white" />
+          )}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        {/* INR Balance */}
+        <div className="bg-gray-800 rounded-lg p-2 text-center">
+          <div className="text-xs text-gray-400 mb-1">₹ INR</div>
+          <div className="text-sm font-semibold text-white">
+            {showBalances ? (
+              <AnimatedNumber 
+                value={balanceData.available_inr}
+                formatNumber={(value) => formatRupeesForDisplay(value)}
+                duration={400}
+                className="text-sm font-semibold text-white"
+              />
+            ) : (
+              <span className="text-gray-500">••••••</span>
+            )}
+          </div>
+        </div>
+
+        {/* BTC Balance */}
+        <div className="bg-gray-800 rounded-lg p-2 text-center">
+          <div className="text-xs text-gray-400 mb-1">₿ BTC</div>
+          <div className="text-sm font-semibold text-white">
+            {showBalances ? (
+              <AnimatedNumber 
+                value={balanceData.available_btc}
+                formatNumber={(value) => formatBitcoinForDisplay(value)}
+                duration={400}
+                className="text-sm font-semibold text-white"
+              />
+            ) : (
+              <span className="text-gray-500">••••••••</span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Balance;
