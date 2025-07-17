@@ -1,14 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { useWebSocketEvent } from '../context/WebSocketContext';
+import { useWebSocket, useWebSocketEvent } from '../context/WebSocketContext';
+import { useAuth } from '../context/AuthContext';
 import AnimatedNumber from './AnimatedNumber';
 import { getApiUrl } from '../utils/api';
+
+interface BalanceData {
+  available_inr: number;
+  available_btc: number;
+  reserved_inr: number;
+  reserved_btc: number;
+  collateral_btc: number;
+  borrowed_inr: number;
+  interest_accrued: number;
+}
 
 interface MarketRateProps {
   className?: string;
   onBuyClick?: () => void;
   onSellClick?: () => void;
   onRatesUpdate?: (buyRate: number, sellRate: number) => void;
+  onBalanceUpdate?: (balanceData: BalanceData | null) => void;
 }
 
 interface PriceUpdateData {
@@ -18,9 +30,12 @@ interface PriceUpdateData {
   timestamp: string;
 }
 
-const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate }) => {
+const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate, onBalanceUpdate }) => {
   const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
+  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isAuthenticated, token } = useAuth();
+  const { socket, isConnected } = useWebSocket();
 
   // Fetch initial data from API (Redis cache)
   useEffect(() => {
@@ -48,6 +63,78 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     fetchInitialRates();
   }, []);
 
+  // Function to fetch balance from REST API
+  const fetchBalance = useCallback(async () => {
+    console.log('🔍 fetchBalance called - Auth status:', { isAuthenticated, hasToken: !!token });
+    if (!isAuthenticated || !token) {
+      console.log('❌ Not authenticated or no token, setting balance to null');
+      setBalanceData(null);
+      return;
+    }
+    
+    try {
+      console.log('📡 Fetching balance from API...');
+      const response = await fetch(`${getApiUrl()}/api/balance`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Balance fetch successful:', data);
+        setBalanceData(data);
+        console.log('💰 Fetched balance data:', data);
+      } else {
+        console.error('❌ Balance fetch failed:', response.status, response.statusText);
+        setBalanceData(null);
+      }
+    } catch (error) {
+      console.error('❌ Balance fetch error:', error);
+      setBalanceData(null);
+    }
+  }, [isAuthenticated, token]);
+
+  // Handle WebSocket balance updates
+  const handleBalanceUpdate = useCallback((data: BalanceData) => {
+    console.log('📊 Received balance update:', data);
+    setBalanceData(data);
+  }, []);
+
+  // Initial balance fetch on component mount
+  useEffect(() => {
+    fetchBalance();
+  }, [fetchBalance]);
+
+  // WebSocket authentication and event handling
+  useEffect(() => {
+    if (socket && isConnected && isAuthenticated && token) {
+      // Authenticate the WebSocket connection
+      socket.emit('authenticate', token);
+      
+      // Listen for balance updates
+      socket.on('user_balance_update', handleBalanceUpdate);
+      
+      // Listen for authentication success
+      socket.on('authentication_success', (data) => {
+        console.log('🔐 WebSocket authenticated:', data);
+      });
+      
+      // Listen for authentication errors
+      socket.on('authentication_error', (error) => {
+        console.error('🔐 WebSocket authentication failed:', error);
+      });
+      
+      // Cleanup listeners on unmount
+      return () => {
+        socket.off('user_balance_update', handleBalanceUpdate);
+        socket.off('authentication_success');
+        socket.off('authentication_error');
+      };
+    }
+  }, [socket, isConnected, isAuthenticated, token, handleBalanceUpdate]);
+
   // Listen for WebSocket price updates as per notes/state.txt
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
     console.log('📡 Received btc_price_update:', data);
@@ -66,6 +153,13 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
       onRatesUpdate(buyRate, sellRate);
     }
   }, [buyRate, sellRate, onRatesUpdate]);
+
+  // Notify parent component of balance updates
+  useEffect(() => {
+    if (onBalanceUpdate) {
+      onBalanceUpdate(balanceData);
+    }
+  }, [balanceData, onBalanceUpdate]);
 
   const formatINR = (amount: number): string => {
     return new Intl.NumberFormat('en-IN', {

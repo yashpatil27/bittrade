@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
 import AnimatedNumber from './AnimatedNumber';
+import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
+
+interface BalanceData {
+  available_inr: number;
+  available_btc: number;
+  reserved_inr: number;
+  reserved_btc: number;
+  collateral_btc: number;
+  borrowed_inr: number;
+  interest_accrued: number;
+}
 
 interface TradingModalProps {
   isOpen: boolean;
@@ -9,6 +20,7 @@ interface TradingModalProps {
   type: 'buy' | 'sell';
   buyRate?: number;
   sellRate?: number;
+  balanceData?: BalanceData | null;
   onComplete?: (type: 'buy' | 'sell', amount: string) => void;
 }
 
@@ -18,6 +30,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
   type,
   buyRate,
   sellRate,
+  balanceData,
   onComplete,
 }) => {
   const [currentStep, setCurrentStep] = useState<'input' | 'confirm'>('input');
@@ -37,17 +50,38 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const calculateConversion = (amount: string) => {
     const numAmount = parseFloat(amount) || 0;
     const currentRate = type === 'buy' ? (buyRate || 0) : (sellRate || 0);
-    const btcAmount = currentRate > 0 ? numAmount / currentRate : 0;
-    return {
-      inrAmount: numAmount,
-      btcAmount: btcAmount,
-      formattedBtc: btcAmount.toFixed(8),
-      formattedInr: numAmount.toLocaleString('en-IN'),
-    };
+    
+    if (type === 'buy') {
+      // Buy: User inputs INR, gets BTC
+      const btcAmount = currentRate > 0 ? numAmount / currentRate : 0;
+      return {
+        inrAmount: numAmount,
+        btcAmount: btcAmount,
+        formattedBtc: btcAmount.toFixed(8),
+        formattedInr: numAmount.toLocaleString('en-IN'),
+      };
+    } else {
+      // Sell: User inputs BTC, gets INR
+      const inrAmount = currentRate > 0 ? numAmount * currentRate : 0;
+      return {
+        inrAmount: inrAmount,
+        btcAmount: numAmount,
+        formattedBtc: numAmount.toFixed(8),
+        formattedInr: inrAmount.toLocaleString('en-IN'),
+      };
+    }
   };
 
-  // Handle input modal confirmation
+  // Handle input modal confirmation with validation
   const handleInputConfirm = (value: string) => {
+    const numValue = parseFloat(value);
+    const maxValue = getMaxValue();
+    
+    if (numValue < 0 || (maxValue !== undefined && numValue > maxValue)) {
+      alert('Please enter a valid amount that is within your available balance and not negative.');
+      return;
+    }
+
     setInputValue(value);
     setCurrentStep('confirm');
   };
@@ -140,6 +174,40 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const currentSellRate = sellRate || 0; // Sell rate: WebSocket rate only
   const currentRate = type === 'buy' ? currentBuyRate : currentSellRate;
   
+  // Calculate max values based on balance and type
+  const getMaxValue = () => {
+    if (!balanceData) return undefined;
+    
+    if (type === 'buy') {
+      // For buy: max is available INR
+      return balanceData.available_inr;
+    } else {
+      // For sell: max is available BTC in BTC units
+      return balanceData.available_btc / 100000000; // Convert satoshis to BTC
+    }
+  };
+  
+  // Get max button text with proper formatting
+  const getMaxButtonText = () => {
+    console.log('🔍 getMaxButtonText called:', { balanceData, type });
+    if (!balanceData) {
+      console.log('⚠️ No balance data available');
+      return 'Max';
+    }
+    
+    if (type === 'buy') {
+      // For buy: show available INR
+      const formatted = formatRupeesForDisplay(balanceData.available_inr);
+      console.log('💰 Buy max button:', formatted);
+      return `Max ${formatted}`;
+    } else {
+      // For sell: show available BTC
+      const formatted = formatBitcoinForDisplay(balanceData.available_btc);
+      console.log('₿ Sell max button:', formatted);
+      return `Max ${formatted}`;
+    }
+  };
+  
   // Don't allow modal to open if rates are not available
   if (isOpen && currentRate === 0) {
     return (
@@ -167,12 +235,14 @@ const TradingModal: React.FC<TradingModalProps> = ({
         isOpen={isOpen && currentStep === 'input'}
         onClose={handleInputClose}
         title={getInputTitle()}
-        type="inr"
+        type={type === 'buy' ? 'inr' : 'btc'}
         confirmText={getConfirmationButtonText()}
         onConfirm={handleInputConfirm}
         sectionTitle={`${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
         sectionAmount={currentRate > 0 ? `₹${currentRate.toLocaleString('en-IN')}` : 'Rate unavailable'}
         sectionAmountValue={currentRate > 0 ? currentRate : undefined}
+        maxValue={getMaxValue()}
+        maxButtonText={getMaxButtonText()}
       />
 
       {/* Confirmation Modal */}
@@ -182,10 +252,16 @@ const TradingModal: React.FC<TradingModalProps> = ({
         title={getConfirmationTitle()}
         amount={inputValue}
         amountValue={inputValue ? parseFloat(inputValue) : undefined}
-        amountType="inr"
-        subAmount={inputValue ? calculateConversion(inputValue).formattedBtc : ''}
-        subAmountValue={inputValue ? calculateConversion(inputValue).btcAmount : undefined}
-        subAmountType="btc"
+        amountType={type === 'buy' ? 'inr' : 'btc'}
+        subAmount={type === 'buy' 
+          ? (inputValue ? calculateConversion(inputValue).formattedBtc : '')
+          : (inputValue ? `₹${calculateConversion(inputValue).formattedInr}` : '')
+        }
+        subAmountValue={type === 'buy' 
+          ? (inputValue ? calculateConversion(inputValue).btcAmount : undefined)
+          : (inputValue ? calculateConversion(inputValue).inrAmount : undefined)
+        }
+        subAmountType={type === 'buy' ? 'btc' : 'inr'}
         details={getConfirmationDetails()}
         confirmText={getConfirmationButtonText()}
         onConfirm={handleConfirmationConfirm}

@@ -8,6 +8,16 @@ import TradingModal from '../components/TradingModal';
 import Balance from '../components/Balance';
 import { mockTransactions } from '../data/mockData';
 
+interface BalanceData {
+  available_inr: number;
+  available_btc: number;
+  reserved_inr: number;
+  reserved_btc: number;
+  collateral_btc: number;
+  borrowed_inr: number;
+  interest_accrued: number;
+}
+
 interface HomeProps {
   setModalOpen: (open: boolean) => void;
 }
@@ -18,6 +28,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
   const [buyRate, setBuyRate] = React.useState<number>(0);
   const [sellRate, setSellRate] = React.useState<number>(0);
+  const [balanceData, setBalanceData] = React.useState<BalanceData | null>(null);
 
   const handleBuyClick = () => {
     setModalType('buy');
@@ -50,6 +61,10 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
     setSellRate(newSellRate);
   };
 
+  const handleBalanceUpdate = (newBalanceData: BalanceData | null) => {
+    setBalanceData(newBalanceData);
+  };
+
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
@@ -68,6 +83,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
           onBuyClick={handleBuyClick}
           onSellClick={handleSellClick}
           onRatesUpdate={handleRatesUpdate}
+          onBalanceUpdate={handleBalanceUpdate}
         />
         
         {/* Recent Transactions */}
@@ -87,6 +103,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
           type={modalType}
           buyRate={buyRate}
           sellRate={sellRate}
+          balanceData={balanceData}
           onComplete={handleTradingComplete}
         />
         </div>

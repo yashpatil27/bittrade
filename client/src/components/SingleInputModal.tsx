@@ -6,18 +6,17 @@ interface SingleInputModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  type: 'btc' | 'inr';
-  maxValue?: number;
-  confirmText?: string;
+  confirmText: string;
   onConfirm: (value: string) => void;
-  isLoading?: boolean;
-  // Optional section above keypad
+  type: 'inr' | 'btc';
   sectionTitle?: string;
-  sectionDetail?: string | React.ReactNode;
   sectionAmount?: string;
-  sectionAmountValue?: number; // For animation
+  sectionAmountValue?: number;
+  maxValue?: number;
+  maxButtonText?: string;
+  sectionDetail?: string | React.ReactNode;
   onSectionClick?: () => void;
-  // Optional tab switcher
+  isLoading?: boolean;
   tabSwitcher?: React.ReactNode;
 }
 
@@ -27,6 +26,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   title,
   type,
   maxValue,
+  maxButtonText,
   confirmText = "Next",
   onConfirm,
   isLoading = false,
@@ -221,6 +221,19 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         setValue(prev => prev === '' ? '0.' : prev + keyValue);
       }
     } else {
+      // Validate the new value before setting it
+      const newValue = value + keyValue;
+      const numValue = parseFloat(newValue);
+      
+      // Don't allow negative values or values exceeding max
+      if (numValue < 0) {
+        return; // Don't update if it would create a negative value
+      }
+      
+      if (maxValue !== undefined && numValue > maxValue) {
+        return; // Don't update if it would exceed max value
+      }
+      
       setValue(prev => prev + keyValue);
     }
   };
@@ -245,7 +258,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     }
   };
 
-  const isConfirmDisabled = !value || isLoading;
+  const isConfirmDisabled = !value || isLoading || parseFloat(value) <= 0;
 
   if (!isOpen) return null;
 
@@ -301,15 +314,15 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                 </span>
               </div>
               
-              {/* Max Button */}
-              {!value && maxValue !== undefined && (
-                <button
-                  onClick={handleMaxAmount}
-                  className="bg-gray-800 text-gray-300 px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors mb-2 inline-flex items-center justify-center min-w-fit"
-                >
-                  Max {type === 'btc' ? `₿${maxValue}` : `₹${maxValue.toLocaleString()}`}
-                </button>
-              )}
+            {/* Max Button */}
+            {!value && maxButtonText && (
+              <button
+                onClick={handleMaxAmount}
+                className="bg-gray-800 text-gray-300 px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors mb-2 inline-flex items-center justify-center min-w-fit"
+              >
+                {maxButtonText}
+              </button>
+            )}
             </div>
           </div>
 
