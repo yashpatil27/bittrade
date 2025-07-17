@@ -5,7 +5,6 @@ import TransactionList from '../components/TransactionList';
 import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
-import PriceUpdateTest from '../components/PriceUpdateTest';
 import { mockTransactions } from '../data/mockData';
 
 interface HomeProps {
@@ -76,9 +75,6 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
             onViewAllClick={() => console.log('View all clicked')}
           />
         </Card>
-
-        {/* WebSocket Test Component */}
-        <PriceUpdateTest />
 
         {/* Trading Modal */}
         <TradingModal
