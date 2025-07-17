@@ -275,8 +275,8 @@ global.broadcastToClients = broadcastToClients;
 async function startServer() {
   await initDB();
   
-  // Start the data service
-  const dataService = new DataService();
+  // Start the data service with Socket.IO integration
+  const dataService = new DataService(io);
   global.dataService = dataService;
   dataService.start().catch(console.error);
   
@@ -288,6 +288,7 @@ async function startServer() {
     console.log(`   - http://192.168.1.164:${PORT}`);
     console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🌐 WebSocket server ready for real-time data broadcasting`);
+    console.log(`📡 WebSocket 'btc_price_update' broadcasts enabled`);
     console.log(`📡 Connected clients: ${io.engine.clientsCount}`);
   });
 }

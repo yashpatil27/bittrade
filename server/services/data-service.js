@@ -4,14 +4,20 @@ const cron = require('node-cron');
 const config = require('../config/config');
 
 class DataService {
-  constructor() {
+  constructor(io = null) {
     this.db = null;
+    this.io = io; // Socket.IO instance for broadcasting
+    this.lastBtcPrice = null; // Track last price to detect changes
+    this.settings = { buy_multiplier: 91, sell_multiplier: 88 }; // Cache settings
   }
 
   async connect() {
     try {
       this.db = await mysql.createConnection(config.database);
       console.log('Connected to MySQL database');
+      
+      // Load initial settings
+      await this.loadSettings();
     } catch (error) {
       console.error('Database connection failed:', error);
       throw error;
@@ -23,6 +29,57 @@ class DataService {
       await this.db.end();
       console.log('Database connection closed');
     }
+  }
+
+  // Load settings from database
+  async loadSettings() {
+    try {
+      const [rows] = await this.db.execute(
+        'SELECT `key`, value FROM settings WHERE `key` IN (?, ?)',
+        ['buy_multiplier', 'sell_multiplier']
+      );
+      
+      rows.forEach(row => {
+        this.settings[row.key] = row.value;
+      });
+      
+      console.log('Settings loaded:', this.settings);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  }
+
+  // Set Socket.IO instance for broadcasting
+  setSocketIO(io) {
+    this.io = io;
+  }
+
+  // Calculate buy and sell rates in INR
+  calculateRates(btcUsdPrice) {
+    const usdToInr = 83; // Approximate USD to INR conversion rate
+    const btcInrPrice = btcUsdPrice * usdToInr;
+    
+    return {
+      btc_usd_price: btcUsdPrice,
+      buy_rate_inr: Math.round(btcInrPrice * (this.settings.buy_multiplier / 100)),
+      sell_rate_inr: Math.round(btcInrPrice * (this.settings.sell_multiplier / 100))
+    };
+  }
+
+  // Broadcast BTC price update via WebSocket
+  broadcastPriceUpdate(btcUsdPrice) {
+    if (!this.io) return;
+    
+    const rates = this.calculateRates(btcUsdPrice);
+    
+    this.io.emit('btc_price_update', {
+      btc_usd_price: rates.btc_usd_price,
+      buy_rate_inr: rates.buy_rate_inr,
+      sell_rate_inr: rates.sell_rate_inr,
+      timestamp: new Date().toISOString()
+    });
+    
+    console.log(`Broadcasted price update: $${btcUsdPrice} USD (Buy: ₹${rates.buy_rate_inr}, Sell: ₹${rates.sell_rate_inr})`);
   }
 
   // Fetch Bitcoin data from CoinGecko
@@ -79,6 +136,12 @@ class DataService {
         bitcoinData.ath_date,
         bitcoinData.ath_change_pct
       ]);
+
+      // Check if price changed and broadcast update
+      if (this.lastBtcPrice !== bitcoinData.btc_usd_price) {
+        this.lastBtcPrice = bitcoinData.btc_usd_price;
+        this.broadcastPriceUpdate(bitcoinData.btc_usd_price);
+      }
 
       // Keep only last 5 records
       await this.db.execute(`
