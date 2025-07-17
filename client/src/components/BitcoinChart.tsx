@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useWebSocketEvent } from '../context/WebSocketContext';
+import AnimatedNumber from './AnimatedNumber';
 
 interface ChartData {
   timestamp: string;
@@ -139,7 +140,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     };
 
     loadBitcoinData();
-  }, [selectedTab]);
+  }, [selectedTab, chartData.length]);
 
   const formatPrice = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -213,7 +214,6 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
 
   // Use live price from WebSocket if available, otherwise use chart data
   const currentPrice = currentLivePrice || (chartData.length > 0 ? chartData[chartData.length - 1].price : 0);
-  const isPositive = priceChangePercent >= 0;
   
   // Calculate real-time price change if we have live price
   const realTimePriceChange = currentLivePrice && chartData.length > 0 
@@ -241,7 +241,14 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
             <span className={`text-xl font-semibold ${
               isLivePrice ? 'text-green-400' : 'text-white'
             } transition-colors duration-300`}>
-              {formatPrice(currentPrice)}
+              <AnimatedNumber 
+                value={currentPrice}
+                formatNumber={(value) => formatPrice(value)}
+                duration={600}
+                className={`text-xl font-semibold ${
+                  isLivePrice ? 'text-green-400' : 'text-white'
+                } transition-colors duration-300`}
+              />
             </span>
             <div className={`${isRealTimePositive ? 'text-green-400' : 'text-red-400'}`}>
               <span className="text-xs font-light">

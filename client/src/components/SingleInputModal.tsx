@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import AnimatedNumber from './AnimatedNumber';
 
 interface SingleInputModalProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface SingleInputModalProps {
   sectionTitle?: string;
   sectionDetail?: string | React.ReactNode;
   sectionAmount?: string;
+  sectionAmountValue?: number; // For animation
   onSectionClick?: () => void;
   // Optional tab switcher
   tabSwitcher?: React.ReactNode;
@@ -31,6 +33,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   sectionTitle,
   sectionDetail,
   sectionAmount,
+  sectionAmountValue,
   onSectionClick,
   tabSwitcher
 }) => {
@@ -315,18 +318,31 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <div 
               data-clickable-section
               onClick={onSectionClick} 
-              className="mb-2 bg-black border border-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-900 transition-colors"
+              className="mb-2 bg-gray-900 border border-brand rounded-lg p-4 cursor-pointer hover:bg-gray-800 transition-colors"
             >
               <div className="flex justify-between items-center">
                 <div>
-                  <span className="text-gray-400 text-sm">{sectionTitle}</span>
+                  <span className="text-white text-sm">{sectionTitle}</span>
                   {sectionDetail && (
                     <div className="text-xs text-gray-500 mt-1">
                       {typeof sectionDetail === 'string' ? <p>{sectionDetail}</p> : sectionDetail}
                     </div>
                   )}
                 </div>
-                {sectionAmount && <span className="text-sm font-medium text-gray-300">{sectionAmount}</span>}
+                {sectionAmount && (
+                  <span className="text-sm font-medium text-gray-300">
+                    {sectionAmountValue ? (
+                      <AnimatedNumber 
+                        value={sectionAmountValue}
+                        formatNumber={(value) => `₹${value.toLocaleString('en-IN')}`}
+                        duration={600}
+                        className="text-sm font-medium text-gray-300"
+                      />
+                    ) : (
+                      sectionAmount
+                    )}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -360,7 +376,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={isConfirmDisabled}
-              className="px-8 h-12 bg-white text-black text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500"
+              className="px-8 h-12 bg-brand text-black text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 hover:bg-brand/90"
             >
               {isLoading ? 'Processing...' : confirmText}
             </button>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import AnimatedNumber from './AnimatedNumber';
 
 interface DetailItem {
   label: string;
   value: string;
+  numericValue?: number; // For animation
   highlight?: boolean; // Optional highlighting for important details
 }
 
@@ -12,8 +14,10 @@ interface ConfirmationModalProps {
   onClose: () => void;
   title: string;
   amount?: string; // Optional for display-only mode
+  amountValue?: number; // Numeric value for animation
   amountType?: 'btc' | 'inr';
   subAmount?: string; // Smaller amount below main amount
+  subAmountValue?: number; // Numeric value for animation
   subAmountType?: 'btc' | 'inr';
   details: DetailItem[]; // Array of details to show
   confirmText?: string;
@@ -31,8 +35,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   onClose,
   title,
   amount,
+  amountValue,
   amountType,
   subAmount,
+  subAmountValue,
   subAmountType,
   details,
   confirmText,
@@ -251,7 +257,20 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {amount && amountType && (
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-white text-5xl font-light">
-                    {formatAmount(amount, amountType)}
+                    {amountValue ? (
+                      <AnimatedNumber
+                        value={amountValue}
+                        formatNumber={(value) => 
+                          amountType === 'btc' 
+                            ? `₿${value.toFixed(8)}` 
+                            : `₹${value.toLocaleString('en-IN')}`
+                        }
+                        duration={800}
+                        className="text-white text-5xl font-light"
+                      />
+                    ) : (
+                      formatAmount(amount, amountType)
+                    )}
                   </span>
                 </div>
               )}
@@ -260,7 +279,20 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {subAmount && subAmountType && (
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-zinc-400 text-lg font-light">
-                    {formatAmount(subAmount, subAmountType)}
+                    {subAmountValue ? (
+                      <AnimatedNumber
+                        value={subAmountValue}
+                        formatNumber={(value) => 
+                          subAmountType === 'btc' 
+                            ? `₿${value.toFixed(8)}` 
+                            : `₹${value.toLocaleString('en-IN')}`
+                        }
+                        duration={800}
+                        className="text-zinc-400 text-lg font-light"
+                      />
+                    ) : (
+                      formatAmount(subAmount, subAmountType)
+                    )}
                   </span>
                 </div>
               )}
@@ -276,7 +308,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
           {/* Details Section - positioned exactly like SingleInputModal section */}
           {details.length > 0 && (
-            <div className="mb-2 bg-black border border-zinc-700 rounded-lg p-4">
+            <div className="mb-2 bg-gray-900 border border-brand rounded-lg p-4">
               <div className="space-y-4">
                 {details.map((detail, index) => (
                   <div key={index} className="flex justify-between items-center">
@@ -284,7 +316,31 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     <span className={`text-sm font-medium ${
                       detail.highlight ? 'text-white' : 'text-zinc-300'
                     }`}>
-                      {detail.value}
+                      {detail.numericValue !== undefined ? (
+                        <AnimatedNumber
+                          value={detail.numericValue}
+                          formatNumber={(value) => {
+                            // Auto-detect currency format based on the original value
+                            if (detail.value.includes('₹')) {
+                              // For INR rates, use integers only
+                              if (detail.label === 'Rate') {
+                                return `₹${Math.round(value).toLocaleString('en-IN')}`;
+                              }
+                              return `₹${value.toLocaleString('en-IN')}`;
+                            } else if (detail.value.includes('₿')) {
+                              return `₿${value.toFixed(8)}`;
+                            } else {
+                              return value.toLocaleString('en-IN');
+                            }
+                          }}
+                          duration={600}
+                          className={`text-sm font-medium ${
+                            detail.highlight ? 'text-white' : 'text-zinc-300'
+                          }`}
+                        />
+                      ) : (
+                        detail.value
+                      )}
                     </span>
                   </div>
                 ))}
@@ -312,7 +368,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               className={`px-8 h-12 text-base font-medium rounded-lg transition-all disabled:opacity-50 ${
                 mode === 'display' 
                   ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' 
-                  : 'bg-white text-black disabled:bg-zinc-800 disabled:text-zinc-500'
+                  : 'bg-brand text-black disabled:bg-zinc-800 disabled:text-zinc-500 hover:bg-brand/90'
               }`}
             >
               {getButtonText()}

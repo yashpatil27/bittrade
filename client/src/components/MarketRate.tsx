@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useWebSocketEvent } from '../context/WebSocketContext';
+import AnimatedNumber from './AnimatedNumber';
 
 interface MarketRateProps {
   className?: string;
@@ -132,7 +133,12 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           )}
           {currentBtcPrice > 0 && (
             <span className="text-xs text-gray-400">
-              ${currentBtcPrice.toLocaleString()}
+              $<AnimatedNumber 
+                value={currentBtcPrice}
+                formatNumber={(value) => Math.round(value).toLocaleString()}
+                duration={600}
+                className="text-xs text-gray-400"
+              />
             </span>
           )}
         </div>
@@ -143,7 +149,12 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
         <div className="text-center">
           <p className="text-xs text-gray-400 mb-1">Buy Rate</p>
           <p className="text-base font-semibold text-white mb-2">
-            {formatINR(buyRate)}
+            <AnimatedNumber 
+              value={buyRate}
+              formatNumber={(value) => formatINR(value)}
+              duration={600}
+              className="text-base font-semibold text-white"
+            />
           </p>
           <button 
             onClick={onBuyClick}
@@ -158,7 +169,12 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
         <div className="text-center">
           <p className="text-xs text-gray-400 mb-1">Sell Rate</p>
           <p className="text-base font-semibold text-white mb-2">
-            {formatINR(sellRate)}
+            <AnimatedNumber 
+              value={sellRate}
+              formatNumber={(value) => formatINR(value)}
+              duration={600}
+              className="text-base font-semibold text-white"
+            />
           </p>
           <button 
             onClick={onSellClick}

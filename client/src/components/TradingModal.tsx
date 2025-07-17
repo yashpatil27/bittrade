@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
+import AnimatedNumber from './AnimatedNumber';
 
 interface TradingModalProps {
   isOpen: boolean;
@@ -105,21 +106,25 @@ const TradingModal: React.FC<TradingModalProps> = ({
       {
         label: 'Amount',
         value: `₹${conversion.formattedInr}`,
+        numericValue: conversion.inrAmount,
         highlight: true
       },
       {
         label: 'Rate',
         value: rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : 'Rate unavailable',
+        numericValue: rate > 0 ? rate : undefined,
         highlight: false
       },
       {
         label: 'You will ' + (type === 'buy' ? 'receive' : 'pay'),
         value: `₿${conversion.formattedBtc}`,
+        numericValue: conversion.btcAmount,
         highlight: true
       },
       {
         label: 'Fee',
         value: '₹0.00',
+        numericValue: 0,
         highlight: false
       }
     ];
@@ -167,7 +172,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         onConfirm={handleInputConfirm}
         sectionTitle={`${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
         sectionAmount={currentRate > 0 ? `₹${currentRate.toLocaleString('en-IN')}` : 'Rate unavailable'}
-        sectionDetail={currentRate > 0 ? `1 BTC = ₹${currentRate.toLocaleString('en-IN')}` : 'Waiting for live rates...'}
+        sectionAmountValue={currentRate > 0 ? currentRate : undefined}
       />
 
       {/* Confirmation Modal */}
@@ -176,8 +181,10 @@ const TradingModal: React.FC<TradingModalProps> = ({
         onClose={handleConfirmationClose}
         title={getConfirmationTitle()}
         amount={inputValue}
+        amountValue={inputValue ? parseFloat(inputValue) : undefined}
         amountType="inr"
         subAmount={inputValue ? calculateConversion(inputValue).formattedBtc : ''}
+        subAmountValue={inputValue ? calculateConversion(inputValue).btcAmount : undefined}
         subAmountType="btc"
         details={getConfirmationDetails()}
         confirmText={getConfirmationButtonText()}
