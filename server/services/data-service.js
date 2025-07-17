@@ -55,23 +55,31 @@ class DataService {
   }
 
   // Calculate buy and sell rates in INR
+  // As per notes/state.txt requirements:
+  // buy_rate_inr = btc_usd_price * settings.buy_multiplier
+  // sell_rate_inr = btc_usd_price * settings.sell_multiplier
   calculateRates(btcUsdPrice) {
-    const usdToInr = 83; // Approximate USD to INR conversion rate
-    const btcInrPrice = btcUsdPrice * usdToInr;
-    
     return {
       btc_usd_price: btcUsdPrice,
-      buy_rate_inr: Math.round(btcInrPrice * (this.settings.buy_multiplier / 100)),
-      sell_rate_inr: Math.round(btcInrPrice * (this.settings.sell_multiplier / 100))
+      buy_rate_inr: Math.round(btcUsdPrice * this.settings.buy_multiplier),
+      sell_rate_inr: Math.round(btcUsdPrice * this.settings.sell_multiplier)
     };
   }
 
   // Broadcast BTC price update via WebSocket
+  // As per notes/state.txt requirements:
+  // Event: btc_price_update
+  // Payload: [btc_usd_price, buy_rate_inr, sell_rate_inr]
+  // Triggered when bitcoin_data.btc_usd_price changes
   broadcastPriceUpdate(btcUsdPrice) {
-    if (!this.io) return;
+    if (!this.io) {
+      console.log('⚠️  No WebSocket connection available for broadcasting');
+      return;
+    }
     
     const rates = this.calculateRates(btcUsdPrice);
     
+    // Broadcast globally to all connected clients
     this.io.emit('btc_price_update', {
       btc_usd_price: rates.btc_usd_price,
       buy_rate_inr: rates.buy_rate_inr,
@@ -79,7 +87,8 @@ class DataService {
       timestamp: new Date().toISOString()
     });
     
-    console.log(`Broadcasted price update: $${btcUsdPrice} USD (Buy: ₹${rates.buy_rate_inr}, Sell: ₹${rates.sell_rate_inr})`);
+    console.log(`📡 Broadcasted btc_price_update: $${btcUsdPrice} USD (Buy: ₹${rates.buy_rate_inr}, Sell: ₹${rates.sell_rate_inr})`);
+    console.log(`📡 Connected clients: ${this.io.engine.clientsCount}`);
   }
 
   // Fetch Bitcoin data from CoinGecko
@@ -138,9 +147,14 @@ class DataService {
       ]);
 
       // Check if price changed and broadcast update
+      // This implements the trigger condition from notes/state.txt
       if (this.lastBtcPrice !== bitcoinData.btc_usd_price) {
+        const priceDirection = this.lastBtcPrice ? (bitcoinData.btc_usd_price > this.lastBtcPrice ? '⬆️' : '⬇️') : '🔄';
+        console.log(`💰 Bitcoin price changed: $${this.lastBtcPrice || 'N/A'} → $${bitcoinData.btc_usd_price} ${priceDirection}`);
         this.lastBtcPrice = bitcoinData.btc_usd_price;
         this.broadcastPriceUpdate(bitcoinData.btc_usd_price);
+      } else {
+        console.log(`💰 Bitcoin price unchanged: $${bitcoinData.btc_usd_price} (no broadcast)`);
       }
 
       // Keep only last 5 records

@@ -186,8 +186,8 @@ CREATE TABLE bitcoin_chart_data (
 
 -- Insert default settings
 INSERT INTO settings (`key`, value) VALUES 
-('buy_multiplier', 91),
-('sell_multiplier', 88),
+('buy_multiplier', 91), -- USDINR rate for converting BTCUSD to BTCINR for BUY Transactions
+('sell_multiplier', 88), -- USDINR rate for converting BTCUSD to BTCINR for SELL Transactions
 ('loan_interest_rate', 15.00);
 
 -- Create additional indexes for performance
