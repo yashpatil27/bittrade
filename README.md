@@ -43,8 +43,8 @@ bittrade/
    ```
 
    This will start both the server and client simultaneously:
-   - Server: http://localhost:3001
-   - Client: http://localhost:3000
+   - **API Server**: http://localhost:3001 (also accessible via your IP: http://192.168.1.164:3001)
+   - **Client**: http://localhost:3000
 
 ## Available Scripts
 
@@ -94,6 +94,38 @@ The client runs on port 3000 and includes:
 - TypeScript for type safety
 - Responsive design with Tailwind CSS
 - Real-time data updates
+
+## API Endpoints
+
+The server provides the following REST API endpoints:
+
+### Bitcoin Data
+- `GET /api/bitcoin/current` - Get current Bitcoin price and market data
+- `GET /api/bitcoin/chart/:timeframe` - Get chart data (1d, 7d, 30d, 90d, 365d)
+- `GET /api/bitcoin/sentiment` - Get Fear & Greed Index
+- `GET /api/bitcoin/history?limit=10` - Get recent Bitcoin data history
+
+### Trading
+- `GET /api/transactions` - Get user transaction history
+- `POST /api/transactions` - Create new transaction
+- `GET /api/portfolio` - Get user portfolio/balance
+
+### System
+- `GET /api/health` - Server health check
+
+### Example Usage
+```bash
+# Get current Bitcoin price
+curl http://localhost:3001/api/bitcoin/current
+
+# Get 7-day chart data
+curl http://localhost:3001/api/bitcoin/chart/7d
+
+# Create a buy transaction
+curl -X POST http://localhost:3001/api/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"type":"buy","amount":0.001,"price":45000}'
+```
 
 ## Database Setup
 
