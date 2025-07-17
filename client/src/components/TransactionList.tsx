@@ -1,0 +1,133 @@
+import React from 'react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { formatINR, formatBTC, getTimeAgo } from '../data/mockData';
+import { Transaction } from '../types';
+
+interface TransactionListProps {
+  transactions: Transaction[];
+  title?: string;
+  showViewAll?: boolean;
+  onTransactionClick?: (transaction: Transaction) => void;
+  onViewAllClick?: () => void;
+  maxItems?: number;
+}
+
+const TransactionList: React.FC<TransactionListProps> = ({
+  transactions,
+  title = 'Transactions',
+  showViewAll = true,
+  onTransactionClick,
+  onViewAllClick,
+  maxItems
+}) => {
+  const displayTransactions = maxItems ? transactions.slice(0, maxItems) : transactions;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'text-white';
+      case 'pending': return 'text-gray-400';
+      case 'failed': return 'text-gray-500';
+      case 'cancelled': return 'text-gray-500';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getTransactionIcon = (type: string) => {
+    switch (type) {
+      case 'buy': return <ArrowUpRight className="w-4 h-4" />;
+      case 'sell': return <ArrowDownRight className="w-4 h-4" />;
+      case 'deposit': return <TrendingUp className="w-4 h-4" />;
+      case 'withdraw': return <TrendingDown className="w-4 h-4" />;
+      default: return <div className="w-4 h-4" />;
+    }
+  };
+
+  const getTransactionColor = (type: string) => {
+    switch (type) {
+      case 'buy': return 'bg-gray-700';
+      case 'sell': return 'bg-gray-600';
+      case 'deposit': return 'bg-gray-700';
+      case 'withdraw': return 'bg-gray-600';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const handleTransactionClick = (transaction: Transaction) => {
+    if (onTransactionClick) {
+      onTransactionClick(transaction);
+    }
+  };
+
+  const handleViewAllClick = () => {
+    if (onViewAllClick) {
+      onViewAllClick();
+    }
+  };
+
+  if (displayTransactions.length === 0) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-base font-medium text-white">{title}</h3>
+        </div>
+        <div className="text-center py-8">
+          <p className="text-gray-400 text-sm">No transactions found</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-medium text-white">{title}</h3>
+        {showViewAll && (
+          <button 
+            className="text-xs font-light text-brand"
+            onClick={handleViewAllClick}
+          >
+            View All
+          </button>
+        )}
+      </div>
+      
+      <div className="space-y-0">
+        {displayTransactions.map((txn, index) => (
+          <div key={txn.id}>
+            <div 
+              className={`flex items-center justify-between py-3 ${onTransactionClick ? 'cursor-pointer hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors' : ''}`}
+              onClick={() => handleTransactionClick(txn)}
+            >
+              <div className="flex items-center space-x-3">
+                <div className={`w-8 h-8 ${getTransactionColor(txn.type)} rounded-full flex items-center justify-center`}>
+                  {getTransactionIcon(txn.type)}
+                </div>
+                <div>
+                  <p className="text-sm font-light text-white capitalize">{txn.type} Bitcoin</p>
+                  <p className="text-xs text-gray-400">{getTimeAgo(txn.timestamp)}</p>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <p className="text-sm font-light text-white">
+                  {txn.type === 'deposit' || txn.type === 'withdraw' ? 
+                    formatINR(txn.total) : 
+                    formatBTC(txn.amount)
+                  }
+                </p>
+                <p className={`text-xs ${getStatusColor(txn.status)}`}>
+                  {txn.status}
+                </p>
+              </div>
+            </div>
+            {index < displayTransactions.length - 1 && (
+              <div className="border-b border-gray-800"></div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default TransactionList;
