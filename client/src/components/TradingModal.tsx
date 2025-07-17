@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
-import AnimatedNumber from './AnimatedNumber';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { executeTrade } from '../utils/tradingApi';
 
@@ -155,25 +154,25 @@ const TradingModal: React.FC<TradingModalProps> = ({
     return [
       {
         label: 'Amount',
-        value: `₹${conversion.formattedInr}`,
+        value: conversion.formattedInr,
         numericValue: conversion.inrAmount,
         highlight: true
       },
       {
         label: 'Rate',
-        value: rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : 'Rate unavailable',
+        value: rate > 0 ? formatRupeesForDisplay(rate) : 'Rate unavailable',
         numericValue: rate > 0 ? rate : undefined,
         highlight: false
       },
       {
         label: 'You will ' + (type === 'buy' ? 'receive' : 'pay'),
-        value: `₿${conversion.formattedBtc}`,
+        value: conversion.formattedBtc,
         numericValue: conversion.btcAmount,
         highlight: true
       },
       {
         label: 'Fee',
-        value: '₹0.00',
+        value: formatRupeesForDisplay(0),
         numericValue: 0,
         highlight: false
       }
@@ -271,7 +270,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         amountType={type === 'buy' ? 'inr' : 'btc'}
         subAmount={type === 'buy' 
           ? (inputValue ? calculateConversion(inputValue).formattedBtc : '')
-          : (inputValue ? `₹${calculateConversion(inputValue).formattedInr}` : '')
+          : (inputValue ? calculateConversion(inputValue).formattedInr : '')
         }
         subAmountValue={type === 'buy' 
           ? (inputValue ? calculateConversion(inputValue).btcAmount : undefined)

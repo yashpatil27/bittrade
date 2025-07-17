@@ -250,12 +250,39 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     onConfirm(value);
   };
 
+  // Format Bitcoin for input display (preserves trailing zeros and decimal point)
+  const formatBitcoinForInput = (val: string) => {
+    if (val === '') return '₿0';
+    if (val === '.') return '₿0.';
+    
+    // Handle cases where input starts with decimal point
+    let processedVal = val;
+    if (val.startsWith('.')) {
+      processedVal = '0' + val;
+    }
+    
+    // If it contains a decimal point, preserve trailing zeros
+    if (processedVal.includes('.')) {
+      // Split into integer and decimal parts
+      const [integerPart, decimalPart] = processedVal.split('.');
+      
+      // Limit decimal places to 8 (standard Bitcoin precision)
+      const limitedDecimalPart = decimalPart ? decimalPart.slice(0, 8) : '';
+      
+      return `₿${integerPart}.${limitedDecimalPart}`;
+    }
+    
+    // No decimal point, just return with Bitcoin symbol
+    return `₿${processedVal}`;
+  };
+
   // Format display value
   const formatDisplayValue = (val: string) => {
     if (type === 'btc') {
-      return val || '0';
+      return formatBitcoinForInput(val);
     } else {
-      return val || '0';
+      const numVal = parseFloat(val) || 0;
+      return formatRupeesForDisplay(numVal);
     }
   };
 

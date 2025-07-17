@@ -202,7 +202,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 
   const formatAmount = (value: string, type: 'btc' | 'inr') => {
     const numValue = parseFloat(value) || 0;
-    return type === 'btc' ? `₿${numValue.toFixed(8)}` : `₹${numValue.toLocaleString('en-IN')}`;
+    return type === 'btc' ? formatBitcoinForDisplay(numValue * 100000000) : formatRupeesForDisplay(numValue);
   };
 
   if (!isOpen) return null;
@@ -281,8 +281,8 @@ formatNumber={(value) => amountType === 'btc' ? formatBitcoinForDisplay(value * 
                         value={subAmountValue}
                         formatNumber={(value) => 
                           subAmountType === 'btc' 
-                            ? `₿${value.toFixed(8)}` 
-                            : `₹${value.toLocaleString('en-IN')}`
+                            ? formatBitcoinForDisplay(value * 100000000)
+                            : formatRupeesForDisplay(value)
                         }
                         duration={800}
                         className="text-zinc-400 text-lg font-light"
@@ -319,13 +319,9 @@ formatNumber={(value) => amountType === 'btc' ? formatBitcoinForDisplay(value * 
                           formatNumber={(value) => {
                             // Auto-detect currency format based on the original value
                             if (detail.value.includes('₹')) {
-                              // For INR rates, use integers only
-                              if (detail.label === 'Rate') {
-                                return `₹${Math.round(value).toLocaleString('en-IN')}`;
-                              }
-                              return `₹${value.toLocaleString('en-IN')}`;
+                              return formatRupeesForDisplay(value);
                             } else if (detail.value.includes('₿')) {
-                              return `₿${value.toFixed(8)}`;
+                              return formatBitcoinForDisplay(value * 100000000);
                             } else {
                               return value.toLocaleString('en-IN');
                             }
