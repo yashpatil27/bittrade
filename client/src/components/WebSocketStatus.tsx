@@ -2,7 +2,7 @@ import React from 'react';
 import { useWebSocket } from '../context/WebSocketContext';
 
 const WebSocketStatus: React.FC = () => {
-  const { isConnected, connectionStatus } = useWebSocket();
+  const { connectionStatus } = useWebSocket();
 
   const getStatusColor = () => {
     switch (connectionStatus) {

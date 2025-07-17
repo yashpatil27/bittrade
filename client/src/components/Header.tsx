@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Search } from 'lucide-react';
+import { Bell, Menu, Settings } from 'lucide-react';
 import WebSocketStatus from './WebSocketStatus';
 
 interface HeaderProps {
