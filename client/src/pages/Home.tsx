@@ -5,17 +5,19 @@ import TransactionList from '../components/TransactionList';
 import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
-import { mockMarketData, mockTransactions } from '../data/mockData';
+import PriceUpdateTest from '../components/PriceUpdateTest';
+import { mockTransactions } from '../data/mockData';
 
 interface HomeProps {
   setModalOpen: (open: boolean) => void;
 }
 
 const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
-  const [marketData] = React.useState(mockMarketData);
   const [recentTxns] = React.useState(mockTransactions.slice(0, 5));
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
+  const [buyRate, setBuyRate] = React.useState<number>(0);
+  const [sellRate, setSellRate] = React.useState<number>(0);
 
   const handleBuyClick = () => {
     setModalType('buy');
@@ -43,6 +45,11 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
     // 4. Update transaction list
   };
 
+  const handleRatesUpdate = (newBuyRate: number, newSellRate: number) => {
+    setBuyRate(newBuyRate);
+    setSellRate(newSellRate);
+  };
+
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
@@ -55,9 +62,9 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
         
         {/* Market Rate */}
         <MarketRate 
-          bitcoinPrice={marketData.price} 
           onBuyClick={handleBuyClick}
           onSellClick={handleSellClick}
+          onRatesUpdate={handleRatesUpdate}
         />
         
         {/* Recent Transactions */}
@@ -70,12 +77,16 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
           />
         </Card>
 
+        {/* WebSocket Test Component */}
+        <PriceUpdateTest />
+
         {/* Trading Modal */}
         <TradingModal
           isOpen={modalOpen}
           onClose={handleModalClose}
           type={modalType}
-          bitcoinPrice={marketData.price}
+          buyRate={buyRate}
+          sellRate={sellRate}
           onComplete={handleTradingComplete}
         />
         </div>

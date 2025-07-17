@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import { useWebSocketEvent } from '../context/WebSocketContext';
 
 interface ChartData {
   timestamp: string;
@@ -20,12 +21,33 @@ interface BitcoinChartProps {
   className?: string;
 }
 
+interface PriceUpdateData {
+  btc_usd_price: number;
+  buy_rate_inr: number;
+  sell_rate_inr: number;
+  timestamp: string;
+}
+
 const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState('90d');
   const [priceChangePercent, setPriceChangePercent] = useState<number>(0);
+  const [currentLivePrice, setCurrentLivePrice] = useState<number | null>(null);
+  const [isLivePrice, setIsLivePrice] = useState(false);
+
+  // Listen for WebSocket price updates
+  useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
+    console.log('📈 BitcoinChart received btc_price_update:', data);
+    setCurrentLivePrice(data.btc_usd_price);
+    setIsLivePrice(true);
+    
+    // Reset live indicator after 3 seconds
+    setTimeout(() => {
+      setIsLivePrice(false);
+    }, 3000);
+  });
 
   const tabs = [
     { id: '1d', label: '1D', apiTimeframe: '1d' },
@@ -163,24 +185,48 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     );
   }
 
-  const currentPrice = chartData.length > 0 ? chartData[chartData.length - 1].price : 0;
+  // Use live price from WebSocket if available, otherwise use chart data
+  const currentPrice = currentLivePrice || (chartData.length > 0 ? chartData[chartData.length - 1].price : 0);
   const isPositive = priceChangePercent >= 0;
+  
+  // Calculate real-time price change if we have live price
+  const realTimePriceChange = currentLivePrice && chartData.length > 0 
+    ? ((currentLivePrice - chartData[0].price) / chartData[0].price) * 100
+    : priceChangePercent;
+  
+  const displayPriceChange = currentLivePrice ? realTimePriceChange : priceChangePercent;
+  const isRealTimePositive = displayPriceChange >= 0;
 
   return (
     <div className={`bg-black rounded-lg p-1 ${className}`}>
       {/* Header */}
       <div className="mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-white">Bitcoin Price</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white">Bitcoin Price</h3>
+            {isLivePrice && (
+              <div className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-xs text-green-400">Live</span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center space-x-2 mt-1">
-            <span className="text-xl font-semibold text-white">
+            <span className={`text-xl font-semibold ${
+              isLivePrice ? 'text-green-400' : 'text-white'
+            } transition-colors duration-300`}>
               {formatPrice(currentPrice)}
             </span>
-            <div className={`${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+            <div className={`${isRealTimePositive ? 'text-green-400' : 'text-red-400'}`}>
               <span className="text-xs font-light">
-                {isPositive ? '+' : ''}{priceChangePercent.toFixed(2)}%
+                {isRealTimePositive ? '+' : ''}{displayPriceChange.toFixed(2)}%
               </span>
             </div>
+            {currentLivePrice && (
+              <span className="text-xs text-gray-400">
+                Real-time
+              </span>
+            )}
           </div>
         </div>
       </div>

@@ -6,7 +6,8 @@ interface TradingModalProps {
   isOpen: boolean;
   onClose: () => void;
   type: 'buy' | 'sell';
-  bitcoinPrice: number;
+  buyRate?: number;
+  sellRate?: number;
   onComplete?: (type: 'buy' | 'sell', amount: string) => void;
 }
 
@@ -14,7 +15,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
   isOpen,
   onClose,
   type,
-  bitcoinPrice,
+  buyRate,
+  sellRate,
   onComplete,
 }) => {
   const [currentStep, setCurrentStep] = useState<'input' | 'confirm'>('input');
@@ -33,7 +35,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
   // Calculate conversion values
   const calculateConversion = (amount: string) => {
     const numAmount = parseFloat(amount) || 0;
-    const btcAmount = numAmount / bitcoinPrice;
+    const currentRate = type === 'buy' ? (buyRate || 0) : (sellRate || 0);
+    const btcAmount = currentRate > 0 ? numAmount / currentRate : 0;
     return {
       inrAmount: numAmount,
       btcAmount: btcAmount,
@@ -96,7 +99,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
     if (!inputValue) return [];
     
     const conversion = calculateConversion(inputValue);
-    const rate = type === 'buy' ? buyRate : sellRate;
+    const rate = type === 'buy' ? (buyRate || 0) : (sellRate || 0);
     
     return [
       {
@@ -106,7 +109,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
       },
       {
         label: 'Rate',
-        value: `₹${rate.toLocaleString('en-IN')}`,
+        value: rate > 0 ? `₹${rate.toLocaleString('en-IN')}` : 'Rate unavailable',
         highlight: false
       },
       {
@@ -127,10 +130,30 @@ const TradingModal: React.FC<TradingModalProps> = ({
     return type === 'buy' ? 'Buy Now' : 'Sell Now';
   };
 
-  // Calculate rates for display
-  const buyRate = bitcoinPrice * 91; // Buy rate: price * 91
-  const sellRate = bitcoinPrice * 88; // Sell rate: price * 88
-  const currentRate = type === 'buy' ? buyRate : sellRate;
+  // Calculate rates for display - WebSocket data only
+  const currentBuyRate = buyRate || 0; // Buy rate: WebSocket rate only
+  const currentSellRate = sellRate || 0; // Sell rate: WebSocket rate only
+  const currentRate = type === 'buy' ? currentBuyRate : currentSellRate;
+  
+  // Don't allow modal to open if rates are not available
+  if (isOpen && currentRate === 0) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 max-w-sm w-full">
+          <h3 className="text-lg font-semibold text-white mb-4">Rates Unavailable</h3>
+          <p className="text-gray-300 mb-4">
+            Unable to {type} Bitcoin at the moment. Please wait for live rates to load.
+          </p>
+          <button
+            onClick={onClose}
+            className="w-full bg-brand text-black hover:bg-brand/80 transition-colors rounded-lg py-2 px-4 font-medium"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -143,8 +166,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
         confirmText={getConfirmationButtonText()}
         onConfirm={handleInputConfirm}
         sectionTitle={`${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
-        sectionAmount={`₹${currentRate.toLocaleString('en-IN')}`}
-        sectionDetail={`1 BTC = ₹${currentRate.toLocaleString('en-IN')}`}
+        sectionAmount={currentRate > 0 ? `₹${currentRate.toLocaleString('en-IN')}` : 'Rate unavailable'}
+        sectionDetail={currentRate > 0 ? `1 BTC = ₹${currentRate.toLocaleString('en-IN')}` : 'Waiting for live rates...'}
       />
 
       {/* Confirmation Modal */}

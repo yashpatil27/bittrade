@@ -1,16 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useWebSocketEvent } from '../context/WebSocketContext';
 
 interface MarketRateProps {
-  bitcoinPrice: number;
   className?: string;
   onBuyClick?: () => void;
   onSellClick?: () => void;
+  onRatesUpdate?: (buyRate: number, sellRate: number) => void;
 }
 
-const MarketRate: React.FC<MarketRateProps> = ({ bitcoinPrice, className = "", onBuyClick, onSellClick }) => {
-  const buyRate = bitcoinPrice * 91;
-  const sellRate = bitcoinPrice * 88;
+interface PriceUpdateData {
+  btc_usd_price: number;
+  buy_rate_inr: number;
+  sell_rate_inr: number;
+  timestamp: string;
+}
+
+const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate }) => {
+  const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
+  const [isLive, setIsLive] = useState(false);
+
+  // Listen for WebSocket price updates as per notes/state.txt
+  useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
+    console.log('📡 Received btc_price_update:', data);
+    setPriceData(data);
+    setIsLive(true);
+  });
+
+  // Use WebSocket data only - no fallback to mock data
+  const buyRate = priceData ? priceData.buy_rate_inr : 0;
+  const sellRate = priceData ? priceData.sell_rate_inr : 0;
+  const currentBtcPrice = priceData ? priceData.btc_usd_price : 0;
+
+  // Notify parent component of rate updates
+  useEffect(() => {
+    if (onRatesUpdate) {
+      onRatesUpdate(buyRate, sellRate);
+    }
+  }, [buyRate, sellRate, onRatesUpdate]);
 
   const formatINR = (amount: number): string => {
     return new Intl.NumberFormat('en-IN', {
@@ -21,10 +48,66 @@ const MarketRate: React.FC<MarketRateProps> = ({ bitcoinPrice, className = "", o
     }).format(amount);
   };
 
+  // Show loading state when no data is available
+  if (!priceData) {
+    return (
+      <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-base font-medium text-white">Market Rates</h3>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-yellow-400">Loading...</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          {/* Buy Rate Loading */}
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-1">Buy Rate</p>
+            <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+            <button 
+              disabled
+              className="w-full border-2 border-gray-600 bg-gray-700 text-gray-400 rounded-lg py-1.5 px-3 text-xs font-light flex items-center justify-center space-x-1 cursor-not-allowed"
+            >
+              <span>Loading...</span>
+            </button>
+          </div>
+
+          {/* Sell Rate Loading */}
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-1">Sell Rate</p>
+            <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+            <button 
+              disabled
+              className="w-full border-2 border-gray-600 bg-gray-700 text-gray-400 rounded-lg py-1.5 px-3 text-xs font-light flex items-center justify-center space-x-1 cursor-not-allowed"
+            >
+              <span>Loading...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
-      <div className="mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <h3 className="text-base font-medium text-white">Market Rates</h3>
+        <div className="flex items-center space-x-2">
+          {isLive && (
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-green-400">Live</span>
+            </div>
+          )}
+          {currentBtcPrice > 0 && (
+            <span className="text-xs text-gray-400">
+              ${currentBtcPrice.toLocaleString()}
+            </span>
+          )}
+        </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4">
