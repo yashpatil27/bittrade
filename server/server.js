@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2/promise');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 const config = require('./config/config');
 const DataService = require('./services/data-service');
 
@@ -224,6 +226,47 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
+// Create HTTP server and Socket.IO instance
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.IO connection handling
+io.on('connection', (socket) => {
+  console.log(`📡 Client connected: ${socket.id}`);
+  
+  // Send current Bitcoin data immediately upon connection
+  socket.emit('connection_established', {
+    message: 'Connected to BitTrade WebSocket',
+    timestamp: new Date().toISOString()
+  });
+  
+  // Handle client disconnect
+  socket.on('disconnect', (reason) => {
+    console.log(`📡 Client disconnected: ${socket.id} (${reason})`);
+  });
+  
+  // Handle client errors
+  socket.on('error', (error) => {
+    console.error(`📡 Socket error for ${socket.id}:`, error);
+  });
+});
+
+// Function to broadcast data to all connected clients
+function broadcastToClients(eventName, data) {
+  io.emit(eventName, {
+    ...data,
+    timestamp: new Date().toISOString()
+  });
+}
+
+// Make broadcast function available globally
+global.broadcastToClients = broadcastToClients;
+
 // Start server
 async function startServer() {
   await initDB();
@@ -233,13 +276,15 @@ async function startServer() {
   global.dataService = dataService;
   dataService.start().catch(console.error);
   
-  app.listen(PORT, '0.0.0.0', () => {
+  httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 BitTrade API Server running on port ${PORT}`);
     console.log(`📱 Server accessible at:`);
     console.log(`   - http://localhost:${PORT}`);
     console.log(`   - http://0.0.0.0:${PORT}`);
-    console.log(`   - http://[your-ip-address]:${PORT}`);
+    console.log(`   - http://192.168.1.164:${PORT}`);
     console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🌐 WebSocket server ready for real-time data broadcasting`);
+    console.log(`📡 Connected clients: ${io.engine.clientsCount}`);
   });
 }
 

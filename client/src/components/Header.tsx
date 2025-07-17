@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bell, Settings, Menu } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
+import WebSocketStatus from './WebSocketStatus';
 
 interface HeaderProps {
   title?: string;
@@ -37,7 +38,9 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         {/* Right side */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
+          <WebSocketStatus />
+          
           {showNotifications && (
             <button 
               onClick={onNotificationClick}
