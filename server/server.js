@@ -5,6 +5,8 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const config = require('./config/config');
 const DataService = require('./services/data-service');
+const authRoutes = require('./routes/auth');
+const { authenticateToken, optionalAuth } = require('./middleware/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -26,6 +28,9 @@ async function initDB() {
     process.exit(1);
   }
 }
+
+// Authentication Routes
+app.use('/api/auth', authRoutes);
 
 // API Routes
 
