@@ -216,8 +216,9 @@ class DataService {
 
       return {
         timeframe,
-        price_data: JSON.stringify(priceData),
+price_data: JSON.stringify(priceData),
         data_points_count: priceData.length,
+        price_change_pct: priceData.length > 0 ? ((priceData[priceData.length - 1].price - priceData[0].price) / priceData[0].price) * 100 : null,
         date_from: new Date(chartData.prices[0][0]).toISOString().slice(0, 19).replace('T', ' '),
         date_to: new Date(chartData.prices[chartData.prices.length - 1][0]).toISOString().slice(0, 19).replace('T', ' ')
       };
@@ -234,15 +235,16 @@ class DataService {
       
       // Insert new data
       const insertQuery = `
-        INSERT INTO bitcoin_chart_data (
-          timeframe, price_data, data_points_count, date_from, date_to
-        ) VALUES (?, ?, ?, ?, ?)
+INSERT INTO bitcoin_chart_data (
+          timeframe, price_data, data_points_count, price_change_pct, date_from, date_to
+        ) VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       await this.db.execute(insertQuery, [
         chartData.timeframe,
         chartData.price_data,
         chartData.data_points_count,
+chartData.price_change_pct, 
         chartData.date_from,
         chartData.date_to
       ]);

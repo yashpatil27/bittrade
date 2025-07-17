@@ -179,13 +179,14 @@ CREATE TABLE bitcoin_sentiment (
   UNIQUE KEY unique_date (data_date)
 );
 
--- Bitcoin chart data table (unchanged)
+-- Bitcoin chart data table
 CREATE TABLE bitcoin_chart_data (
   id INT PRIMARY KEY AUTO_INCREMENT,
   
   timeframe ENUM('1d', '7d', '30d', '90d', '365d') NOT NULL,
   price_data JSON NOT NULL,
   data_points_count INT UNSIGNED NOT NULL,
+  price_change_pct DECIMAL(8,2) DEFAULT NULL,
   
   date_from TIMESTAMP NOT NULL,
   date_to TIMESTAMP NOT NULL,
