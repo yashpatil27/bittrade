@@ -3,6 +3,7 @@ import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
 import AnimatedNumber from './AnimatedNumber';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
+import { executeTrade } from '../utils/tradingApi';
 
 interface BalanceData {
   available_inr: number;
@@ -57,8 +58,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
       return {
         inrAmount: numAmount,
         btcAmount: btcAmount,
-        formattedBtc: btcAmount.toFixed(8),
-        formattedInr: numAmount.toLocaleString('en-IN'),
+        formattedBtc: formatBitcoinForDisplay(btcAmount * 100000000),
+        formattedInr: formatRupeesForDisplay(numAmount),
       };
     } else {
       // Sell: User inputs BTC, gets INR
@@ -66,8 +67,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
       return {
         inrAmount: inrAmount,
         btcAmount: numAmount,
-        formattedBtc: numAmount.toFixed(8),
-        formattedInr: inrAmount.toLocaleString('en-IN'),
+        formattedBtc: formatBitcoinForDisplay(numAmount * 100000000),
+        formattedInr: formatRupeesForDisplay(inrAmount),
       };
     }
   };
@@ -96,8 +97,20 @@ const TradingModal: React.FC<TradingModalProps> = ({
     setIsProcessing(true);
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Prepare trade request
+      const tradeRequest = {
+        action: type,
+        type: 'market' as const,
+        amount: inputValue,
+        currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc'
+      };
+      
+      console.log('🔄 Executing trade:', tradeRequest);
+      
+      // Execute trade via API
+      const tradeResult = await executeTrade(tradeRequest);
+      
+      console.log('✅ Trade executed successfully:', tradeResult);
       
       // Call completion callback
       if (onComplete) {
@@ -107,8 +120,11 @@ const TradingModal: React.FC<TradingModalProps> = ({
       // Close entire modal flow
       onClose();
     } catch (error) {
-      console.error('Transaction failed:', error);
-      // In a real app, you'd show an error message
+      console.error('❌ Trade execution failed:', error);
+      
+      // Show error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Trade execution failed';
+      alert(`Transaction failed: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }
@@ -239,7 +255,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         confirmText={getConfirmationButtonText()}
         onConfirm={handleInputConfirm}
         sectionTitle={`${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
-        sectionAmount={currentRate > 0 ? `₹${currentRate.toLocaleString('en-IN')}` : 'Rate unavailable'}
+        sectionAmount={currentRate > 0 ? formatRupeesForDisplay(currentRate) : 'Rate unavailable'}
         sectionAmountValue={currentRate > 0 ? currentRate : undefined}
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}

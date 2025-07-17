@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import AnimatedNumber from './AnimatedNumber';
+import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 
 interface DetailItem {
   label: string;
@@ -260,11 +261,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     {amountValue ? (
                       <AnimatedNumber
                         value={amountValue}
-                        formatNumber={(value) => 
-                          amountType === 'btc' 
-                            ? `₿${value.toFixed(8)}` 
-                            : `₹${value.toLocaleString('en-IN')}`
-                        }
+formatNumber={(value) => amountType === 'btc' ? formatBitcoinForDisplay(value * 100000000) : formatRupeesForDisplay(value)}
                         duration={800}
                         className="text-white text-5xl font-light"
                       />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import AnimatedNumber from './AnimatedNumber';
+import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
   isOpen: boolean;
@@ -347,7 +348,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                     {sectionAmountValue ? (
                       <AnimatedNumber 
                         value={sectionAmountValue}
-                        formatNumber={(value) => `₹${value.toLocaleString('en-IN')}`}
+                        formatNumber={(value) => formatRupeesForDisplay(value)}
                         duration={600}
                         className="text-sm font-medium text-gray-300"
                       />

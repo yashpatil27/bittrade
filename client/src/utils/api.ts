@@ -20,6 +20,8 @@ export const API_CONFIG = {
     // Trading
     MARKET_RATES: `${API_BASE_URL}/api/market-rates`,
     TRANSACTIONS: `${API_BASE_URL}/api/transactions`,
+    TRADE: `${API_BASE_URL}/api/trade`,
+    BALANCE: `${API_BASE_URL}/api/balance`,
     PORTFOLIO: `${API_BASE_URL}/api/portfolio`,
     
     // System
