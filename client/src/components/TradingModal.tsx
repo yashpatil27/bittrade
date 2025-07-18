@@ -248,7 +248,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         onClose={handleInputClose}
         title={getInputTitle()}
         type={type === 'buy' ? 'inr' : 'btc'}
-        confirmText={getConfirmationButtonText()}
+        confirmText="Next"
         onConfirm={handleInputConfirm}
         sectionTitle={`${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
         sectionAmount={currentRate > 0 ? (

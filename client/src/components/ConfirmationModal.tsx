@@ -297,7 +297,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={isLoading}
-              className={`px-8 h-12 text-base font-normal rounded-lg transition-all disabled:opacity-50 ${
+              className={`px-8 h-12 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 ${
                 mode === 'display' 
                   ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' 
                   : 'bg-brand text-black disabled:bg-zinc-800 disabled:text-zinc-500 hover:bg-brand/90'

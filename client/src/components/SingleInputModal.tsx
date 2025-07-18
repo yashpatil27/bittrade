@@ -334,13 +334,13 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <div className="text-center w-full">
               {/* Input Display */}
               <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="text-white text-5xl font-light">
+                <span className="text-white text-5xl font-normal">
                   {formatDisplayValue(value)}
                 </span>
               </div>
               
             {/* Max Button */}
-            {!value && maxButtonText && (
+            {maxButtonText && (
               <button
                 onClick={handleMaxAmount}
                 className="bg-gray-800 text-gray-300 px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors mb-2 inline-flex items-center justify-center min-w-fit"
@@ -356,7 +356,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <div 
               data-clickable-section
               onClick={onSectionClick} 
-              className="mb-2 bg-gray-900 border border-brand rounded-lg p-4 cursor-pointer hover:bg-gray-800 transition-colors"
+              className="mb-2 bg-gray-900 border border-brand/30 rounded-lg p-4 cursor-pointer hover:bg-gray-800 transition-colors"
             >
               <div className="flex justify-between items-center">
                 <div>
@@ -405,7 +405,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={isConfirmDisabled}
-              className="px-8 h-12 bg-brand text-black text-base font-medium rounded-lg transition-all disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 hover:bg-brand/90"
+              className="px-8 h-12 bg-brand text-black text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 hover:bg-brand/90"
             >
               {isLoading ? 'Processing...' : confirmText}
             </button>
