@@ -155,22 +155,22 @@ const TradingModal: React.FC<TradingModalProps> = ({
     return [
       {
         label: 'Amount',
-        value: <AnimateINR value={conversion.inrAmount} className="text-sm font-medium text-white" />,
+        value: <AnimateINR value={conversion.inrAmount} className="text-sm font-normal text-white" />,
         highlight: true
       },
       {
         label: 'Rate',
-        value: rate > 0 ? <AnimateINR value={rate} className="text-sm font-medium text-zinc-300" /> : 'Rate unavailable',
+        value: rate > 0 ? <AnimateINR value={rate} className="text-sm font-normal text-white" /> : 'Rate unavailable',
         highlight: false
       },
       {
         label: 'You will ' + (type === 'buy' ? 'receive' : 'pay'),
-        value: <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-medium text-white" />,
+        value: <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-normal text-white" />,
         highlight: true
       },
       {
         label: 'Fee',
-        value: <AnimateINR value={0} className="text-sm font-medium text-zinc-300" />,
+        value: <AnimateINR value={0} className="text-sm font-normal text-white" />,
         highlight: false
       }
     ];
@@ -178,7 +178,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
 
   // Get button texts
   const getConfirmationButtonText = () => {
-    return type === 'buy' ? 'Buy Now' : 'Sell Now';
+    return 'Confirm';
   };
 
   // Calculate rates for display - WebSocket data only
@@ -267,17 +267,17 @@ const TradingModal: React.FC<TradingModalProps> = ({
         title={getConfirmationTitle()}
         amount={inputValue ? (
           type === 'buy' ? (
-            <AnimateINR value={parseFloat(inputValue)} className="justify-center text-white text-5xl font-light" />
+            <AnimateINR value={parseFloat(inputValue)} className="justify-center text-white text-5xl font-normal" />
           ) : (
-            <AnimateBTC value={parseFloat(inputValue) * 100000000} className="justify-center text-white text-5xl font-light" />
+            <AnimateBTC value={parseFloat(inputValue) * 100000000} className="justify-center text-white text-5xl font-semibold" />
           )
         ) : undefined}
         amountType={type === 'buy' ? 'inr' : 'btc'}
         subAmount={inputValue ? (
           type === 'buy' ? (
-            <AnimateBTC value={calculateConversion(inputValue).btcAmount * 100000000} className="justify-center text-zinc-400 text-lg font-light" />
+            <AnimateBTC value={calculateConversion(inputValue).btcAmount * 100000000} className="justify-center text-white text-sm font-normal" />
           ) : (
-            <AnimateINR value={calculateConversion(inputValue).inrAmount} className="justify-center text-zinc-400 text-lg font-light" />
+            <AnimateINR value={calculateConversion(inputValue).inrAmount} className="justify-center text-white text-sm font-normal" />
           )
         ) : undefined}
         subAmountType={type === 'buy' ? 'btc' : 'inr'}

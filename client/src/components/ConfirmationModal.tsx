@@ -240,17 +240,14 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col h-full px-6">
+        <div className="flex flex-col h-full px-6 ">
           {/* Amount Display Area */}
-          <div 
-            className="flex flex-col justify-start items-center pt-4" 
-            style={{ height: `${contentHeight}px` }}
-          >
+          <div className="flex flex-col justify-start items-center pt-4">
             <div className="text-center w-full">
               {/* Main Amount Display */}
               {amount && amountType && (
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <span className="text-white text-5xl font-light">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <span className="text-white text-5xl font-normal">
                     {amount}
                   </span>
                 </div>
@@ -258,32 +255,25 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               
               {/* Sub Amount Display */}
               {subAmount && subAmountType && (
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <span className="text-zinc-400 text-lg font-light">
+                <div className="flex items-center justify-center gap-2 mb-8">
+                  <span className="text-white text-sm font-normal">
                     {subAmount}
                   </span>
                 </div>
               )}
               
-              {/* Status Badge */}
-              {statusBadge && (
-                <div className="mb-4">
-                  {statusBadge}
-                </div>
-              )}
+              
             </div>
           </div>
 
           {/* Details Section - positioned exactly like SingleInputModal section */}
           {details.length > 0 && (
-            <div className="mb-2 bg-gray-900 border border-brand rounded-lg p-4">
-              <div className="space-y-4">
+            <div className="mb-4 bg-black border border-brand/30 rounded-2xl p-4">
+              <div className="divide-y divide-brand/30">
                 {details.map((detail, index) => (
-                  <div key={index} className="flex justify-between items-center">
+                  <div key={index} className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
                     <span className="text-zinc-400 text-sm">{detail.label}</span>
-                    <span className={`text-sm font-medium ${
-                      detail.highlight ? 'text-white' : 'text-zinc-300'
-                    }`}>
+                    <span className="text-sm font-normal text-white">
                       {detail.value}
                     </span>
                   </div>
@@ -299,17 +289,15 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </div>
           )}
 
-          {/* Keypad Space - matches SingleInputModal keypad */}
-          <div className="mb-3">
-            <div className="h-32"></div> {/* 128px height to match keypad area */}
-          </div>
+          {/* Spacer to maintain button position */}
+          <div className="flex-1"></div>
 
           {/* Confirm/Close Button */}
           <div className="mb-4 pb-20 flex justify-center">
             <button
               onClick={handleConfirm}
               disabled={isLoading}
-              className={`px-8 h-12 text-base font-medium rounded-lg transition-all disabled:opacity-50 ${
+              className={`px-8 h-12 text-base font-normal rounded-lg transition-all disabled:opacity-50 ${
                 mode === 'display' 
                   ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' 
                   : 'bg-brand text-black disabled:bg-zinc-800 disabled:text-zinc-500 hover:bg-brand/90'
