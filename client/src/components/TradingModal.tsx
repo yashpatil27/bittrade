@@ -34,16 +34,16 @@ const TradingModal: React.FC<TradingModalProps> = ({
   balanceData,
   onComplete,
 }) => {
-  const [currentStep, setCurrentStep] = useState<'input' | 'confirm'>('input');
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Reset state when modal opens/closes
   React.useEffect(() => {
     if (isOpen) {
-      setCurrentStep('input');
       setInputValue('');
       setIsProcessing(false);
+      setShowConfirmation(false);
     }
   }, [isOpen]);
 
@@ -84,7 +84,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
     }
 
     setInputValue(value);
-    setCurrentStep('confirm');
+    setShowConfirmation(true);
   };
 
   // Handle input modal close
@@ -132,8 +132,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
 
   // Handle confirmation modal cancel/close
   const handleConfirmationClose = () => {
-    // Go back to input modal
-    setCurrentStep('input');
+    // Hide confirmation modal, SingleInputModal stays open
+    setShowConfirmation(false);
   };
 
   // Get modal titles
@@ -242,9 +242,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
 
   return (
     <>
-      {/* Input Modal */}
+      {/* Input Modal - Always open when main modal is open */}
       <SingleInputModal
-        isOpen={isOpen && currentStep === 'input'}
+        isOpen={isOpen}
         onClose={handleInputClose}
         title={getInputTitle()}
         type={type === 'buy' ? 'inr' : 'btc'}
@@ -258,11 +258,12 @@ const TradingModal: React.FC<TradingModalProps> = ({
         )}
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}
+        initialValue={inputValue}
       />
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal - Opens on top of SingleInputModal */}
       <ConfirmationModal
-        isOpen={isOpen && currentStep === 'confirm'}
+        isOpen={isOpen && showConfirmation}
         onClose={handleConfirmationClose}
         title={getConfirmationTitle()}
         amount={inputValue ? (

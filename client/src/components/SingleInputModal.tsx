@@ -17,6 +17,7 @@ interface SingleInputModalProps {
   onSectionClick?: () => void;
   isLoading?: boolean;
   tabSwitcher?: React.ReactNode;
+  initialValue?: string;
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -33,7 +34,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   sectionDetail,
   sectionAmount,
   onSectionClick,
-  tabSwitcher
+  tabSwitcher,
+  initialValue = ''
 }) => {
   const [value, setValue] = useState('');
   const [dragStartY, setDragStartY] = useState(0);
@@ -70,14 +72,14 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     if (isOpen) {
       setDragOffset(0);
       setIsAnimating(false);
-      setValue('');
+      setValue(initialValue);
       setTimeout(() => {
         setIsAnimating(true);
       }, 50);
     } else {
       setIsAnimating(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialValue]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
