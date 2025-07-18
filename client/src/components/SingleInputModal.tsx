@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import AnimatedNumber from './AnimatedNumber';
+import { AnimateINR } from './AnimateNumberFlow';
 import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -373,10 +373,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                 {sectionAmount && (
                   <span className="text-sm font-medium text-gray-300">
                     {sectionAmountValue ? (
-                      <AnimatedNumber 
+                      <AnimateINR 
                         value={sectionAmountValue}
-                        formatNumber={(value) => formatRupeesForDisplay(value)}
-                        duration={600}
                         className="text-sm font-medium text-gray-300"
                       />
                     ) : (

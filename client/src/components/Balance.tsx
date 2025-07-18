@@ -2,9 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Wallet, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
-import AnimatedNumber from './AnimatedNumber';
+import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 import { getApiUrl } from '../utils/api';
-import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 
 interface BalanceData {
   available_inr: number;
@@ -143,14 +142,12 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
           <div className="text-xs text-gray-400 mb-1">₹ INR</div>
           <div className="text-sm font-semibold text-white">
             {showBalances ? (
-              <AnimatedNumber 
+              <AnimateINR 
                 value={balanceData.available_inr}
-                formatNumber={(value) => formatRupeesForDisplay(value)}
-                duration={400}
                 className="text-sm font-semibold text-white"
               />
             ) : (
-              <span className="text-gray-500">••••••</span>
+              <span className="text-gray-500 flex justify-center">••••••</span>
             )}
           </div>
         </div>
@@ -160,14 +157,12 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
           <div className="text-xs text-gray-400 mb-1">₿ BTC</div>
           <div className="text-sm font-semibold text-white">
             {showBalances ? (
-              <AnimatedNumber 
+              <AnimateBTC 
                 value={balanceData.available_btc}
-                formatNumber={(value) => formatBitcoinForDisplay(value)}
-                duration={400}
                 className="text-sm font-semibold text-white"
               />
             ) : (
-              <span className="text-gray-500">••••••••</span>
+              <span className="text-gray-500 flex justify-center">••••••••</span>
             )}
           </div>
         </div>

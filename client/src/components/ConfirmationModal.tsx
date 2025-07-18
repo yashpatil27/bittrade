@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import AnimatedNumber from './AnimatedNumber';
-import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
+import { AnimateUSD, AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 
 interface DetailItem {
   label: string;
@@ -200,11 +199,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
     return mode === 'display' ? 'Close' : 'Confirm';
   };
 
-  const formatAmount = (value: string, type: 'btc' | 'inr') => {
-    const numValue = parseFloat(value) || 0;
-    return type === 'btc' ? formatBitcoinForDisplay(numValue * 100000000) : formatRupeesForDisplay(numValue);
-  };
-
   if (!isOpen) return null;
 
   const modalContent = (
@@ -259,14 +253,19 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-white text-5xl font-light">
                     {amountValue ? (
-                      <AnimatedNumber
-                        value={amountValue}
-formatNumber={(value) => amountType === 'btc' ? formatBitcoinForDisplay(value * 100000000) : formatRupeesForDisplay(value)}
-                        duration={800}
-                        className="text-white text-5xl font-light"
-                      />
+                      amountType === 'btc' ? (
+                        <AnimateBTC 
+                          value={amountValue}
+                          className="text-white text-5xl font-light"
+                        />
+                      ) : (
+                        <AnimateINR 
+                          value={amountValue}
+                          className="text-white text-5xl font-light"
+                        />
+                      )
                     ) : (
-                      formatAmount(amount, amountType)
+                      amount
                     )}
                   </span>
                 </div>
@@ -277,18 +276,19 @@ formatNumber={(value) => amountType === 'btc' ? formatBitcoinForDisplay(value * 
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-zinc-400 text-lg font-light">
                     {subAmountValue ? (
-                      <AnimatedNumber
-                        value={subAmountValue}
-                        formatNumber={(value) => 
-                          subAmountType === 'btc' 
-                            ? formatBitcoinForDisplay(value * 100000000)
-                            : formatRupeesForDisplay(value)
-                        }
-                        duration={800}
-                        className="text-zinc-400 text-lg font-light"
-                      />
+                      subAmountType === 'btc' ? (
+                        <AnimateBTC 
+                          value={subAmountValue}
+                          className="text-zinc-400 text-lg font-light"
+                        />
+                      ) : (
+                        <AnimateINR 
+                          value={subAmountValue}
+                          className="text-zinc-400 text-lg font-light"
+                        />
+                      )
                     ) : (
-                      formatAmount(subAmount, subAmountType)
+                      subAmount
                     )}
                   </span>
                 </div>
@@ -314,23 +314,27 @@ formatNumber={(value) => amountType === 'btc' ? formatBitcoinForDisplay(value * 
                       detail.highlight ? 'text-white' : 'text-zinc-300'
                     }`}>
                       {detail.numericValue !== undefined ? (
-                        <AnimatedNumber
-                          value={detail.numericValue}
-                          formatNumber={(value) => {
-                            // Auto-detect currency format based on the original value
-                            if (detail.value.includes('₹')) {
-                              return formatRupeesForDisplay(value);
-                            } else if (detail.value.includes('₿')) {
-                              return formatBitcoinForDisplay(value * 100000000);
-                            } else {
-                              return value.toLocaleString('en-IN');
-                            }
-                          }}
-                          duration={600}
-                          className={`text-sm font-medium ${
+                        detail.value.includes('₹') ? (
+                          <AnimateINR 
+                            value={detail.numericValue}
+                            className={`text-sm font-medium ${
+                              detail.highlight ? 'text-white' : 'text-zinc-300'
+                            }`}
+                          />
+                        ) : detail.value.includes('₿') ? (
+                          <AnimateBTC 
+                            value={detail.numericValue}
+                            className={`text-sm font-medium ${
+                              detail.highlight ? 'text-white' : 'text-zinc-300'
+                            }`}
+                          />
+                        ) : (
+                          <span className={`text-sm font-medium ${
                             detail.highlight ? 'text-white' : 'text-zinc-300'
-                          }`}
-                        />
+                          }`}>
+                            {detail.numericValue.toLocaleString('en-IN')}
+                          </span>
+                        )
                       ) : (
                         detail.value
                       )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { useWebSocketEvent } from '../context/WebSocketContext';
-import AnimatedNumber from './AnimatedNumber';
+import { AnimateUSD } from './AnimateNumberFlow';
 import { getApiUrl } from '../utils/api';
 
 interface ChartData {
@@ -146,15 +146,6 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     loadBitcoinData();
   }, [selectedTab, isInitialLoad]);
 
-  const formatPrice = (value: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
-
   const formatTooltipPrice = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -237,10 +228,8 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
           </div>
           <div className="flex items-center space-x-2 mt-1">
             <span className="text-xl font-semibold text-white">
-              <AnimatedNumber 
+              <AnimateUSD 
                 value={currentPrice}
-                formatNumber={(value) => formatPrice(value)}
-                duration={600}
                 className="text-xl font-semibold text-white"
               />
             </span>

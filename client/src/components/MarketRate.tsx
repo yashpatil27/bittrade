@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useWebSocket, useWebSocketEvent } from '../context/WebSocketContext';
 import { useAuth } from '../context/AuthContext';
-import AnimatedNumber from './AnimatedNumber';
+import { AnimateUSD, AnimateINR } from './AnimateNumberFlow';
 import { getApiUrl } from '../utils/api';
 
 interface BalanceData {
@@ -161,15 +161,6 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     }
   }, [balanceData, onBalanceUpdate]);
 
-  const formatINR = (amount: number): string => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
   // Show loading state when no data is available
   if (!priceData) {
     return (
@@ -219,14 +210,10 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
         <h3 className="text-base font-medium text-white">Market Rates</h3>
         <div className="flex items-center space-x-2">
           {currentBtcPrice > 0 && (
-            <span className="text-xs text-gray-400">
-              $<AnimatedNumber 
-                value={currentBtcPrice}
-                formatNumber={(value) => Math.round(value).toLocaleString()}
-                duration={600}
-                className="text-xs text-gray-400"
-              />
-            </span>
+            <AnimateUSD 
+              value={currentBtcPrice}
+              className="text-xs text-gray-400"
+            />
           )}
         </div>
       </div>
@@ -236,10 +223,8 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
         <div className="text-center">
           <p className="text-xs text-gray-400 mb-1">Buy Rate</p>
           <p className="text-base font-semibold text-white mb-2">
-            <AnimatedNumber 
+            <AnimateINR 
               value={buyRate}
-              formatNumber={(value) => formatINR(value)}
-              duration={600}
               className="text-base font-semibold text-white"
             />
           </p>
@@ -256,10 +241,8 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
         <div className="text-center">
           <p className="text-xs text-gray-400 mb-1">Sell Rate</p>
           <p className="text-base font-semibold text-white mb-2">
-            <AnimatedNumber 
+            <AnimateINR 
               value={sellRate}
-              formatNumber={(value) => formatINR(value)}
-              duration={600}
               className="text-base font-semibold text-white"
             />
           </p>
