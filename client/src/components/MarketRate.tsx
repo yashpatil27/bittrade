@@ -212,7 +212,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           {currentBtcPrice > 0 && (
             <AnimateUSD 
               value={currentBtcPrice}
-              className="text-xs text-gray-400"
+              className="justify-center text-xs text-gray-400"
             />
           )}
         </div>
@@ -225,7 +225,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           <p className="text-base font-semibold text-white mb-2">
             <AnimateINR 
               value={buyRate}
-              className="text-base font-semibold text-white"
+              className="justify-center text-base font-semibold text-white"
             />
           </p>
           <button 
@@ -243,7 +243,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           <p className="text-base font-semibold text-white mb-2">
             <AnimateINR 
               value={sellRate}
-              className="text-base font-semibold text-white"
+              className="justify-center text-base font-semibold text-white"
             />
           </p>
           <button 

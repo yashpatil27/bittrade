@@ -3,6 +3,7 @@ import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { executeTrade } from '../utils/tradingApi';
+import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 
 interface BalanceData {
   available_inr: number;
@@ -154,26 +155,22 @@ const TradingModal: React.FC<TradingModalProps> = ({
     return [
       {
         label: 'Amount',
-        value: conversion.formattedInr,
-        numericValue: conversion.inrAmount,
+        value: <AnimateINR value={conversion.inrAmount} className="text-sm font-medium text-white" />,
         highlight: true
       },
       {
         label: 'Rate',
-        value: rate > 0 ? formatRupeesForDisplay(rate) : 'Rate unavailable',
-        numericValue: rate > 0 ? rate : undefined,
+        value: rate > 0 ? <AnimateINR value={rate} className="text-sm font-medium text-zinc-300" /> : 'Rate unavailable',
         highlight: false
       },
       {
         label: 'You will ' + (type === 'buy' ? 'receive' : 'pay'),
-        value: conversion.formattedBtc,
-        numericValue: conversion.btcAmount,
+        value: <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-medium text-white" />,
         highlight: true
       },
       {
         label: 'Fee',
-        value: formatRupeesForDisplay(0),
-        numericValue: 0,
+        value: <AnimateINR value={0} className="text-sm font-medium text-zinc-300" />,
         highlight: false
       }
     ];
@@ -254,8 +251,11 @@ const TradingModal: React.FC<TradingModalProps> = ({
         confirmText={getConfirmationButtonText()}
         onConfirm={handleInputConfirm}
         sectionTitle={`${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
-        sectionAmount={currentRate > 0 ? formatRupeesForDisplay(currentRate) : 'Rate unavailable'}
-        sectionAmountValue={currentRate > 0 ? currentRate : undefined}
+        sectionAmount={currentRate > 0 ? (
+          <AnimateINR value={currentRate} className="text-sm font-medium text-gray-300" />
+        ) : (
+          'Rate unavailable'
+        )}
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}
       />
@@ -265,17 +265,21 @@ const TradingModal: React.FC<TradingModalProps> = ({
         isOpen={isOpen && currentStep === 'confirm'}
         onClose={handleConfirmationClose}
         title={getConfirmationTitle()}
-        amount={inputValue}
-        amountValue={inputValue ? parseFloat(inputValue) : undefined}
+        amount={inputValue ? (
+          type === 'buy' ? (
+            <AnimateINR value={parseFloat(inputValue)} className="justify-center text-white text-5xl font-light" />
+          ) : (
+            <AnimateBTC value={parseFloat(inputValue) * 100000000} className="justify-center text-white text-5xl font-light" />
+          )
+        ) : undefined}
         amountType={type === 'buy' ? 'inr' : 'btc'}
-        subAmount={type === 'buy' 
-          ? (inputValue ? calculateConversion(inputValue).formattedBtc : '')
-          : (inputValue ? calculateConversion(inputValue).formattedInr : '')
-        }
-        subAmountValue={type === 'buy' 
-          ? (inputValue ? calculateConversion(inputValue).btcAmount : undefined)
-          : (inputValue ? calculateConversion(inputValue).inrAmount : undefined)
-        }
+        subAmount={inputValue ? (
+          type === 'buy' ? (
+            <AnimateBTC value={calculateConversion(inputValue).btcAmount * 100000000} className="justify-center text-zinc-400 text-lg font-light" />
+          ) : (
+            <AnimateINR value={calculateConversion(inputValue).inrAmount} className="justify-center text-zinc-400 text-lg font-light" />
+          )
+        ) : undefined}
         subAmountType={type === 'buy' ? 'btc' : 'inr'}
         details={getConfirmationDetails()}
         confirmText={getConfirmationButtonText()}

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimateINR } from './AnimateNumberFlow';
 import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -11,8 +10,7 @@ interface SingleInputModalProps {
   onConfirm: (value: string) => void;
   type: 'inr' | 'btc';
   sectionTitle?: string;
-  sectionAmount?: string;
-  sectionAmountValue?: number;
+  sectionAmount?: string | React.ReactNode;
   maxValue?: number;
   maxButtonText?: string;
   sectionDetail?: string | React.ReactNode;
@@ -34,7 +32,6 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   sectionTitle,
   sectionDetail,
   sectionAmount,
-  sectionAmountValue,
   onSectionClick,
   tabSwitcher
 }) => {
@@ -372,14 +369,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                 </div>
                 {sectionAmount && (
                   <span className="text-sm font-medium text-gray-300">
-                    {sectionAmountValue ? (
-                      <AnimateINR 
-                        value={sectionAmountValue}
-                        className="text-sm font-medium text-gray-300"
-                      />
-                    ) : (
-                      sectionAmount
-                    )}
+                    {sectionAmount}
                   </span>
                 )}
               </div>

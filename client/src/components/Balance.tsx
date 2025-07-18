@@ -144,7 +144,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
             {showBalances ? (
               <AnimateINR 
                 value={balanceData.available_inr}
-                className="text-sm font-semibold text-white"
+                className="justify-center text-sm font-semibold text-white"
               />
             ) : (
               <span className="text-gray-500 flex justify-center">••••••</span>
@@ -159,7 +159,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
             {showBalances ? (
               <AnimateBTC 
                 value={balanceData.available_btc}
-                className="text-sm font-semibold text-white"
+                className="justify-center text-sm font-semibold text-white"
               />
             ) : (
               <span className="text-gray-500 flex justify-center">••••••••</span>

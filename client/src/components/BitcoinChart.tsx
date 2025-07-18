@@ -230,7 +230,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
             <span className="text-xl font-semibold text-white">
               <AnimateUSD 
                 value={currentPrice}
-                className="text-xl font-semibold text-white"
+                className="justify-center text-xl font-semibold text-white"
               />
             </span>
             <div className={`${isRealTimePositive ? 'text-green-400' : 'text-red-400'}`}>

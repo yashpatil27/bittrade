@@ -8,7 +8,7 @@ interface AnimateNumberFlowProps {
 
 export const AnimateUSD: React.FC<AnimateNumberFlowProps> = ({ value, className = '' }) => {
   return (
-    <div className={`flex items-center justify-center ${className}`}>
+    <div className={`flex items-center ${className}`}>
       <span>$</span>
       <NumberFlow
         value={value}
@@ -23,7 +23,7 @@ export const AnimateUSD: React.FC<AnimateNumberFlowProps> = ({ value, className 
 
 export const AnimateINR: React.FC<AnimateNumberFlowProps> = ({ value, className = '' }) => {
   return (
-    <div className={`flex items-center justify-center ${className}`}>
+    <div className={`flex items-center ${className}`}>
       <span>₹</span>
       <NumberFlow
         value={value}
@@ -39,7 +39,7 @@ export const AnimateINR: React.FC<AnimateNumberFlowProps> = ({ value, className 
 
 export const AnimateBTC: React.FC<AnimateNumberFlowProps> = ({ value, className = '' }) => {
   return (
-    <div className={`flex items-center justify-center ${className}`}>
+    <div className={`flex items-center ${className}`}>
       <span>₿</span>
       <NumberFlow
         value={value*0.00000001}

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimateUSD, AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 
 interface DetailItem {
   label: string;
-  value: string;
-  numericValue?: number; // For animation
+  value: string | React.ReactNode;
+  numericValue?: number; // For animation (deprecated - use React nodes in value)
   highlight?: boolean; // Optional highlighting for important details
 }
 
@@ -13,11 +12,11 @@ interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  amount?: string; // Optional for display-only mode
-  amountValue?: number; // Numeric value for animation
+  amount?: string | React.ReactNode; // Optional for display-only mode
+  amountValue?: number; // Numeric value for animation (deprecated)
   amountType?: 'btc' | 'inr';
-  subAmount?: string; // Smaller amount below main amount
-  subAmountValue?: number; // Numeric value for animation
+  subAmount?: string | React.ReactNode; // Smaller amount below main amount
+  subAmountValue?: number; // Numeric value for animation (deprecated)
   subAmountType?: 'btc' | 'inr';
   details: DetailItem[]; // Array of details to show
   confirmText?: string;
@@ -252,21 +251,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {amount && amountType && (
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-white text-5xl font-light">
-                    {amountValue ? (
-                      amountType === 'btc' ? (
-                        <AnimateBTC 
-                          value={amountValue}
-                          className="text-white text-5xl font-light"
-                        />
-                      ) : (
-                        <AnimateINR 
-                          value={amountValue}
-                          className="text-white text-5xl font-light"
-                        />
-                      )
-                    ) : (
-                      amount
-                    )}
+                    {amount}
                   </span>
                 </div>
               )}
@@ -275,21 +260,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               {subAmount && subAmountType && (
                 <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-zinc-400 text-lg font-light">
-                    {subAmountValue ? (
-                      subAmountType === 'btc' ? (
-                        <AnimateBTC 
-                          value={subAmountValue}
-                          className="text-zinc-400 text-lg font-light"
-                        />
-                      ) : (
-                        <AnimateINR 
-                          value={subAmountValue}
-                          className="text-zinc-400 text-lg font-light"
-                        />
-                      )
-                    ) : (
-                      subAmount
-                    )}
+                    {subAmount}
                   </span>
                 </div>
               )}
@@ -313,31 +284,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                     <span className={`text-sm font-medium ${
                       detail.highlight ? 'text-white' : 'text-zinc-300'
                     }`}>
-                      {detail.numericValue !== undefined ? (
-                        detail.value.includes('₹') ? (
-                          <AnimateINR 
-                            value={detail.numericValue}
-                            className={`text-sm font-medium ${
-                              detail.highlight ? 'text-white' : 'text-zinc-300'
-                            }`}
-                          />
-                        ) : detail.value.includes('₿') ? (
-                          <AnimateBTC 
-                            value={detail.numericValue}
-                            className={`text-sm font-medium ${
-                              detail.highlight ? 'text-white' : 'text-zinc-300'
-                            }`}
-                          />
-                        ) : (
-                          <span className={`text-sm font-medium ${
-                            detail.highlight ? 'text-white' : 'text-zinc-300'
-                          }`}>
-                            {detail.numericValue.toLocaleString('en-IN')}
-                          </span>
-                        )
-                      ) : (
-                        detail.value
-                      )}
+                      {detail.value}
                     </span>
                   </div>
                 ))}
