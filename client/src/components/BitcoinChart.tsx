@@ -170,27 +170,36 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
 
   if (loading) {
     return (
-      <div className={`bg-black rounded-lg p-6 ${className}`}>
-        <div className="flex items-center justify-between mb-6">
+      <div className={`bg-black rounded-lg p-1 ${className}`}>
+        {/* Header */}
+        <div className="mb-3">
           <div>
-            <h3 className="text-xl font-semibold text-white">Bitcoin Price</h3>
-            <div className="flex items-center space-x-2 mt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">Bitcoin Price</h3>
+            </div>
+            <div className="flex items-center space-x-2 mt-1">
               <div className="w-20 h-6 bg-gray-700 rounded animate-pulse"></div>
               <div className="w-16 h-4 bg-gray-700 rounded animate-pulse"></div>
             </div>
           </div>
-          <div className="flex bg-gray-800 rounded-lg p-1">
+        </div>
+        
+        {/* Chart */}
+        <div className="h-48 bg-gray-800 rounded-lg animate-pulse"></div>
+        
+        {/* Tab Navigation */}
+        <div className="mt-2 flex justify-center">
+          <div className="flex bg-gray-800 rounded-lg p-1 w-full max-w-md">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                className="px-3 py-1 text-sm font-light text-gray-400 rounded-md"
+                className="flex-1 py-1 text-xs font-light text-gray-400 rounded-md"
               >
                 {tab.label}
               </button>
             ))}
           </div>
         </div>
-        <div className="h-48 bg-gray-800 rounded-lg animate-pulse"></div>
       </div>
     );
   }
