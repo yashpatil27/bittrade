@@ -107,33 +107,18 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     fetchBalance();
   }, [fetchBalance]);
 
-  // WebSocket authentication and event handling
+  // Listen for WebSocket balance updates (authentication handled centrally)
   useEffect(() => {
-    if (socket && isConnected && isAuthenticated && token) {
-      // Authenticate the WebSocket connection
-      socket.emit('authenticate', token);
-      
+    if (socket && isConnected) {
       // Listen for balance updates
       socket.on('user_balance_update', handleBalanceUpdate);
-      
-      // Listen for authentication success
-      socket.on('authentication_success', (data) => {
-        console.log('🔐 WebSocket authenticated:', data);
-      });
-      
-      // Listen for authentication errors
-      socket.on('authentication_error', (error) => {
-        console.error('🔐 WebSocket authentication failed:', error);
-      });
       
       // Cleanup listeners on unmount
       return () => {
         socket.off('user_balance_update', handleBalanceUpdate);
-        socket.off('authentication_success');
-        socket.off('authentication_error');
       };
     }
-  }, [socket, isConnected, isAuthenticated, token, handleBalanceUpdate]);
+  }, [socket, isConnected, handleBalanceUpdate]);
 
   // Listen for WebSocket price updates as per notes/state.txt
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {

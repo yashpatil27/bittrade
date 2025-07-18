@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import History from './pages/History';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider } from './context/AuthContext';
+import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
   return (
     <AuthProvider>
       <WebSocketProvider>
+        <WebSocketAuthenticator />
         <Router>
           <Layout showBottomNav={!modalOpen}>
             <Routes>
