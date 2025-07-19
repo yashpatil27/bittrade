@@ -254,32 +254,99 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Get all user transactions (real data from database)
+// Get all user transactions (real data from database with Redis caching)
 app.get('/api/transactions', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 50;
+    const page = parseInt(req.query.page) || 1;
+    const offset = (page - 1) * limit;
     
+    // Try Redis cache first for recent transactions (page 1 only)
+    if (page === 1 && global.dataService && global.dataService.redis) {
+      try {
+        const redisKey = `user_transactions_${userId}`;
+        const cachedData = await global.dataService.redis.get(redisKey);
+        if (cachedData) {
+          const transactionData = JSON.parse(cachedData);
+          console.log('💾 Transactions served from Redis cache:', redisKey);
+          
+          // Format cached transactions for frontend
+          const transactions = transactionData.slice(0, limit).map(row => ({
+            id: row.id,
+            type: row.type.toLowerCase().replace('market_', ''),
+            btc_amount: row.btc_amount,
+            inr_amount: row.inr_amount,
+            execution_price: row.execution_price,
+            date: row.executed_at || row.created_at,
+            status: row.status.toLowerCase(),
+            cached: true
+          }));
+          
+          return res.json({
+            transactions,
+            page,
+            limit,
+            hasMore: transactionData.length > limit
+          });
+        }
+      } catch (redisError) {
+        console.error('Redis error, falling back to database:', redisError);
+      }
+    }
+    
+    // Fetch from database
     const [rows] = await db.execute(
       `SELECT id, type, status, btc_amount, inr_amount, execution_price, 
               created_at, executed_at FROM transactions 
        WHERE user_id = ? AND status = 'EXECUTED' 
-       ORDER BY created_at DESC LIMIT ?`,
-      [userId, limit]
+       ORDER BY executed_at DESC, created_at DESC 
+       LIMIT ? OFFSET ?`,
+      [userId, limit + 1, offset] // Fetch one extra to check if there are more
     );
     
+    const hasMore = rows.length > limit;
+    const actualTransactions = hasMore ? rows.slice(0, limit) : rows;
+    
     // Format transactions for frontend
-    const transactions = rows.map(row => ({
+    const transactions = actualTransactions.map(row => ({
       id: row.id,
       type: row.type.toLowerCase().replace('market_', ''),
       btc_amount: row.btc_amount,
       inr_amount: row.inr_amount,
       execution_price: row.execution_price,
       date: row.executed_at || row.created_at,
-      status: row.status.toLowerCase()
+      status: row.status.toLowerCase(),
+      cached: false
     }));
     
-    res.json(transactions);
+    // Cache first page results in Redis (if available)
+    if (page === 1 && global.dataService && global.dataService.redis) {
+      try {
+        const redisKey = `user_transactions_${userId}`;
+        const cacheData = actualTransactions.map(row => ({
+          id: row.id,
+          type: row.type,
+          status: row.status,
+          btc_amount: row.btc_amount,
+          inr_amount: row.inr_amount,
+          execution_price: row.execution_price,
+          executed_at: row.executed_at,
+          created_at: row.created_at
+        }));
+        await global.dataService.redis.set(redisKey, JSON.stringify(cacheData), 'EX', 60 * 5); // Cache for 5 minutes
+        console.log('💾 Transactions cached in Redis:', redisKey);
+      } catch (redisError) {
+        console.error('Error caching transactions in Redis:', redisError);
+      }
+    }
+    
+    res.json({
+      transactions,
+      page,
+      limit,
+      hasMore
+    });
   } catch (error) {
     console.error('Error fetching transactions:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -443,6 +510,11 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
         global.sendUserBalanceUpdate(userId);
       }
       
+      // Send transaction update via WebSocket
+      if (global.sendUserTransactionUpdate) {
+        global.sendUserTransactionUpdate(userId);
+      }
+      
       console.log(`✅ ${action.toUpperCase()} transaction completed:`, {
         userId,
         transactionId: transactionResult.insertId,
@@ -590,6 +662,9 @@ io.on('connection', async (socket) => {
       // Send initial balance data after authentication
       await sendUserBalanceUpdate(decoded.id);
       
+      // Send initial transaction data after authentication
+      await sendUserTransactionUpdate(decoded.id);
+      
       socket.emit('authentication_success', {
         message: 'WebSocket authenticated successfully',
         userId: decoded.id, // Fixed: use 'id' instead of 'userId'
@@ -709,6 +784,69 @@ async function sendUserBalanceUpdate(userId) {
   }
 }
 
+// Function to send transaction update to specific user (most recent 15 transactions)
+async function sendUserTransactionUpdate(userId) {
+  try {
+    // Validate userId
+    if (!userId) {
+      console.error('❌ sendUserTransactionUpdate: userId is undefined');
+      return;
+    }
+    
+    console.log(`🔍 Sending transaction update for userId: ${userId}`);
+    
+    // Fetch most recent 15 transactions from database
+    const [rows] = await db.execute(
+      `SELECT id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at 
+       FROM transactions 
+       WHERE user_id = ? 
+       ORDER BY executed_at DESC, created_at DESC 
+       LIMIT 15`,
+      [userId]
+    );
+    
+    const transactionData = rows.map(row => ({
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      btc_amount: row.btc_amount,
+      inr_amount: row.inr_amount,
+      execution_price: row.execution_price,
+      executed_at: row.executed_at,
+      created_at: row.created_at
+    }));
+    
+    console.log(`💳 Sending ${transactionData.length} transactions for user ${userId}`);
+
+    // Cache transaction data in Redis (if available)
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const redisKey = `user_transactions_${userId}`;
+        await global.dataService.redis.set(redisKey, JSON.stringify(transactionData), 'EX', 60 * 5); // Cache for 5 minutes
+        console.log(`💾 Transaction data cached in Redis: ${redisKey}`);
+      } catch (redisError) {
+        console.error('Error caching transaction data in Redis:', redisError);
+      }
+    }
+
+    // Emit update to all sockets of the user
+    const userSocketSet = userSockets.get(userId);
+    if (userSocketSet && userSocketSet.size > 0) {
+      userSocketSet.forEach((socketId) => {
+        io.to(socketId).emit('user_transaction_update', {
+          transactions: transactionData,
+          timestamp: new Date().toISOString()
+        });
+      });
+      console.log(`📡 Transaction update sent to ${userSocketSet.size} client(s) for user ${userId}`);
+    } else {
+      console.log(`⚠️  No active connections for user ${userId}`);
+    }
+  } catch (error) {
+    console.error(`Error sending transaction update for user ${userId}:`, error);
+  }
+}
+
 // Function to broadcast data to all connected clients
 function broadcastToClients(eventName, data) {
   io.emit(eventName, {
@@ -720,6 +858,7 @@ function broadcastToClients(eventName, data) {
 // Make broadcast function available globally
 global.broadcastToClients = broadcastToClients;
 global.sendUserBalanceUpdate = sendUserBalanceUpdate;
+global.sendUserTransactionUpdate = sendUserTransactionUpdate;
 
 // Start server
 async function startServer() {

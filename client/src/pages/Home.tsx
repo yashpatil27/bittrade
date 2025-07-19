@@ -6,7 +6,6 @@ import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
 import Balance from '../components/Balance';
-import { mockTransactions } from '../data/mockData';
 
 interface BalanceData {
   available_inr: number;
@@ -23,7 +22,6 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
-  const [recentTxns] = React.useState(mockTransactions.slice(0, 5));
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
   const [buyRate, setBuyRate] = React.useState<number>(0);
@@ -89,8 +87,8 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
         {/* Recent Transactions */}
         <Card>
           <TransactionList 
-            transactions={recentTxns}
             title="Recent Activity"
+            maxItems={5}
             onTransactionClick={(txn) => console.log('Clicked transaction:', txn)}
             onViewAllClick={() => console.log('View all clicked')}
           />

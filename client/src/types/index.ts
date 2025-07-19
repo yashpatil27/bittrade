@@ -51,15 +51,22 @@ export interface MarketData {
 export interface Transaction {
   id: string;
   type: 'buy' | 'sell' | 'deposit' | 'withdraw';
-  amount: number;
-  price: number;
-  total: number;
-  fee: number;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled';
-  timestamp: string;
+  btc_amount?: number;
+  inr_amount?: number;
+  execution_price?: number;
+  amount?: number; // For backward compatibility
+  price?: number; // For backward compatibility
+  total?: number; // For backward compatibility
+  fee?: number;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'executed';
+  timestamp?: string;
+  date?: string;
+  executed_at?: string;
+  created_at?: string;
   paymentMethod?: string;
   upiId?: string;
   bankAccount?: string;
+  cached?: boolean;
 }
 
 // Order types

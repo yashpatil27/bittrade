@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatINR, formatBTC, getTimeAgo } from '../data/mockData';
 import { Transaction } from '../types';
+import useTransactionUpdates from '../hooks/useTransactionUpdates';
 
 interface TransactionListProps {
-  transactions: Transaction[];
   title?: string;
   showViewAll?: boolean;
   onTransactionClick?: (transaction: Transaction) => void;
@@ -13,13 +13,13 @@ interface TransactionListProps {
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
-  transactions,
   title = 'Transactions',
   showViewAll = true,
   onTransactionClick,
   onViewAllClick,
   maxItems
 }) => {
+  const { transactions, isLoading, error, fetchTransactions, page } = useTransactionUpdates();
   const displayTransactions = maxItems ? transactions.slice(0, maxItems) : transactions;
 
   const getStatusColor = (status: string) => {
@@ -64,6 +64,32 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
   };
 
+  useEffect(() => {
+    if (page === 1 && transactions.length === 0) {
+      fetchTransactions();
+    }
+  }, [transactions, fetchTransactions, page]);
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-400 text-sm">
+          Loading transactions...
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500 text-sm">
+          Error: {error}
+        </p>
+      </div>
+    );
+  }
+
   if (displayTransactions.length === 0) {
     return (
       <div>
@@ -104,19 +130,19 @@ const TransactionList: React.FC<TransactionListProps> = ({
                 </div>
                 <div>
                   <p className="text-sm font-light text-white capitalize">{txn.type} Bitcoin</p>
-                  <p className="text-xs text-gray-400">{getTimeAgo(txn.timestamp)}</p>
+                  <p className="text-xs text-gray-400">{getTimeAgo(txn.timestamp || txn.date || txn.executed_at || txn.created_at || '')}</p>
                 </div>
               </div>
               
               <div className="text-right">
                 <p className="text-sm font-light text-white">
                   {txn.type === 'deposit' || txn.type === 'withdraw' ? 
-                    formatINR(txn.total) : 
-                    formatBTC(txn.amount)
+                    formatINR(txn.total || txn.inr_amount || 0) : 
+                    formatBTC(txn.amount || (txn.btc_amount ? txn.btc_amount / 100000000 : 0))
                   }
                 </p>
-                <p className={`text-xs ${getStatusColor(txn.status)}`}>
-                  {txn.status}
+                <p className={`text-xs ${getStatusColor(txn.status === 'executed' ? 'completed' : txn.status)}`}>
+                  {txn.status === 'executed' ? 'completed' : txn.status}
                 </p>
               </div>
             </div>
