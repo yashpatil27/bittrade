@@ -273,13 +273,13 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
               <Area
                 type="monotone"
                 dataKey="price"
-                stroke="#ffd4d4"
+                stroke="rgb(255, 212, 212)"
                 strokeWidth={2}
                 fill="url(#colorGradient)"
                 dot={false}
                 activeDot={{ 
                   r: 4, 
-                  fill: '#ffd4d4',
+                  fill: 'rgb(255, 212, 212)',
                   stroke: '#1f2937',
                   strokeWidth: 2
                 }}
