@@ -50,17 +50,16 @@ export interface MarketData {
 // Transaction types
 export interface Transaction {
   id: string;
-  type: 'buy' | 'sell' | 'deposit' | 'withdraw';
+  type: 'MARKET_BUY' | 'MARKET_SELL' | 'LIMIT_BUY' | 'LIMIT_SELL' | 'DCA_BUY' | 'DCA_SELL' | 
+        'LOAN_CREATE' | 'LOAN_BORROW' | 'LOAN_REPAY' | 'LOAN_ADD_COLLATERAL' | 
+        'LIQUIDATION' | 'PARTIAL_LIQUIDATION' | 'FULL_LIQUIDATION' | 'INTEREST_ACCRUAL' |
+        'DEPOSIT_INR' | 'WITHDRAW_INR' | 'DEPOSIT_BTC' | 'WITHDRAW_BTC' |
+        string; // Fallback for any other raw database values
   btc_amount?: number;
   inr_amount?: number;
   execution_price?: number;
-  amount?: number; // For backward compatibility
-  price?: number; // For backward compatibility
-  total?: number; // For backward compatibility
   fee?: number;
-  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'executed';
-  timestamp?: string;
-  date?: string;
+  status: 'PENDING' | 'EXECUTED' | 'FAILED' | 'CANCELLED' | string; // Fallback for raw database values
   executed_at?: string;
   created_at?: string;
   paymentMethod?: string;

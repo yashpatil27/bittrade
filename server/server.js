@@ -271,15 +271,16 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
           const transactionData = JSON.parse(cachedData);
           console.log('💾 Transactions served from Redis cache:', redisKey);
           
-          // Format cached transactions for frontend
+          // Send raw cached transactions data
           const transactions = transactionData.slice(0, limit).map(row => ({
             id: row.id,
-            type: row.type.toLowerCase().replace('market_', ''),
+            type: row.type,
             btc_amount: row.btc_amount,
             inr_amount: row.inr_amount,
             execution_price: row.execution_price,
-            date: row.executed_at || row.created_at,
-            status: row.status.toLowerCase(),
+            executed_at: row.executed_at,
+            created_at: row.created_at,
+            status: row.status,
             cached: true
           }));
           
@@ -311,15 +312,16 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
     const hasMore = rows.length > limit;
     const actualTransactions = hasMore ? rows.slice(0, limit) : rows;
     
-    // Format transactions for frontend
+    // Send raw database transactions data
     const transactions = actualTransactions.map(row => ({
       id: row.id,
-      type: row.type.toLowerCase().replace('market_', ''),
+      type: row.type,
       btc_amount: row.btc_amount,
       inr_amount: row.inr_amount,
       execution_price: row.execution_price,
-      date: row.executed_at || row.created_at,
-      status: row.status.toLowerCase(),
+      executed_at: row.executed_at,
+      created_at: row.created_at,
+      status: row.status,
       cached: false
     }));
     

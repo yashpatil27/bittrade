@@ -34,20 +34,56 @@ const TransactionList: React.FC<TransactionListProps> = ({
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
-      case 'buy': return <ArrowUpRight className="w-4 h-4" />;
-      case 'sell': return <ArrowDownRight className="w-4 h-4" />;
-      case 'deposit': return <TrendingUp className="w-4 h-4" />;
-      case 'withdraw': return <TrendingDown className="w-4 h-4" />;
+      case 'MARKET_BUY':
+      case 'LIMIT_BUY':
+      case 'DCA_BUY':
+        return <ArrowUpRight className="w-4 h-4" />;
+      case 'MARKET_SELL':
+      case 'LIMIT_SELL':
+      case 'DCA_SELL':
+        return <ArrowDownRight className="w-4 h-4" />;
+      case 'DEPOSIT_INR':
+      case 'DEPOSIT_BTC':
+      case 'LOAN_CREATE':
+      case 'LOAN_ADD_COLLATERAL':
+        return <TrendingUp className="w-4 h-4" />;
+      case 'WITHDRAW_INR':
+      case 'WITHDRAW_BTC':
+      case 'LOAN_REPAY':
+      case 'LIQUIDATION':
+      case 'PARTIAL_LIQUIDATION':
+      case 'FULL_LIQUIDATION':
+        return <TrendingDown className="w-4 h-4" />;
+      case 'LOAN_BORROW':
+      case 'INTEREST_ACCRUAL':
+        return <ArrowUpRight className="w-4 h-4" />;
       default: return <div className="w-4 h-4" />;
     }
   };
 
   const getTransactionColor = (type: string) => {
     switch (type) {
-      case 'buy': return 'bg-gray-700';
-      case 'sell': return 'bg-gray-600';
-      case 'deposit': return 'bg-gray-700';
-      case 'withdraw': return 'bg-gray-600';
+      case 'MARKET_BUY':
+      case 'LIMIT_BUY':
+      case 'DCA_BUY':
+      case 'DEPOSIT_INR':
+      case 'DEPOSIT_BTC':
+      case 'LOAN_CREATE':
+      case 'LOAN_ADD_COLLATERAL':
+      case 'LOAN_BORROW':
+        return 'bg-gray-700';
+      case 'MARKET_SELL':
+      case 'LIMIT_SELL':
+      case 'DCA_SELL':
+      case 'WITHDRAW_INR':
+      case 'WITHDRAW_BTC':
+      case 'LOAN_REPAY':
+      case 'LIQUIDATION':
+      case 'PARTIAL_LIQUIDATION':
+      case 'FULL_LIQUIDATION':
+        return 'bg-gray-600';
+      case 'INTEREST_ACCRUAL':
+        return 'bg-gray-500';
       default: return 'bg-gray-500';
     }
   };
@@ -61,6 +97,80 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const handleViewAllClick = () => {
     if (onViewAllClick) {
       onViewAllClick();
+    }
+  };
+
+  const getTransactionLabel = (type: string, status?: string) => {
+    switch (type) {
+      case 'MARKET_BUY':
+        return 'Bitcoin Purchase';
+      case 'MARKET_SELL':
+        return 'Bitcoin Sale';
+      case 'LIMIT_BUY':
+        return status === 'PENDING' ? 'Bitcoin Limit Purchase (Pending)' : 'Bitcoin Limit Purchase';
+      case 'LIMIT_SELL':
+        return status === 'PENDING' ? 'Bitcoin Limit Sale (Pending)' : 'Bitcoin Limit Sale';
+      case 'DCA_BUY':
+        return 'DCA Bitcoin Purchase';
+      case 'DCA_SELL':
+        return 'DCA Bitcoin Sale';
+      case 'LOAN_CREATE':
+        return 'Collateral Deposit';
+      case 'LOAN_BORROW':
+        return 'Cash Borrowed';
+      case 'LOAN_REPAY':
+        return 'Loan Repaid';
+      case 'LOAN_ADD_COLLATERAL':
+        return 'Collateral Added';
+      case 'LIQUIDATION':
+        return 'Loan Liquidation (Auto)';
+      case 'PARTIAL_LIQUIDATION':
+        return 'Loan Liquidation (Manual)';
+      case 'FULL_LIQUIDATION':
+        return 'Loan Liquidation (Manual)';
+      case 'INTEREST_ACCRUAL':
+        return 'Interest Accrued';
+      case 'DEPOSIT_INR':
+        return 'Cash Deposit';
+      case 'WITHDRAW_INR':
+        return 'Cash Withdrawal';
+      case 'DEPOSIT_BTC':
+        return 'Bitcoin Deposit';
+      case 'WITHDRAW_BTC':
+        return 'Bitcoin Withdrawal';
+      default:
+        return type || 'Unknown Transaction';
+    }
+  };
+
+  const getTransactionAmount = (txn: Transaction) => {
+    // INR transactions (deposits, withdrawals, loans, interest)
+    const isINRTransaction = [
+      'DEPOSIT_INR', 'WITHDRAW_INR', 'LOAN_BORROW', 'LOAN_REPAY', 'INTEREST_ACCRUAL'
+    ].includes(txn.type);
+
+    if (isINRTransaction) {
+      return formatINR(txn.inr_amount || 0);
+    }
+
+    // BTC transactions (buys, sells, bitcoin deposits/withdrawals, collateral)
+    const btcAmount = txn.btc_amount || 0;
+    return formatBTC(btcAmount / 100000000); // Convert satoshis to BTC for display
+  };
+
+  const getDisplayStatus = (status: string) => {
+    // Normalize status for display
+    switch (status?.toUpperCase()) {
+      case 'EXECUTED':
+        return 'completed';
+      case 'PENDING':
+        return 'pending';
+      case 'FAILED':
+        return 'failed';
+      case 'CANCELLED':
+        return 'cancelled';
+      default:
+        return status?.toLowerCase() || 'unknown';
     }
   };
 
@@ -129,20 +239,17 @@ const TransactionList: React.FC<TransactionListProps> = ({
                   {getTransactionIcon(txn.type)}
                 </div>
                 <div>
-                  <p className="text-sm font-light text-white capitalize">{txn.type} Bitcoin</p>
-                  <p className="text-xs text-gray-400">{getTimeAgo(txn.timestamp || txn.date || txn.executed_at || txn.created_at || '')}</p>
+                  <p className="text-sm font-light text-white">{getTransactionLabel(txn.type, txn.status)}</p>
+                  <p className="text-xs text-gray-400">{getTimeAgo(txn.executed_at || txn.created_at || '')}</p>
                 </div>
               </div>
               
               <div className="text-right">
                 <p className="text-sm font-light text-white">
-                  {txn.type === 'deposit' || txn.type === 'withdraw' ? 
-                    formatINR(txn.total || txn.inr_amount || 0) : 
-                    formatBTC(txn.amount || (txn.btc_amount ? txn.btc_amount / 100000000 : 0))
-                  }
+                  {getTransactionAmount(txn)}
                 </p>
-                <p className={`text-xs ${getStatusColor(txn.status === 'executed' ? 'completed' : txn.status)}`}>
-                  {txn.status === 'executed' ? 'completed' : txn.status}
+                <p className={`text-xs ${getStatusColor(getDisplayStatus(txn.status))}`}>
+                  {getDisplayStatus(txn.status)}
                 </p>
               </div>
             </div>

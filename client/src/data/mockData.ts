@@ -1,4 +1,4 @@
-import { User, BitcoinBalance, Portfolio, MarketData, Transaction, PaymentMethod, NewsItem } from '../types';
+import { User, BitcoinBalance, Portfolio, MarketData, PaymentMethod, NewsItem } from '../types';
 
 export const mockUser: User = {
   id: '1',
@@ -46,67 +46,6 @@ export const mockMarketData: MarketData = {
   lastUpdated: '2024-01-16T14:30:00Z'
 };
 
-export const mockTransactions: Transaction[] = [
-  {
-    id: '1',
-    type: 'buy',
-    amount: 0.0025,
-    price: 5625000.00,
-    total: 14062.50,
-    fee: 140.63,
-    status: 'completed',
-    timestamp: '2024-01-16T12:30:00Z',
-    paymentMethod: 'UPI',
-    upiId: 'rajesh@paytm'
-  },
-  {
-    id: '2',
-    type: 'sell',
-    amount: 0.001,
-    price: 5618000.00,
-    total: 5618.00,
-    fee: 56.18,
-    status: 'completed',
-    timestamp: '2024-01-16T10:45:00Z',
-    paymentMethod: 'Bank Transfer'
-  },
-  {
-    id: '3',
-    type: 'deposit',
-    amount: 0,
-    price: 0,
-    total: 50000.00,
-    fee: 0,
-    status: 'completed',
-    timestamp: '2024-01-15T16:20:00Z',
-    paymentMethod: 'UPI',
-    upiId: 'rajesh@paytm'
-  },
-  {
-    id: '4',
-    type: 'buy',
-    amount: 0.0087,
-    price: 5610000.00,
-    total: 48807.00,
-    fee: 488.07,
-    status: 'pending',
-    timestamp: '2024-01-16T14:15:00Z',
-    paymentMethod: 'UPI',
-    upiId: 'rajesh@paytm'
-  },
-  {
-    id: '5',
-    type: 'withdraw',
-    amount: 0,
-    price: 0,
-    total: 25000.00,
-    fee: 50.00,
-    status: 'completed',
-    timestamp: '2024-01-15T09:30:00Z',
-    paymentMethod: 'Bank Transfer',
-    bankAccount: 'HDFC****5678'
-  }
-];
 
 export const mockPaymentMethods: PaymentMethod[] = [
   {
