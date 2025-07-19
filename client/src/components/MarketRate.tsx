@@ -193,14 +193,6 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-base font-medium text-white">Market Rates</h3>
-        <div className="flex items-center space-x-2">
-          {currentBtcPrice > 0 && (
-            <AnimateUSD 
-              value={currentBtcPrice}
-              className="justify-center text-xs text-gray-400"
-            />
-          )}
-        </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4">

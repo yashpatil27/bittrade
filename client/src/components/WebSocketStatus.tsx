@@ -88,11 +88,6 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({ className = '' }) => 
       <span className={getStatusColor()}>
         {getStatusText()}
       </span>
-      {lastUpdate && connectionStatus === 'connected' && (
-        <span className="text-gray-500">
-          {lastUpdate}
-        </span>
-      )}
     </div>
   );
 };
