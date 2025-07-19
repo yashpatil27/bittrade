@@ -166,7 +166,7 @@ const Register: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-brand hover:bg-brand/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full btn-strike-primary flex justify-center py-3 px-4"
           >
             {isLoading ? 'Creating account...' : 'Create Account'}
           </button>

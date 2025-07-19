@@ -231,7 +231,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
           </p>
           <button
             onClick={onClose}
-            className="w-full bg-brand text-black hover:bg-brand/80 transition-colors rounded-lg py-2 px-4 font-medium"
+            className="w-full btn-strike-primary"
           >
             Close
           </button>

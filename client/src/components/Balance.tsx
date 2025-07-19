@@ -90,13 +90,25 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
   if (loading || !balanceData) {
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
-        <div className="flex items-center space-x-2 mb-3">
-          <Wallet className="w-4 h-4 text-brand" />
-          <h3 className="text-sm font-medium text-white">Balance</h3>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-base font-medium text-white">Balance</h3>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+              <span className="text-xs text-yellow-400">Loading...</span>
+            </div>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="h-12 bg-gray-700 rounded animate-pulse"></div>
-          <div className="h-12 bg-gray-700 rounded animate-pulse"></div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-1">₹ INR</p>
+            <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+          </div>
+          <div className="text-center">
+            <p className="text-xs text-gray-400 mb-1">₿ BTC</p>
+            <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+          </div>
         </div>
       </div>
     );
@@ -104,52 +116,51 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
 
   return (
     <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-base font-medium text-white">Balance</h3>
         <div className="flex items-center space-x-2">
-          <Wallet className="w-4 h-4 text-brand" />
-          <h3 className="text-sm font-medium text-white">Balance</h3>
+          <button
+            onClick={() => setShowBalances(!showBalances)}
+            className="p-1 hover:bg-gray-800 rounded transition-colors duration-150"
+          >
+            {showBalances ? (
+              <Eye className="w-4 h-4 text-gray-400 hover:text-white" />
+            ) : (
+              <EyeOff className="w-4 h-4 text-gray-400 hover:text-white" />
+            )}
+          </button>
         </div>
-        <button
-          onClick={() => setShowBalances(!showBalances)}
-          className="p-1 hover:bg-gray-800 rounded transition-colors"
-        >
-          {showBalances ? (
-            <Eye className="w-4 h-4 text-gray-400 hover:text-white" />
-          ) : (
-            <EyeOff className="w-4 h-4 text-gray-400 hover:text-white" />
-          )}
-        </button>
       </div>
-
-      <div className="grid grid-cols-2 gap-3">
+      
+      <div className="grid grid-cols-2 gap-4">
         {/* INR Balance */}
-        <div className="bg-gray-800 rounded-lg p-2 text-center">
-          <div className="text-xs text-gray-400 mb-1">₹ INR</div>
-          <div className="text-sm font-semibold text-white">
+        <div className="text-center">
+          <p className="text-xs text-gray-400 mb-1">₹ INR</p>
+          <p className="text-base font-semibold text-white mb-2">
             {showBalances ? (
               <AnimateINR 
                 value={balanceData.available_inr}
-                className="justify-center text-sm font-semibold text-white"
+                className="justify-center text-base font-semibold text-white"
               />
             ) : (
-              <span className="text-gray-500 flex justify-center">••••••</span>
+              <span className="text-gray-400 flex justify-center">••••••</span>
             )}
-          </div>
+          </p>
         </div>
 
         {/* BTC Balance */}
-        <div className="bg-gray-800 rounded-lg p-2 text-center">
-          <div className="text-xs text-gray-400 mb-1">₿ BTC</div>
-          <div className="text-sm font-semibold text-white">
+        <div className="text-center">
+          <p className="text-xs text-gray-400 mb-1">₿ BTC</p>
+          <p className="text-base font-semibold text-white mb-2">
             {showBalances ? (
               <AnimateBTC 
                 value={balanceData.available_btc}
-                className="justify-center text-sm font-semibold text-white"
+                className="justify-center text-base font-semibold text-white"
               />
             ) : (
-              <span className="text-gray-500 flex justify-center">••••••••</span>
+              <span className="text-gray-400 flex justify-center">••••••••</span>
             )}
-          </div>
+          </p>
         </div>
       </div>
     </div>

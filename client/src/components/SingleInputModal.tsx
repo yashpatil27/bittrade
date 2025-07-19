@@ -317,7 +317,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
-              className="text-gray-400 hover:text-white p-2 w-12 h-12 flex items-center justify-center text-lg"
+              className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center text-lg transition-colors"
             >
               ✕
             </button>
@@ -345,7 +345,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             {maxButtonText && (
               <button
                 onClick={handleMaxAmount}
-                className="bg-gray-800 text-gray-300 px-6 py-2 rounded-full text-sm font-medium hover:bg-gray-700 transition-colors mb-2 inline-flex items-center justify-center min-w-fit"
+                className="btn-strike-secondary px-6 py-2 text-sm mb-2 inline-flex items-center justify-center min-w-fit"
               >
                 {maxButtonText}
               </button>
@@ -407,7 +407,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={isConfirmDisabled}
-              className="px-8 h-12 bg-brand text-black text-sm font-semibold rounded-lg transition-all disabled:opacity-50 disabled:bg-gray-800 disabled:text-gray-500 hover:bg-brand/90"
+              className="px-8 h-12 btn-strike-primary text-sm"
             >
               {isLoading ? 'Processing...' : confirmText}
             </button>

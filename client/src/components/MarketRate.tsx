@@ -167,7 +167,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
             <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
             <button 
               disabled
-              className="w-full border-2 border-gray-600 bg-gray-700 text-gray-400 rounded-lg py-1.5 px-3 text-xs font-light flex items-center justify-center space-x-1 cursor-not-allowed"
+              className="w-full btn-strike-primary flex items-center justify-center space-x-1"
             >
               <span>Loading...</span>
             </button>
@@ -179,7 +179,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
             <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
             <button 
               disabled
-              className="w-full border-2 border-gray-600 bg-gray-700 text-gray-400 rounded-lg py-1.5 px-3 text-xs font-light flex items-center justify-center space-x-1 cursor-not-allowed"
+              className="w-full btn-strike-primary flex items-center justify-center space-x-1"
             >
               <span>Loading...</span>
             </button>
@@ -215,7 +215,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           </p>
           <button 
             onClick={onBuyClick}
-            className="w-full border-2 border-transparent bg-brand text-black hover:bg-brand/80 hover:shadow-lg hover:shadow-brand/20 transition-all duration-200 rounded-lg py-1.5 px-3 text-xs font-light flex items-center justify-center space-x-1"
+            className="w-full btn-strike-primary flex items-center justify-center space-x-1"
           >
             <TrendingUp className="w-3 h-3" />
             <span>Buy Bitcoin</span>
@@ -233,7 +233,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           </p>
           <button 
             onClick={onSellClick}
-            className="w-full border-2 border-brand bg-transparent text-brand hover:bg-brand hover:text-black hover:shadow-lg hover:shadow-brand/20 transition-all duration-200 rounded-lg py-1.5 px-3 text-xs font-light flex items-center justify-center space-x-1"
+            className="w-full btn-strike-primary flex items-center justify-center space-x-1"
           >
             <TrendingDown className="w-3 h-3" />
             <span>Sell Bitcoin</span>

@@ -260,9 +260,9 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
             <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#a5b4fc" stopOpacity={0.3} />
-                  <stop offset="50%" stopColor="#a5b4fc" stopOpacity={0.1} />
-                  <stop offset="100%" stopColor="#a5b4fc" stopOpacity={0.05} />
+                  <stop offset="0%" stopColor="var(--brand-color)" stopOpacity={0.3} />
+                  <stop offset="50%" stopColor="var(--brand-color)" stopOpacity={0.1} />
+                  <stop offset="100%" stopColor="var(--brand-color)" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
               <YAxis 
@@ -273,13 +273,13 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
               <Area
                 type="monotone"
                 dataKey="price"
-                stroke="#a5b4fc"
+                stroke="#ffd4d4"
                 strokeWidth={2}
                 fill="url(#colorGradient)"
                 dot={false}
                 activeDot={{ 
                   r: 4, 
-                  fill: '#a5b4fc',
+                  fill: '#ffd4d4',
                   stroke: '#1f2937',
                   strokeWidth: 2
                 }}

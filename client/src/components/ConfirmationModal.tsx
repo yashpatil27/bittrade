@@ -228,7 +228,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
-              className="text-gray-400 hover:text-white p-2 w-12 h-12 flex items-center justify-center text-lg"
+              className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center text-lg transition-colors"
             >
               ✕
             </button>
@@ -297,10 +297,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={isLoading}
-              className={`px-8 h-12 text-sm font-semibold rounded-lg transition-all disabled:opacity-50 ${
+              className={`px-8 h-12 text-sm ${
                 mode === 'display' 
-                  ? 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700' 
-                  : 'bg-brand text-black disabled:bg-zinc-800 disabled:text-zinc-500 hover:bg-brand/90'
+                  ? 'btn-strike-secondary' 
+                  : 'btn-strike-primary'
               }`}
             >
               {getButtonText()}
