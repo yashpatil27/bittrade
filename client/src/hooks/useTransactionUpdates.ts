@@ -40,7 +40,7 @@ export const useTransactionUpdates = (): UseTransactionUpdatesReturn => {
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('bittrade_token');
       if (!token) {
         throw new Error('No authentication token found');
       }
@@ -56,6 +56,12 @@ export const useTransactionUpdates = (): UseTransactionUpdatesReturn => {
       );
 
       if (!response.ok) {
+        if (response.status === 403) {
+          // Token expired or invalid - redirect to login
+          localStorage.removeItem('bittrade_token');
+          window.location.href = '/login';
+          throw new Error('Session expired. Please login again.');
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 

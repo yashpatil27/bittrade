@@ -295,12 +295,15 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
       }
     }
     
-    // Fetch from database
+    // Fetch from database (both PENDING and EXECUTED transactions)
     const [rows] = await db.execute(
       `SELECT id, type, status, btc_amount, inr_amount, execution_price, 
               created_at, executed_at FROM transactions 
-       WHERE user_id = ? AND status = 'EXECUTED' 
-       ORDER BY executed_at DESC, created_at DESC 
+       WHERE user_id = ? AND status IN ('PENDING', 'EXECUTED') 
+       ORDER BY 
+         CASE WHEN status = 'PENDING' THEN 0 ELSE 1 END,
+         COALESCE(executed_at, created_at) DESC, 
+         created_at DESC 
        LIMIT ? OFFSET ?`,
       [userId, limit + 1, offset] // Fetch one extra to check if there are more
     );
@@ -334,7 +337,7 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
           executed_at: row.executed_at,
           created_at: row.created_at
         }));
-        await global.dataService.redis.set(redisKey, JSON.stringify(cacheData), 'EX', 60 * 5); // Cache for 5 minutes
+        await global.dataService.redis.set(redisKey, JSON.stringify(cacheData), 'EX', 60 * 60); // Cache for 1 hour
         console.log('💾 Transactions cached in Redis:', redisKey);
       } catch (redisError) {
         console.error('Error caching transactions in Redis:', redisError);
@@ -795,12 +798,15 @@ async function sendUserTransactionUpdate(userId) {
     
     console.log(`🔍 Sending transaction update for userId: ${userId}`);
     
-    // Fetch most recent 15 transactions from database
+    // Fetch most recent 15 transactions from database (both PENDING and EXECUTED)
     const [rows] = await db.execute(
       `SELECT id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at 
        FROM transactions 
-       WHERE user_id = ? 
-       ORDER BY executed_at DESC, created_at DESC 
+       WHERE user_id = ? AND status IN ('PENDING', 'EXECUTED') 
+       ORDER BY 
+         CASE WHEN status = 'PENDING' THEN 0 ELSE 1 END,
+         COALESCE(executed_at, created_at) DESC, 
+         created_at DESC 
        LIMIT 15`,
       [userId]
     );
@@ -822,7 +828,7 @@ async function sendUserTransactionUpdate(userId) {
     if (global.dataService && global.dataService.redis) {
       try {
         const redisKey = `user_transactions_${userId}`;
-        await global.dataService.redis.set(redisKey, JSON.stringify(transactionData), 'EX', 60 * 5); // Cache for 5 minutes
+        await global.dataService.redis.set(redisKey, JSON.stringify(transactionData), 'EX', 60 * 60); // Cache for 1 hour
         console.log(`💾 Transaction data cached in Redis: ${redisKey}`);
       } catch (redisError) {
         console.error('Error caching transaction data in Redis:', redisError);
