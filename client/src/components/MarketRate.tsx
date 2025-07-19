@@ -215,10 +215,10 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           </p>
           <button 
             onClick={onBuyClick}
-            className="w-full btn-strike-primary flex items-center justify-center space-x-1"
+            className="w-full btn-strike-primary rounded-xl flex items-center justify-center space-x-1"
           >
-            <TrendingUp className="w-3 h-3" />
-            <span>Buy Bitcoin</span>
+            
+            <span className="font-medium">Buy</span>
           </button>
         </div>
 
@@ -233,10 +233,10 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
           </p>
           <button 
             onClick={onSellClick}
-            className="w-full btn-strike-primary flex items-center justify-center space-x-1"
+            className="w-full btn-strike-primary rounded-xl flex items-center justify-center space-x-1"
           >
-            <TrendingDown className="w-3 h-3" />
-            <span>Sell Bitcoin</span>
+            
+            <span className="font-medium">Sell</span>
           </button>
         </div>
       </div>

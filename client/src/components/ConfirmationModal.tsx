@@ -232,7 +232,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             >
               ✕
             </button>
-            <h2 className="text-white text-sm font-semibold text-center flex-1">{title}</h2>
+            <h2 className="text-white text-sm font-medium text-center flex-1">{title}</h2>
             <div className="w-10">
               {icon && <div className="p-2 bg-gray-800 rounded-lg">{icon}</div>}
             </div>
@@ -297,7 +297,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={isLoading}
-              className={`px-8 h-12 text-sm ${
+              className={`px-6 h-12 text-sm font-medium rounded-xl ${
                 mode === 'display' 
                   ? 'btn-strike-secondary' 
                   : 'btn-strike-primary'

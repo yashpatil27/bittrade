@@ -321,7 +321,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             >
               ✕
             </button>
-            <h2 className="text-white text-sm font-semibold text-center flex-1">{title}</h2>
+            <h2 className="text-white text-sm font-medium text-center flex-1">{title}</h2>
             <div className="w-10"></div> {/* Spacer for centering */}
           </div>
         </div>
@@ -345,7 +345,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             {maxButtonText && (
               <button
                 onClick={handleMaxAmount}
-                className="btn-strike-secondary px-6 py-2 text-sm mb-2 inline-flex items-center justify-center min-w-fit"
+                className="bg-btn-secondary text-white px-4 py-2 text-xs font-normal mb-2 inline-flex items-center justify-center min-w-fit rounded-xl hover:bg-btn-secondary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black"
               >
                 {maxButtonText}
               </button>
@@ -407,7 +407,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <button
               onClick={handleConfirm}
               disabled={isConfirmDisabled}
-              className="px-8 h-12 btn-strike-primary text-sm"
+              className="px-6 h-12 btn-strike-primary text-sm font-medium rounded-xl"
             >
               {isLoading ? 'Processing...' : confirmText}
             </button>
