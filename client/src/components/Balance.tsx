@@ -25,6 +25,15 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
   const [showBalances, setShowBalances] = useState(true);
   const { isAuthenticated, token } = useAuth();
   const { socket, isConnected } = useWebSocket();
+  
+  // Calculate asset allocation percentages
+  const btcPrice = 45000; // This should come from your market data in a real app
+  const inrValue = balanceData?.available_inr || 0;
+  const btcValueInINR = balanceData ? (balanceData.available_btc / 100000000) * btcPrice * 91 : 0; // Convert to INR
+  const totalValue = inrValue + btcValueInINR;
+  
+  const inrPercentage = totalValue > 0 ? (inrValue / totalValue) * 100 : 0;
+  const btcPercentage = totalValue > 0 ? (btcValueInINR / totalValue) * 100 : 0;
 
   // Function to fetch balance from REST API
   const fetchBalance = useCallback(async () => {
@@ -100,14 +109,14 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <p className="text-xs text-gray-400 mb-1">₹ INR</p>
-            <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+        <div className="animate-pulse space-y-3">
+          <div>
+            <div className="h-6 bg-gray-700 rounded mb-1"></div>
+            <div className="h-1 bg-gray-600 rounded-full"></div>
           </div>
-          <div className="text-center">
-            <p className="text-xs text-gray-400 mb-1">₿ BTC</p>
-            <div className="h-6 bg-gray-700 rounded animate-pulse mb-2"></div>
+          <div>
+            <div className="h-6 bg-gray-700 rounded mb-1"></div>
+            <div className="h-1 bg-gray-600 rounded-full"></div>
           </div>
         </div>
       </div>
@@ -132,35 +141,47 @@ const Balance: React.FC<BalanceProps> = ({ className = '' }) => {
         </div>
       </div>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div className="space-y-4">
         {/* INR Balance */}
-        <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">₹ INR</p>
-          <p className="text-base font-semibold text-white mb-2">
-            {showBalances ? (
-              <AnimateINR 
-                value={balanceData.available_inr}
-                className="justify-center text-base font-semibold text-white"
-              />
-            ) : (
-              <span className="text-gray-400 flex justify-center">••••••</span>
-            )}
-          </p>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm text-gray-400">₹ INR</span>
+            <span className="text-base font-semibold text-white">
+              {showBalances ? (
+                <AnimateINR value={balanceData.available_inr} />
+              ) : (
+                '••••••'
+              )}
+            </span>
+          </div>
+          {/* INR Allocation Bar */}
+          <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white transition-all duration-300 ease-out"
+              style={{ width: `${Math.round(inrPercentage)}%` }}
+            />
+          </div>
         </div>
 
         {/* BTC Balance */}
-        <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">₿ BTC</p>
-          <p className="text-base font-semibold text-white mb-2">
-            {showBalances ? (
-              <AnimateBTC 
-                value={balanceData.available_btc}
-                className="justify-center text-base font-semibold text-white"
-              />
-            ) : (
-              <span className="text-gray-400 flex justify-center">••••••••</span>
-            )}
-          </p>
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-sm text-gray-400">₿ BTC</span>
+            <span className="text-base font-semibold text-white">
+              {showBalances ? (
+                <AnimateBTC value={balanceData.available_btc} />
+              ) : (
+                '••••••••'
+              )}
+            </span>
+          </div>
+          {/* BTC Allocation Bar */}
+          <div className="w-full bg-gray-700 h-1 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-brand transition-all duration-300 ease-out"
+              style={{ width: `${Math.round(btcPercentage)}%` }}
+            />
+          </div>
         </div>
       </div>
     </div>
