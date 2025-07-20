@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
-import { formatINR, formatBTC, getTimeAgo } from '../data/mockData';
+import { getTimeAgo } from '../data/mockData';
+import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { Transaction } from '../types';
 import useTransactionUpdates from '../hooks/useTransactionUpdates';
 
@@ -22,15 +23,6 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const { transactions, isLoading, error, fetchTransactions, page } = useTransactionUpdates();
   const displayTransactions = maxItems ? transactions.slice(0, maxItems) : transactions;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'text-white';
-      case 'pending': return 'text-gray-400';
-      case 'failed': return 'text-gray-500';
-      case 'cancelled': return 'text-gray-500';
-      default: return 'text-gray-400';
-    }
-  };
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -144,35 +136,47 @@ const TransactionList: React.FC<TransactionListProps> = ({
   };
 
   const getTransactionAmount = (txn: Transaction) => {
-    // INR transactions (deposits, withdrawals, loans, interest)
-    const isINRTransaction = [
-      'DEPOSIT_INR', 'WITHDRAW_INR', 'LOAN_BORROW', 'LOAN_REPAY', 'INTEREST_ACCRUAL'
-    ].includes(txn.type);
-
-    if (isINRTransaction) {
-      return formatINR(txn.inr_amount || 0);
-    }
-
-    // BTC transactions (buys, sells, bitcoin deposits/withdrawals, collateral)
-    const btcAmount = txn.btc_amount || 0;
-    return formatBTC(btcAmount / 100000000); // Convert satoshis to BTC for display
-  };
-
-  const getDisplayStatus = (status: string) => {
-    // Normalize status for display
-    switch (status?.toUpperCase()) {
-      case 'EXECUTED':
-        return 'completed';
-      case 'PENDING':
-        return 'pending';
-      case 'FAILED':
-        return 'failed';
-      case 'CANCELLED':
-        return 'cancelled';
+    // Main amount based on transaction type
+    switch (txn.type) {
+      case 'LOAN_BORROW':
+      case 'LOAN_REPAY':
+      case 'INTEREST_ACCRUAL':
+      case 'DEPOSIT_INR':
+      case 'WITHDRAW_INR':
+        return formatRupeesForDisplay(txn.inr_amount || 0);
       default:
-        return status?.toLowerCase() || 'unknown';
+        // All other transactions show BTC as main amount
+        return formatBitcoinForDisplay(txn.btc_amount || 0);
     }
   };
+
+  const getTransactionSubAmount = (txn: Transaction) => {
+    // Sub-amount based on transaction type
+    switch (txn.type) {
+      case 'MARKET_BUY':
+      case 'MARKET_SELL':
+      case 'LIMIT_BUY':
+      case 'LIMIT_SELL':
+      case 'DCA_BUY':
+      case 'DCA_SELL':
+      case 'LIQUIDATION':
+      case 'PARTIAL_LIQUIDATION':
+      case 'FULL_LIQUIDATION':
+        return formatRupeesForDisplay(txn.inr_amount || 0);
+      case 'LOAN_CREATE':
+      case 'LOAN_ADD_COLLATERAL':
+      case 'LOAN_BORROW':
+      case 'LOAN_REPAY':
+      case 'INTEREST_ACCRUAL':
+      case 'DEPOSIT_INR':
+      case 'WITHDRAW_INR':
+      case 'DEPOSIT_BTC':
+      case 'WITHDRAW_BTC':
+      default:
+        return null; // No sub-amount for these transaction types
+    }
+  };
+
 
   useEffect(() => {
     if (page === 1 && transactions.length === 0) {
@@ -248,9 +252,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
                 <p className="text-sm font-light text-white">
                   {getTransactionAmount(txn)}
                 </p>
-                <p className={`text-xs ${getStatusColor(getDisplayStatus(txn.status))}`}>
-                  {getDisplayStatus(txn.status)}
-                </p>
+                {getTransactionSubAmount(txn) && (
+                  <p className="text-xs text-gray-400">
+                    {getTransactionSubAmount(txn)}
+                  </p>
+                )}
               </div>
             </div>
             {index < displayTransactions.length - 1 && (
