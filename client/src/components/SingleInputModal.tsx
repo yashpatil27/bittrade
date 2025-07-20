@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { formatRupeesForDisplay } from '../utils/formatters';
+import { X } from 'lucide-react';
+import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
   isOpen: boolean;
@@ -317,9 +318,9 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
-              className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center text-lg transition-colors"
+              className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
-              ✕
+              <X className="w-5 h-5" />
             </button>
             <h2 className="text-white text-sm font-medium text-center flex-1">{title}</h2>
             <div className="w-10"></div> {/* Spacer for centering */}
