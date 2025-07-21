@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, SlidersVertical } from 'lucide-react';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -19,6 +19,8 @@ interface SingleInputModalProps {
   isLoading?: boolean;
   tabSwitcher?: React.ReactNode;
   initialValue?: string;
+  showSettingsIcon?: boolean;
+  onSettingsClick?: () => void;
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -36,7 +38,9 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   sectionAmount,
   onSectionClick,
   tabSwitcher,
-  initialValue = ''
+  initialValue = '',
+  showSettingsIcon = false,
+  onSettingsClick
 }) => {
   const [value, setValue] = useState('');
   const [dragStartY, setDragStartY] = useState(0);
@@ -323,7 +327,16 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
               <X className="w-5 h-5" />
             </button>
             <h2 className="text-white text-sm font-medium text-center flex-1">{title}</h2>
-            <div className="w-10"></div> {/* Spacer for centering */}
+            <div className="w-12 h-12 flex items-center justify-center">
+              {showSettingsIcon && onSettingsClick && (
+                <button
+                  onClick={onSettingsClick}
+                  className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+                >
+                  <SlidersVertical className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

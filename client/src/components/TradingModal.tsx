@@ -37,6 +37,12 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  
+  // Handle settings icon click
+  const handleSettingsClick = () => {
+    console.log('Settings icon clicked');
+    // TODO: Implement settings functionality
+  };
 
   // Reset state when modal opens/closes
   React.useEffect(() => {
@@ -259,6 +265,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}
         initialValue={inputValue}
+        showSettingsIcon={true}
+        onSettingsClick={handleSettingsClick}
       />
 
       {/* Confirmation Modal - Opens on top of SingleInputModal */}
