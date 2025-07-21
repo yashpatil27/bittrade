@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
+import OptionsModal from './OptionsModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { executeTrade } from '../utils/tradingApi';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
@@ -37,11 +38,24 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
   
   // Handle settings icon click
   const handleSettingsClick = () => {
     console.log('Settings icon clicked');
-    // TODO: Implement settings functionality
+    setShowOrderTypeModal(true);
+  };
+  
+  // Handle order type modal close
+  const handleOrderTypeModalClose = () => {
+    setShowOrderTypeModal(false);
+  };
+  
+  // Handle order type selection
+  const handleOrderTypeSelect = (orderType: string) => {
+    console.log('Order type selected:', orderType);
+    // TODO: Implement order type logic
+    setShowOrderTypeModal(false);
   };
 
   // Reset state when modal opens/closes
@@ -296,6 +310,59 @@ const TradingModal: React.FC<TradingModalProps> = ({
         isLoading={isProcessing}
         mode="confirm"
       />
+      
+      {/* Order Type Options Modal - Opens on top of SingleInputModal */}
+      <OptionsModal
+        isOpen={isOpen && showOrderTypeModal}
+        onClose={handleOrderTypeModalClose}
+        title="Order Type"
+        type="custom"
+      >
+        <div className="space-y-3">
+          {/* Market Order Option */}
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={() => handleOrderTypeSelect('market')}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Market Order</h3>
+                <p className="text-gray-400 text-xs mt-1">Execute immediately at current market price</p>
+              </div>
+              <div className="text-brand text-xs">Current</div>
+            </div>
+          </div>
+          
+          {/* Limit Order Option */}
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={() => handleOrderTypeSelect('limit')}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Limit Order</h3>
+                <p className="text-gray-400 text-xs mt-1">Set a specific price to {type} at</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Recurring Order (DCA) Option */}
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={() => handleOrderTypeSelect('recurring')}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Recurring Order (DCA)</h3>
+                <p className="text-gray-400 text-xs mt-1">Set up automatic recurring {type === 'buy' ? 'purchases' : 'sales'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </OptionsModal>
     </>
   );
 };
