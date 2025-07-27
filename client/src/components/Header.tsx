@@ -1,23 +1,23 @@
 import React from 'react';
-import { Bell, Menu, Settings } from 'lucide-react';
+import { User, Menu, Settings } from 'lucide-react';
 import WebSocketStatus from './WebSocketStatus';
 
 interface HeaderProps {
   title?: string;
-  showNotifications?: boolean;
+  showProfile?: boolean;
   showSettings?: boolean;
   showMenu?: boolean;
-  onNotificationClick?: () => void;
+  onProfileClick?: () => void;
   onSettingsClick?: () => void;
   onMenuClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
   title = '₿itTrade',
-  showNotifications = true,
+  showProfile = true,
   showSettings = false,
   showMenu = false,
-  onNotificationClick,
+  onProfileClick,
   onSettingsClick,
   onMenuClick
 }) => {
@@ -41,14 +41,12 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center space-x-3">
           <WebSocketStatus />
           
-          {showNotifications && (
+          {showProfile && (
             <button 
-              onClick={onNotificationClick}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors relative"
+              onClick={onProfileClick}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <Bell className="w-5 h-5 text-gray-400" />
-              {/* Notification dot */}
-              <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-brand"></div>
+              <User className="w-5 h-5 text-gray-400" />
             </button>
           )}
           

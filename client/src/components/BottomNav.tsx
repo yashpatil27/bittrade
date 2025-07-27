@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, TrendingUp, Clock, User, PlusCircle } from 'lucide-react';
+import { Home, Repeat, Banknote, Clock } from 'lucide-react';
 
 const BottomNav: React.FC = () => {
   const location = useLocation();
@@ -8,10 +8,9 @@ const BottomNav: React.FC = () => {
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home, path: '/' },
-    { id: 'portfolio', label: 'Portfolio', icon: TrendingUp, path: '/portfolio' },
-    { id: 'trade', label: 'Trade', icon: PlusCircle, path: '/trade' },
+    { id: 'dca', label: 'DCA', icon: Repeat, path: '/dca' },
+    { id: 'loans', label: 'Loans', icon: Banknote, path: '/loans' },
     { id: 'history', label: 'History', icon: Clock, path: '/history' },
-    { id: 'profile', label: 'Profile', icon: User, path: '/profile' },
   ];
 
   const handleNavigation = (path: string) => {
