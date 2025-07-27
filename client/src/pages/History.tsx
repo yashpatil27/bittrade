@@ -16,11 +16,24 @@ const History: React.FC = () => {
         <Header title="₿itTrade" />
         
         {/* Main Content */}
-        <div className="px-4 py-3">
+        <div className="px-4 py-3 space-y-3">
+          {/* Pending Orders - Only shown when there are pending limit orders */}
+          <TransactionList 
+            title="Pending Orders"
+            filterPending={true}
+            showTargetPrice={true}
+            showCount={true}
+            showViewAll={false}
+            wrapInCard={true}
+            onTransactionClick={handleTransactionClick}
+          />
+          
+          {/* All Transactions */}
           <Card>
             <TransactionList 
               title="All Transactions"
               showViewAll={false}
+              excludePending={true}
               onTransactionClick={handleTransactionClick}
             />
           </Card>

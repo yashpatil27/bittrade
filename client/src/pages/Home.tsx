@@ -142,6 +142,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
           <TransactionList 
             title="Recent Activity"
             maxItems={5}
+            excludePending={true}
             onTransactionClick={(txn) => console.log('Clicked transaction:', txn)}
             onViewAllClick={() => console.log('View all clicked')}
           />

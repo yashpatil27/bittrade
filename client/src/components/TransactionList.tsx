@@ -13,6 +13,7 @@ interface TransactionListProps {
   onViewAllClick?: () => void;
   maxItems?: number;
   filterPending?: boolean; // If true, only show pending limit orders
+  excludePending?: boolean; // If true, exclude pending limit orders from the list
   showTargetPrice?: boolean; // If true, show target price for pending orders
   showCount?: boolean; // If true, show count badge next to title
   wrapInCard?: boolean; // If true, wrap content in Card component
@@ -25,16 +26,21 @@ const TransactionList: React.FC<TransactionListProps> = ({
   onViewAllClick,
   maxItems,
   filterPending = false,
+  excludePending = false,
   showTargetPrice = false,
   showCount = false,
   wrapInCard = false
 }) => {
   const { transactions, isLoading, error, fetchTransactions, page } = useTransactionUpdates();
   
-  // Filter transactions based on filterPending prop
+  // Filter transactions based on filterPending and excludePending props
   const filteredTransactions = filterPending 
     ? transactions.filter(txn => 
         txn.status === 'PENDING' && (txn.type === 'LIMIT_BUY' || txn.type === 'LIMIT_SELL')
+      )
+    : excludePending 
+    ? transactions.filter(txn => 
+        !(txn.status === 'PENDING' && (txn.type === 'LIMIT_BUY' || txn.type === 'LIMIT_SELL'))
       )
     : transactions;
   
