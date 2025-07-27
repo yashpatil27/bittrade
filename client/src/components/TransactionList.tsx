@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { getTimeAgo } from '../data/mockData';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { Transaction } from '../types';
 import useTransactionUpdates from '../hooks/useTransactionUpdates';
+import Card from './Card';
 
 interface TransactionListProps {
   title?: string;
@@ -11,6 +12,10 @@ interface TransactionListProps {
   onTransactionClick?: (transaction: Transaction) => void;
   onViewAllClick?: () => void;
   maxItems?: number;
+  filterPending?: boolean; // If true, only show pending limit orders
+  showTargetPrice?: boolean; // If true, show target price for pending orders
+  showCount?: boolean; // If true, show count badge next to title
+  wrapInCard?: boolean; // If true, wrap content in Card component
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
@@ -18,10 +23,22 @@ const TransactionList: React.FC<TransactionListProps> = ({
   showViewAll = true,
   onTransactionClick,
   onViewAllClick,
-  maxItems
+  maxItems,
+  filterPending = false,
+  showTargetPrice = false,
+  showCount = false,
+  wrapInCard = false
 }) => {
   const { transactions, isLoading, error, fetchTransactions, page } = useTransactionUpdates();
-  const displayTransactions = maxItems ? transactions.slice(0, maxItems) : transactions;
+  
+  // Filter transactions based on filterPending prop
+  const filteredTransactions = filterPending 
+    ? transactions.filter(txn => 
+        txn.status === 'PENDING' && (txn.type === 'LIMIT_BUY' || txn.type === 'LIMIT_SELL')
+      )
+    : transactions;
+  
+  const displayTransactions = maxItems ? filteredTransactions.slice(0, maxItems) : filteredTransactions;
 
 
   const getTransactionIcon = (type: string) => {
@@ -53,31 +70,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
     }
   };
 
-  const getTransactionColor = (type: string) => {
-    switch (type) {
-      case 'MARKET_BUY':
-      case 'LIMIT_BUY':
-      case 'DCA_BUY':
-      case 'DEPOSIT_INR':
-      case 'DEPOSIT_BTC':
-      case 'LOAN_CREATE':
-      case 'LOAN_ADD_COLLATERAL':
-      case 'LOAN_BORROW':
-        return 'bg-gray-700';
-      case 'MARKET_SELL':
-      case 'LIMIT_SELL':
-      case 'DCA_SELL':
-      case 'WITHDRAW_INR':
-      case 'WITHDRAW_BTC':
-      case 'LOAN_REPAY':
-      case 'LIQUIDATION':
-      case 'PARTIAL_LIQUIDATION':
-      case 'FULL_LIQUIDATION':
-        return 'bg-gray-600';
-      case 'INTEREST_ACCRUAL':
-        return 'bg-gray-500';
-      default: return 'bg-gray-500';
-    }
+  const getTransactionColor = (type: string, status?: string) => {
+    // Use consistent grey for all transaction types
+    return 'bg-gray-600';
   };
 
   const handleTransactionClick = (transaction: Transaction) => {
@@ -93,6 +88,17 @@ const TransactionList: React.FC<TransactionListProps> = ({
   };
 
   const getTransactionLabel = (type: string, status?: string) => {
+    // Simplified labels for pending orders in filterPending mode
+    if (filterPending && status === 'PENDING') {
+      switch (type) {
+        case 'LIMIT_BUY':
+          return 'Limit Buy Order';
+        case 'LIMIT_SELL':
+          return 'Limit Sale Order';
+      }
+    }
+    
+    // Default labels for all other cases
     switch (type) {
       case 'MARKET_BUY':
         return 'Bitcoin Purchase';
@@ -204,7 +210,13 @@ const TransactionList: React.FC<TransactionListProps> = ({
     );
   }
 
-  if (displayTransactions.length === 0) {
+  // Don't render anything if filtering for pending orders and none exist
+  if (filterPending && displayTransactions.length === 0) {
+    return null;
+  }
+  
+  // Show "no transactions" message for regular transaction lists
+  if (!filterPending && displayTransactions.length === 0) {
     return (
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -217,10 +229,17 @@ const TransactionList: React.FC<TransactionListProps> = ({
     );
   }
 
-  return (
+  const content = (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-medium text-white">{title}</h3>
+        <div className="flex items-center space-x-2">
+          <h3 className="text-base font-medium text-white">{title}</h3>
+          {showCount && displayTransactions.length > 0 && (
+            <span className="bg-brand text-black text-xs px-2 py-0.5 rounded-full font-medium">
+              {displayTransactions.length}
+            </span>
+          )}
+        </div>
         {showViewAll && (
           <button 
             className="text-xs font-light text-brand"
@@ -239,12 +258,20 @@ const TransactionList: React.FC<TransactionListProps> = ({
               onClick={() => handleTransactionClick(txn)}
             >
               <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 ${getTransactionColor(txn.type)} rounded-full flex items-center justify-center`}>
+                <div className={`w-8 h-8 ${getTransactionColor(txn.type, txn.status)} rounded-full flex items-center justify-center`}>
                   {getTransactionIcon(txn.type)}
                 </div>
                 <div>
                   <p className="text-sm font-light text-white">{getTransactionLabel(txn.type, txn.status)}</p>
-                  <p className="text-xs text-gray-400">{getTimeAgo(txn.executed_at || txn.created_at || '')}</p>
+                  {showTargetPrice && txn.status === 'PENDING' && txn.execution_price ? (
+                    <div className="flex items-center space-x-2 text-xs text-gray-400">
+                      <span>Target: {formatRupeesForDisplay(txn.execution_price)}</span>
+                      <span>•</span>
+                      <span>{getTimeAgo(txn.created_at || '')}</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400">{getTimeAgo(txn.executed_at || txn.created_at || '')}</p>
+                  )}
                 </div>
               </div>
               
@@ -267,6 +294,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
       </div>
     </div>
   );
+  
+  return wrapInCard ? <Card>{content}</Card> : content;
 };
 
 export default TransactionList;

@@ -29,6 +29,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   const [sellRate, setSellRate] = React.useState<number>(0);
   const [balanceData, setBalanceData] = React.useState<BalanceData | null>(null);
   const [optionsModalOpen, setOptionsModalOpen] = React.useState(false);
+  
 
   const handleBuyClick = () => {
     setModalType('buy');
@@ -125,6 +126,17 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
           onBalanceUpdate={handleBalanceUpdate}
         />
         
+{/* Pending Orders - Only shown when there are pending limit orders */}
+        <TransactionList 
+          title="Pending Orders"
+          filterPending={true}
+          showTargetPrice={true}
+          showCount={true}
+          showViewAll={false}
+          wrapInCard={true}
+          onTransactionClick={(order) => console.log('Clicked pending order:', order)}
+        />
+
         {/* Recent Transactions */}
         <Card>
           <TransactionList 
