@@ -3,7 +3,7 @@ import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
 import OptionsModal from './OptionsModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
-import { executeTrade } from '../utils/tradingApi';
+import { executeTrade, createLimitOrder } from '../utils/tradingApi';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 
 interface BalanceData {
@@ -143,21 +143,32 @@ const TradingModal: React.FC<TradingModalProps> = ({
     setIsProcessing(true);
     
     try {
-      // Prepare trade request
-      const tradeRequest = {
-        action: type,
-        type: orderType,
-        amount: inputValue,
-        currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc',
-        ...(orderType === 'limit' && targetPrice && {
+      let tradeResult;
+      
+      if (orderType === 'limit' && targetPrice) {
+        // Handle limit order
+        const conversion = calculateConversion(inputValue);
+        const orderData = {
+          type: type === 'buy' ? 'LIMIT_BUY' as const : 'LIMIT_SELL' as const,
+          btc_amount: Math.round(conversion.btcAmount * 100000000), // Convert to satoshis
+          inr_amount: Math.round(conversion.inrAmount),
           execution_price: parseFloat(targetPrice)
-        })
-      };
-      
-      console.log('🔄 Executing trade:', tradeRequest);
-      
-      // Execute trade via API
-      const tradeResult = await executeTrade(tradeRequest);
+        };
+        
+        console.log('🔄 Creating limit order:', orderData);
+        tradeResult = await createLimitOrder(orderData);
+      } else {
+        // Handle market order
+        const tradeRequest = {
+          action: type,
+          type: orderType,
+          amount: inputValue,
+          currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc'
+        };
+        
+        console.log('🔄 Executing market trade:', tradeRequest);
+        tradeResult = await executeTrade(tradeRequest);
+      }
       
       console.log('✅ Trade executed successfully:', tradeResult);
       
