@@ -39,6 +39,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
+  const [orderType, setOrderType] = useState<'market' | 'limit' | 'recurring'>('market');
+  const [showTargetPriceModal, setShowTargetPriceModal] = useState(false);
+  const [targetPrice, setTargetPrice] = useState('');
   
   // Handle settings icon click
   const handleSettingsClick = () => {
@@ -51,11 +54,27 @@ const TradingModal: React.FC<TradingModalProps> = ({
     setShowOrderTypeModal(false);
   };
   
+  // Handle target price modal close
+  const handleTargetPriceModalClose = () => {
+    setShowTargetPriceModal(false);
+  };
+  
+  // Handle target price confirmation
+  const handleTargetPriceConfirm = (price: string) => {
+    setTargetPrice(price);
+    setShowTargetPriceModal(false);
+  };
+  
   // Handle order type selection
-  const handleOrderTypeSelect = (orderType: string) => {
-    console.log('Order type selected:', orderType);
-    // TODO: Implement order type logic
+  const handleOrderTypeSelect = (selectedOrderType: 'market' | 'limit' | 'recurring') => {
+    console.log('Order type selected:', selectedOrderType);
+    setOrderType(selectedOrderType);
     setShowOrderTypeModal(false);
+    
+    // If limit order is selected, show target price modal
+    if (selectedOrderType === 'limit') {
+      setShowTargetPriceModal(true);
+    }
   };
 
   // Reset state when modal opens/closes
@@ -64,17 +83,24 @@ const TradingModal: React.FC<TradingModalProps> = ({
       setInputValue('');
       setIsProcessing(false);
       setShowConfirmation(false);
+      setOrderType('market');
+      setShowTargetPriceModal(false);
+      setTargetPrice('');
     }
   }, [isOpen]);
 
   // Calculate conversion values
   const calculateConversion = (amount: string) => {
     const numAmount = parseFloat(amount) || 0;
-    const currentRate = type === 'buy' ? (buyRate || 0) : (sellRate || 0);
+    
+    // Use target price for limit orders, otherwise use current market rate
+    const effectiveRate = orderType === 'limit' && targetPrice 
+      ? parseFloat(targetPrice)
+      : type === 'buy' ? (buyRate || 0) : (sellRate || 0);
     
     if (type === 'buy') {
       // Buy: User inputs INR, gets BTC
-      const btcAmount = currentRate > 0 ? numAmount / currentRate : 0;
+      const btcAmount = effectiveRate > 0 ? numAmount / effectiveRate : 0;
       return {
         inrAmount: numAmount,
         btcAmount: btcAmount,
@@ -83,7 +109,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
       };
     } else {
       // Sell: User inputs BTC, gets INR
-      const inrAmount = currentRate > 0 ? numAmount * currentRate : 0;
+      const inrAmount = effectiveRate > 0 ? numAmount * effectiveRate : 0;
       return {
         inrAmount: inrAmount,
         btcAmount: numAmount,
@@ -120,9 +146,12 @@ const TradingModal: React.FC<TradingModalProps> = ({
       // Prepare trade request
       const tradeRequest = {
         action: type,
-        type: 'market' as const,
+        type: orderType,
         amount: inputValue,
-        currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc'
+        currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc',
+        ...(orderType === 'limit' && targetPrice && {
+          target_price: parseFloat(targetPrice)
+        })
       };
       
       console.log('🔄 Executing trade:', tradeRequest);
@@ -170,19 +199,37 @@ const TradingModal: React.FC<TradingModalProps> = ({
     if (!inputValue) return [];
     
     const conversion = calculateConversion(inputValue);
-    const rate = type === 'buy' ? (buyRate || 0) : (sellRate || 0);
+    const rate = orderType === 'limit' && targetPrice ? parseFloat(targetPrice) : (type === 'buy' ? (buyRate || 0) : (sellRate || 0));
     
-    return [
+    const details = [
+      {
+        label: 'Order Type',
+        value: orderType === 'market' ? 'Market Order' : orderType === 'limit' ? 'Limit Order' : 'Recurring Order',
+        highlight: false
+      },
       {
         label: 'Amount',
         value: <AnimateINR value={conversion.inrAmount} className="text-sm font-normal text-white" />,
         highlight: true
-      },
-      {
+      }
+    ];
+    
+    // Add target price for limit orders
+    if (orderType === 'limit' && targetPrice) {
+      details.push({
+        label: 'Target Price',
+        value: <AnimateINR value={parseFloat(targetPrice)} className="text-sm font-normal text-white" />,
+        highlight: true
+      });
+    } else {
+      details.push({
         label: 'Rate',
         value: rate > 0 ? <AnimateINR value={rate} className="text-sm font-normal text-white" /> : 'Rate unavailable',
         highlight: false
-      },
+      });
+    }
+    
+    details.push(
       {
         label: 'You will ' + (type === 'buy' ? 'receive' : 'pay'),
         value: <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-normal text-white" />,
@@ -193,7 +240,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
         value: <AnimateINR value={0} className="text-sm font-normal text-white" />,
         highlight: false
       }
-    ];
+    );
+    
+    return details;
   };
 
   // Get button texts
@@ -270,12 +319,15 @@ const TradingModal: React.FC<TradingModalProps> = ({
         type={type === 'buy' ? 'inr' : 'btc'}
         confirmText="Next"
         onConfirm={handleInputConfirm}
-        sectionTitle={`${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
-        sectionAmount={currentRate > 0 ? (
+        sectionTitle={orderType === 'limit' && targetPrice ? 'Target Price' : `${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
+        sectionAmount={orderType === 'limit' && targetPrice ? (
+          <AnimateINR value={parseFloat(targetPrice)} className="text-sm font-medium text-gray-300" />
+        ) : currentRate > 0 ? (
           <AnimateINR value={currentRate} className="text-sm font-medium text-gray-300" />
         ) : (
           'Rate unavailable'
         )}
+        sectionDetail={orderType === 'limit' && targetPrice ? `Limit ${type} order at ₹${parseFloat(targetPrice).toLocaleString('en-IN')}` : undefined}
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}
         initialValue={inputValue}
@@ -363,6 +415,24 @@ const TradingModal: React.FC<TradingModalProps> = ({
           </div>
         </div>
       </OptionsModal>
+      
+      {/* Target Price Modal - Opens when limit order is selected */}
+      <SingleInputModal
+        isOpen={isOpen && showTargetPriceModal}
+        onClose={handleTargetPriceModalClose}
+        title={`Set Target Price`}
+        type="inr"
+        confirmText="Set Price"
+        onConfirm={handleTargetPriceConfirm}
+        sectionTitle={`Current ${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
+        sectionAmount={currentRate > 0 ? (
+          <AnimateINR value={currentRate} className="text-sm font-medium text-gray-300" />
+        ) : (
+          'Rate unavailable'
+        )}
+        sectionDetail={`Enter the price at which you want to ${type} Bitcoin. Your order will execute when the market reaches this price.`}
+        initialValue={targetPrice}
+      />
     </>
   );
 };
