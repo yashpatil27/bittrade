@@ -46,8 +46,7 @@ CREATE TABLE transactions (
   -- Amount fields
   btc_amount BIGINT NOT NULL DEFAULT 0,  -- BTC amount in satoshis
   inr_amount INT NOT NULL DEFAULT 0,     -- INR amount in rupees
-  execution_price INT,                   -- Actual execution price (INR per BTC)
-  limit_price INT,                       -- Target price for limit orders (INR per BTC)
+  execution_price INT,                   -- Execution price (INR per BTC) - for limit orders: target price, for market orders: actual price
   
   -- Relationships
   parent_id INT,                         -- For DCA installments or related transactions

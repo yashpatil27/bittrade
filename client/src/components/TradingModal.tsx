@@ -150,7 +150,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         amount: inputValue,
         currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc',
         ...(orderType === 'limit' && targetPrice && {
-          target_price: parseFloat(targetPrice)
+          execution_price: parseFloat(targetPrice)
         })
       };
       

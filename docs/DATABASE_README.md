@@ -60,8 +60,7 @@ CREATE TABLE transactions (
   status ENUM('PENDING', 'EXECUTED', 'CANCELLED', 'EXPIRED') NOT NULL DEFAULT 'PENDING',
   btc_amount BIGINT NOT NULL DEFAULT 0,  -- BTC amount in satoshis
   inr_amount INT NOT NULL DEFAULT 0,     -- INR amount in rupees
-  execution_price INT,                   -- Actual execution price (INR per BTC)
-  limit_price INT,                       -- Target price for limit orders (INR per BTC)
+  execution_price INT,                   -- Execution price (INR per BTC) - for limit orders: target price, for market orders: actual price
   parent_id INT,                         -- For DCA installments or related transactions
   loan_id INT,                          -- Reference to loan for loan transactions
   scheduled_at TIMESTAMP,               -- When transaction should execute
@@ -272,7 +271,7 @@ The database uses precise integer storage for all currency values:
 
 ### Price Precision
 - **Bitcoin USD Price**: Stored as `INT` representing whole dollars
-- **Execution/Limit Prices**: Stored as `INT` representing INR per BTC
+- **Execution Price**: Stored as `INT` representing INR per BTC (serves as both target price for limit orders and actual execution price)
 - **Interest Rates/LTV**: Stored as `DECIMAL(5,2)` for percentage values (e.g., 15.50%)
 
 ## Default Data
@@ -298,7 +297,12 @@ The following migration files exist in the `/database/migrations/` directory:
    - Renames operations table to transactions
    - Updates related indexes and constraints
 
-3. **add_price_change_pct_to_chart_data.sql**
+3. **005_remove_limit_price_column.sql**
+   - Removes redundant limit_price column from transactions table
+   - Simplifies schema by using execution_price for both target and actual prices
+   - Optimizes limit order handling
+
+4. **add_price_change_pct_to_chart_data.sql**
    - Adds price_change_pct column to bitcoin_chart_data table
    - Enables percentage change calculations for chart displays
 
