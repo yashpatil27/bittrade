@@ -364,11 +364,55 @@ async function executeTrade(userId, type, btcAmount, inrAmount, price, action) {
   await db.beginTransaction();
 
   try {
+    // Check user balance and reserve funds for limit orders
+    if (type.startsWith('LIMIT')) {
+      const [balanceRows] = await db.execute(
+        'SELECT available_inr, available_btc FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      if (balanceRows.length === 0) {
+        throw new Error('User not found');
+      }
+      
+      const balance = balanceRows[0];
+      
+      // Check and reserve funds based on order type
+      if (type === 'LIMIT_BUY') {
+        // For limit buy: need to reserve INR
+        if (balance.available_inr < inrAmount) {
+          throw new Error(`Insufficient INR balance. Required: ₹${inrAmount}, Available: ₹${balance.available_inr}`);
+        }
+        
+        // Reserve INR: move from available_inr to reserved_inr
+        await db.execute(
+          'UPDATE users SET available_inr = available_inr - ?, reserved_inr = reserved_inr + ? WHERE id = ?',
+          [inrAmount, inrAmount, userId]
+        );
+        
+        console.log(`💰 Reserved ₹${inrAmount} for limit buy order (User ${userId})`);
+        
+      } else if (type === 'LIMIT_SELL') {
+        // For limit sell: need to reserve BTC
+        if (balance.available_btc < btcAmount) {
+          throw new Error(`Insufficient BTC balance. Required: ${btcAmount} satoshis, Available: ${balance.available_btc} satoshis`);
+        }
+        
+        // Reserve BTC: move from available_btc to reserved_btc
+        await db.execute(
+          'UPDATE users SET available_btc = available_btc - ?, reserved_btc = reserved_btc + ? WHERE id = ?',
+          [btcAmount, btcAmount, userId]
+        );
+        
+        console.log(`₿ Reserved ${btcAmount} satoshis for limit sell order (User ${userId})`);
+      }
+    }
+    
     // Insert transaction record
     const [transactionResult] = await db.execute(
-      `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at) 
-       VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-      [userId, type, 'PENDING', btcAmount, inrAmount, price]
+      `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at) 
+       VALUES (?, ?, 'PENDING', ?, ?, ?, NOW())`,
+      [userId, type, btcAmount, inrAmount, price]
     );
 
     // Commit transaction
@@ -402,6 +446,11 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
       } catch (error) {
         console.error('Error clearing transaction cache:', error);
       }
+    }
+    
+    // Send balance update via WebSocket (for reserved funds)
+    if (global.sendUserBalanceUpdate) {
+      global.sendUserBalanceUpdate(userId);
     }
     
     // Send transaction update via WebSocket
