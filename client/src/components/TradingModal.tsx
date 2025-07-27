@@ -404,7 +404,10 @@ const TradingModal: React.FC<TradingModalProps> = ({
                 <h3 className="text-white text-sm font-medium">Market Order</h3>
                 <p className="text-gray-400 text-xs mt-1">Execute immediately at current market price</p>
               </div>
-              <div className="text-brand text-xs">Current</div>
+              {/* Show 'Current' if market order is selected OR if no target price is set */}
+              {(orderType === 'market' || (orderType === 'limit' && !targetPrice)) && (
+                <div className="text-brand text-xs">Current</div>
+              )}
             </div>
           </div>
           
@@ -419,6 +422,10 @@ const TradingModal: React.FC<TradingModalProps> = ({
                 <h3 className="text-white text-sm font-medium">Limit Order</h3>
                 <p className="text-gray-400 text-xs mt-1">Set a specific price to {type} at</p>
               </div>
+              {/* Show 'Current' if limit order is selected AND target price is set */}
+              {(orderType === 'limit' && targetPrice) && (
+                <div className="text-brand text-xs">Current</div>
+              )}
             </div>
           </div>
           
