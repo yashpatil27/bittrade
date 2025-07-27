@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useWebSocketEvent } from '../context/WebSocketContext';
+import { getApiUrl } from '../utils/api';
 import { Transaction } from '../types';
 
 interface TransactionUpdateData {
@@ -46,7 +47,7 @@ export const useTransactionUpdates = (): UseTransactionUpdatesReturn => {
       }
 
       const response = await fetch(
-        `${process.env.REACT_APP_API_URL || 'http://localhost:3001'}/api/transactions?page=${requestedPage}&limit=${limit}`,
+        `${getApiUrl()}/api/transactions?page=${requestedPage}&limit=${limit}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
