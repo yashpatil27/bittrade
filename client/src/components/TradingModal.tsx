@@ -157,17 +157,20 @@ const TradingModal: React.FC<TradingModalProps> = ({
         
         console.log('🔄 Creating limit order:', orderData);
         tradeResult = await createLimitOrder(orderData);
-      } else {
+      } else if (orderType === 'market') {
         // Handle market order
         const tradeRequest = {
           action: type,
-          type: orderType,
+          type: orderType as 'market',
           amount: inputValue,
           currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc'
         };
         
         console.log('🔄 Executing market trade:', tradeRequest);
         tradeResult = await executeTrade(tradeRequest);
+      } else {
+        // Recurring orders not implemented yet
+        throw new Error('Recurring orders are not implemented yet');
       }
       
       console.log('✅ Trade executed successfully:', tradeResult);
@@ -233,11 +236,19 @@ const TradingModal: React.FC<TradingModalProps> = ({
         highlight: true
       });
     } else {
-      details.push({
-        label: 'Rate',
-        value: rate > 0 ? <AnimateINR value={rate} className="text-sm font-normal text-white" /> : 'Rate unavailable',
-        highlight: false
-      });
+      if (rate > 0) {
+        details.push({
+          label: 'Rate',
+          value: <AnimateINR value={rate} className="text-sm font-normal text-white" />,
+          highlight: false
+        });
+      } else {
+        details.push({
+          label: 'Rate',
+          value: 'Rate unavailable',
+          highlight: false
+        });
+      }
     }
     
     details.push(

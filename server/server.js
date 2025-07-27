@@ -393,6 +393,31 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 
   try {
     const transactionId = await executeTrade(userId, type, btc_amount, inr_amount, execution_price, req.body.action);
+    
+    // Clear transaction cache and send real-time updates
+    if (global.dataService && global.dataService.redis) {
+      try {
+        await global.dataService.redis.del(`user_transactions_${userId}`);
+        console.log('💾 Cleared transaction cache for user:', userId);
+      } catch (error) {
+        console.error('Error clearing transaction cache:', error);
+      }
+    }
+    
+    // Send transaction update via WebSocket
+    if (global.sendUserTransactionUpdate) {
+      global.sendUserTransactionUpdate(userId);
+    }
+    
+    console.log(`✅ LIMIT order created:`, {
+      userId,
+      transactionId,
+      type,
+      btc_amount,
+      inr_amount,
+      execution_price
+    });
+    
     res.status(201).json({ transactionId, status: 'PENDING' });
   } catch (error) {
     console.error('Error creating order:', error);
