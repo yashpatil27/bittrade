@@ -1,0 +1,444 @@
+import React, { useState, useEffect } from 'react';
+import SingleInputModal from './SingleInputModal';
+import ConfirmationModal from './ConfirmationModal';
+import OptionsModal from './OptionsModal';
+import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
+import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
+import { TrendingUp, DollarSign, Calendar, Repeat, Target, Clock } from 'lucide-react';
+
+interface BalanceData {
+  available_inr: number;
+  available_btc: number;
+  reserved_inr: number;
+  reserved_btc: number;
+  collateral_btc: number;
+  borrowed_inr: number;
+  interest_accrued: number;
+}
+
+interface DCAModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  balanceData?: BalanceData | null;
+  currentBitcoinPrice?: number;
+  onComplete?: (dcaPlan: DCAPlanData) => void;
+}
+
+interface DCAPlanData {
+  plan_type: 'DCA_BUY' | 'DCA_SELL';
+  frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  amount_per_execution: number; // INR amount
+  remaining_executions?: number; // undefined for unlimited
+  max_price?: number; // Optional max price per BTC
+  min_price?: number; // Optional min price per BTC
+}
+
+type DCAStep = 'type' | 'amount' | 'frequency' | 'executions' | 'priceControls' | 'review';
+
+const DCAModal: React.FC<DCAModalProps> = ({
+  isOpen,
+  onClose,
+  balanceData,
+  currentBitcoinPrice = 0,
+  onComplete,
+}) => {
+  const [currentStep, setCurrentStep] = useState<DCAStep>('type');
+  const [dcaPlan, setDcaPlan] = useState<Partial<DCAPlanData>>({
+    plan_type: 'DCA_BUY',
+  });
+  const [amountInput, setAmountInput] = useState('');
+  const [executionsInput, setExecutionsInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep('type');
+      setDcaPlan({ plan_type: 'DCA_BUY' });
+      setAmountInput('');
+      setExecutionsInput('');
+      setMaxPriceInput('');
+      setMinPriceInput('');
+      setIsLoading(false);
+      setShowConfirmation(false);
+    }
+  }, [isOpen]);
+
+  // Handle price controls step - auto-skip for now
+  useEffect(() => {
+    if (currentStep === 'priceControls') {
+      goToNextStep();
+    }
+  }, [currentStep]);
+
+  // Handle step navigation
+  const goToNextStep = () => {
+    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'executions', 'priceControls', 'review'];
+    const currentIndex = stepOrder.indexOf(currentStep);
+    if (currentIndex < stepOrder.length - 1) {
+      setCurrentStep(stepOrder[currentIndex + 1]);
+    }
+  };
+
+  const goToPreviousStep = () => {
+    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'executions', 'priceControls', 'review'];
+    const currentIndex = stepOrder.indexOf(currentStep);
+    if (currentIndex > 0) {
+      let previousIndex = currentIndex - 1;
+      // Skip priceControls step when going backwards since it's auto-skipped
+      if (stepOrder[previousIndex] === 'priceControls') {
+        previousIndex = Math.max(0, previousIndex - 1);
+      }
+      setCurrentStep(stepOrder[previousIndex]);
+    } else {
+      onClose();
+    }
+  };
+
+  // Step validation
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 'type':
+        return dcaPlan.plan_type !== undefined;
+      case 'amount':
+        return amountInput && parseFloat(amountInput) > 0;
+      case 'frequency':
+        return dcaPlan.frequency !== undefined;
+      case 'executions':
+        return true; // Optional step
+      case 'priceControls':
+        return true; // Optional step
+      case 'review':
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  // Handle amount input confirmation
+  const handleAmountConfirm = (value: string) => {
+    const numValue = parseFloat(value);
+    const maxValue = getMaxValue();
+    
+    if (numValue < 0 || (maxValue !== undefined && numValue > maxValue)) {
+      alert('Please enter a valid amount that is within your available balance and not negative.');
+      return;
+    }
+
+    setAmountInput(value);
+    goToNextStep();
+  };
+
+  // Handle executions input confirmation
+  const handleExecutionsConfirm = (value: string) => {
+    setExecutionsInput(value);
+    goToNextStep();
+  };
+
+  // Handle final submission
+  const handleCreatePlan = async () => {
+    if (!isStepValid()) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const finalPlan: DCAPlanData = {
+        plan_type: dcaPlan.plan_type!,
+        frequency: dcaPlan.frequency!,
+        amount_per_execution: parseFloat(amountInput),
+        remaining_executions: executionsInput ? parseInt(executionsInput) : undefined,
+        max_price: maxPriceInput ? parseFloat(maxPriceInput) : undefined,
+        min_price: minPriceInput ? parseFloat(minPriceInput) : undefined,
+      };
+
+      // Call API to create DCA plan
+      console.log('🔄 Creating DCA plan:', finalPlan);
+      
+      // TODO: Add actual API call here
+      // const result = await createDCAPlan(finalPlan);
+      console.log('✅ DCA plan created successfully:', finalPlan);
+      
+      if (onComplete) {
+        onComplete(finalPlan);
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('❌ Failed to create DCA plan:', error);
+      alert('Failed to create DCA plan. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Get max values based on plan type and balance
+  const getMaxValue = () => {
+    if (!balanceData) return undefined;
+    
+    if (dcaPlan.plan_type === 'DCA_BUY') {
+      return balanceData.available_inr;
+    } else {
+      return balanceData.available_btc / 100000000; // Convert satoshis to BTC
+    }
+  };
+
+  // Get max button text
+  const getMaxButtonText = () => {
+    if (!balanceData) return 'Max';
+    
+    if (dcaPlan.plan_type === 'DCA_BUY') {
+      return `Max ${formatRupeesForDisplay(balanceData.available_inr)}`;
+    } else {
+      return `Max ${formatBitcoinForDisplay(balanceData.available_btc)}`;
+    }
+  };
+
+  // Get step titles
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 'type': return 'Create DCA Plan';
+      case 'amount': return 'Set Amount';
+      case 'frequency': return 'Set Frequency';
+      case 'executions': return 'Set Duration';
+      case 'priceControls': return 'Price Controls';
+      case 'review': return 'Review Plan';
+      default: return 'Create DCA Plan';
+    }
+  };
+
+  // Format frequency for display
+  const formatFrequency = (frequency: string) => {
+    switch (frequency) {
+      case 'HOURLY': return 'Hourly';
+      case 'DAILY': return 'Daily';
+      case 'WEEKLY': return 'Weekly';
+      case 'MONTHLY': return 'Monthly';
+      default: return frequency;
+    }
+  };
+
+  // Get confirmation details
+  const getConfirmationDetails = () => {
+    if (!amountInput) return [];
+    
+    const totalPerDay = dcaPlan.frequency === 'HOURLY' ? parseFloat(amountInput) * 24 :
+                       dcaPlan.frequency === 'DAILY' ? parseFloat(amountInput) :
+                       dcaPlan.frequency === 'WEEKLY' ? parseFloat(amountInput) / 7 :
+                       parseFloat(amountInput) / 30;
+
+    const details = [
+      {
+        label: 'Plan Type',
+        value: dcaPlan.plan_type === 'DCA_BUY' ? 'Buy Bitcoin' : 'Sell Bitcoin',
+        highlight: false
+      },
+      {
+        label: 'Amount per execution',
+        value: <AnimateINR value={parseFloat(amountInput)} className="text-sm font-normal text-white" />,
+        highlight: true
+      },
+      {
+        label: 'Frequency',
+        value: formatFrequency(dcaPlan.frequency!),
+        highlight: false
+      },
+      {
+        label: 'Executions',
+        value: executionsInput || 'Unlimited',
+        highlight: false
+      }
+    ];
+    
+    if (maxPriceInput) {
+      details.push({
+        label: 'Max Price',
+        value: <AnimateINR value={parseFloat(maxPriceInput)} className="text-sm font-normal text-white" />,
+        highlight: true
+      });
+    }
+    
+    if (minPriceInput) {
+      details.push({
+        label: 'Min Price',
+        value: <AnimateINR value={parseFloat(minPriceInput)} className="text-sm font-normal text-white" />,
+        highlight: true
+      });
+    }
+    
+    details.push({
+      label: 'Avg. daily investment',
+      value: <AnimateINR value={totalPerDay} className="text-sm font-normal text-brand" />,
+      highlight: true
+    });
+    
+    return details;
+  };
+
+  // Render different step modals
+  if (currentStep === 'type') {
+    return (
+      <OptionsModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Choose Plan Type"
+        type="custom"
+      >
+        <div className="space-y-3">
+          <div 
+            className={`bg-gray-900 hover:bg-gray-800 border ${dcaPlan.plan_type === 'DCA_BUY' ? 'border-brand' : 'border-gray-700'} rounded-lg p-4 cursor-pointer transition-colors`}
+            onClick={() => {
+              setDcaPlan({ ...dcaPlan, plan_type: 'DCA_BUY' });
+              goToNextStep();
+            }}
+            data-clickable="true"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-white text-sm font-medium">Buy Bitcoin Regularly</h3>
+                <p className="text-gray-400 text-xs mt-1">Dollar-cost average into Bitcoin</p>
+              </div>
+            </div>
+          </div>
+          
+          <div 
+            className={`bg-gray-900 hover:bg-gray-800 border ${dcaPlan.plan_type === 'DCA_SELL' ? 'border-brand' : 'border-gray-700'} rounded-lg p-4 cursor-pointer transition-colors`}
+            onClick={() => {
+              setDcaPlan({ ...dcaPlan, plan_type: 'DCA_SELL' });
+              goToNextStep();
+            }}
+            data-clickable="true"
+          >
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <DollarSign className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-white text-sm font-medium">Sell Bitcoin Regularly</h3>
+                <p className="text-gray-400 text-xs mt-1">Take profits systematically</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </OptionsModal>
+    );
+  }
+
+  if (currentStep === 'amount') {
+    return (
+      <SingleInputModal
+        isOpen={isOpen}
+        onClose={goToPreviousStep}
+        title={getStepTitle()}
+        type={dcaPlan.plan_type === 'DCA_BUY' ? 'inr' : 'btc'}
+        confirmText="Next"
+        onConfirm={handleAmountConfirm}
+        sectionTitle={`${dcaPlan.plan_type === 'DCA_BUY' ? 'Buy' : 'Sell'} Amount`}
+        sectionDetail={`Amount to ${dcaPlan.plan_type === 'DCA_BUY' ? 'invest' : 'sell'} each time the plan executes`}
+        maxValue={getMaxValue()}
+        maxButtonText={getMaxButtonText()}
+        initialValue={amountInput}
+      />
+    );
+  }
+
+  if (currentStep === 'frequency') {
+    const frequencies = [
+      { value: 'HOURLY', label: 'Every Hour', icon: Clock, description: 'High frequency, small amounts' },
+      { value: 'DAILY', label: 'Daily', icon: Calendar, description: 'Once per day' },
+      { value: 'WEEKLY', label: 'Weekly', icon: Repeat, description: 'Once per week' },
+      { value: 'MONTHLY', label: 'Monthly', icon: Target, description: 'Once per month' },
+    ] as const;
+
+    return (
+      <OptionsModal
+        isOpen={isOpen}
+        onClose={goToPreviousStep}
+        title="Execution Frequency"
+        type="custom"
+      >
+        <div className="space-y-3">
+          {frequencies.map((freq) => {
+            const IconComponent = freq.icon;
+            return (
+              <div 
+                key={freq.value}
+                className={`bg-gray-900 hover:bg-gray-800 border ${dcaPlan.frequency === freq.value ? 'border-brand' : 'border-gray-700'} rounded-lg p-4 cursor-pointer transition-colors`}
+                onClick={() => {
+                  setDcaPlan({ ...dcaPlan, frequency: freq.value });
+                  goToNextStep();
+                }}
+                data-clickable="true"
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-gray-800 rounded-lg">
+                    <IconComponent className="w-5 h-5 text-brand" />
+                  </div>
+                  <div>
+                    <h3 className="text-white text-sm font-medium">{freq.label}</h3>
+                    <p className="text-gray-400 text-xs mt-1">{freq.description}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </OptionsModal>
+    );
+  }
+
+  if (currentStep === 'executions') {
+    return (
+      <SingleInputModal
+        isOpen={isOpen}
+        onClose={goToPreviousStep}
+        title={getStepTitle()}
+        type="number"
+        confirmText="Next"
+        onConfirm={handleExecutionsConfirm}
+        sectionTitle="Number of Executions"
+        sectionDetail="How many times should we execute this plan? Leave blank for unlimited executions."
+        initialValue={executionsInput}
+        showInfinityPlaceholder={true}
+      />
+    );
+  }
+
+  if (currentStep === 'priceControls') {
+    // This would be a custom modal for price controls - for now, skip to review
+    // The useEffect above handles auto-skipping this step
+    return null;
+  }
+
+  if (currentStep === 'review') {
+    return (
+      <ConfirmationModal
+        isOpen={isOpen && !showConfirmation}
+        onClose={goToPreviousStep}
+        title="Review Your DCA Plan"
+        amount={dcaPlan.plan_type === 'DCA_BUY' ? (
+          <AnimateINR value={parseFloat(amountInput)} className="justify-center text-white text-5xl font-normal" />
+        ) : (
+          <AnimateBTC value={parseFloat(amountInput) * 100000000} className="justify-center text-white text-5xl font-semibold" />
+        )}
+        amountType={dcaPlan.plan_type === 'DCA_BUY' ? 'inr' : 'btc'}
+        subAmount={`${formatFrequency(dcaPlan.frequency!)} ${dcaPlan.plan_type === 'DCA_BUY' ? 'investment' : 'sale'}`}
+        details={getConfirmationDetails()}
+        confirmText="Create Plan"
+        onConfirm={handleCreatePlan}
+        isLoading={isLoading}
+        mode="confirm"
+      />
+    );
+  }
+
+  return null;
+};
+
+export default DCAModal;
+

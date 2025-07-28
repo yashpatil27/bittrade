@@ -1,16 +1,47 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '../components/Header';
 import Card from '../components/Card';
+import DCAModal from '../components/DCAModal';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
+import { getUserBalance } from '../utils/tradingApi';
+
+interface BalanceData {
+  available_inr: number;
+  available_btc: number;
+  reserved_inr: number;
+  reserved_btc: number;
+  collateral_btc: number;
+  borrowed_inr: number;
+  interest_accrued: number;
+}
 
 const DCA: React.FC = () => {
+  const [isDCAModalOpen, setIsDCAModalOpen] = useState(false);
+  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
+  const [currentBitcoinPrice, setCurrentBitcoinPrice] = useState(0);
+
   const handleProfileClick = () => {
     console.log('Profile clicked');
   };
 
-  const handleStartDCA = () => {
-    console.log('Start DCA clicked');
-    // Add your DCA start logic here
+  const handleStartDCA = async () => {
+    // Load balance data when opening DCA modal
+    try {
+      const balance = await getUserBalance();
+      setBalanceData(balance);
+    } catch (error) {
+      console.error('Failed to load balance:', error);
+    }
+    setIsDCAModalOpen(true);
+  };
+
+  const handleCloseDCAModal = () => {
+    setIsDCAModalOpen(false);
+  };
+
+  const handleDCAComplete = (dcaPlan: any) => {
+    console.log('DCA Plan created:', dcaPlan);
+    // Here you would typically update the UI, show success message, etc.
   };
 
   const benefits = [
@@ -148,6 +179,15 @@ const DCA: React.FC = () => {
 
         </div>
       </div>
+      
+      {/* DCA Modal */}
+      <DCAModal 
+        isOpen={isDCAModalOpen} 
+        onClose={handleCloseDCAModal}
+        balanceData={balanceData}
+        currentBitcoinPrice={currentBitcoinPrice}
+        onComplete={handleDCAComplete}
+      />
     </div>
   );
 };

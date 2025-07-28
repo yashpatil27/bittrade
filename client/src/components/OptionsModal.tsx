@@ -202,9 +202,10 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl"
+        className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col"
         style={{
-          height: '45vh',
+          maxHeight: '70vh',
+          minHeight: '40vh',
           transform: `translateY(${isClosing ? '100%' : isAnimating ? `${dragOffset}px` : '100%'})`,
           transition: isDragging ? 'none' : (isAnimating || isClosing) ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none',
           touchAction: 'none'
@@ -228,7 +229,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 px-6">
+        <div className="flex-1 px-6 pb-8 overflow-y-auto">
           {type === 'notifications' ? renderNotifications() : children}
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, SlidersVertical } from 'lucide-react';
+import { X, SlidersVertical, Infinity } from 'lucide-react';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -9,7 +9,7 @@ interface SingleInputModalProps {
   title: string;
   confirmText: string;
   onConfirm: (value: string) => void;
-  type: 'inr' | 'btc';
+  type: 'inr' | 'btc' | 'number';
   sectionTitle?: string;
   sectionAmount?: string | React.ReactNode;
   maxValue?: number;
@@ -21,6 +21,7 @@ interface SingleInputModalProps {
   initialValue?: string;
   showSettingsIcon?: boolean;
   onSettingsClick?: () => void;
+  showInfinityPlaceholder?: boolean;
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -40,7 +41,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   tabSwitcher,
   initialValue = '',
   showSettingsIcon = false,
-  onSettingsClick
+  onSettingsClick,
+  showInfinityPlaceholder = false
 }) => {
   const [value, setValue] = useState('');
   const [dragStartY, setDragStartY] = useState(0);
@@ -250,7 +252,13 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   };
 
   const handleConfirm = () => {
-    if (!value || isLoading) return;
+    if (isLoading) return;
+    // For number type with infinity placeholder, allow empty values
+    if (type === 'number' && showInfinityPlaceholder) {
+      onConfirm(value);
+      return;
+    }
+    if (!value) return;
     onConfirm(value);
   };
 
@@ -284,13 +292,18 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   const formatDisplayValue = (val: string) => {
     if (type === 'btc') {
       return formatBitcoinForInput(val);
+    } else if (type === 'number') {
+      return val || (showInfinityPlaceholder ? '' : '0');
     } else {
       const numVal = parseFloat(val) || 0;
       return formatRupeesForDisplay(numVal);
     }
   };
 
-  const isConfirmDisabled = !value || isLoading || parseFloat(value) <= 0;
+  const isConfirmDisabled = isLoading || (
+    type === 'number' && showInfinityPlaceholder ? false : 
+    (!value || parseFloat(value) <= 0)
+  );
 
   if (!isOpen) return null;
 
@@ -350,9 +363,15 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             <div className="text-center w-full">
               {/* Input Display */}
               <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="text-white text-5xl font-normal">
-                  {formatDisplayValue(value)}
-                </span>
+                {!value && showInfinityPlaceholder ? (
+                  <div className="flex items-center justify-center">
+                    <Infinity className="w-16 h-16 text-gray-400" />
+                  </div>
+                ) : (
+                  <span className="text-white text-5xl font-normal">
+                    {formatDisplayValue(value)}
+                  </span>
+                )}
               </div>
               
             {/* Max Button */}
@@ -402,7 +421,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           {/* Keypad */}
           <div className="mb-3">
             <div className="grid grid-cols-3 gap-1">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', type === 'btc' ? '.' : '', '0', 'backspace'].map((key, index) => (
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', (type === 'btc' || type === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
                 key === '' ? (
                   <div key={`empty-${index}`} className="h-16" />
                 ) : (
