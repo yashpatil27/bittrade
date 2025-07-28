@@ -791,6 +791,40 @@ global.broadcastToClients = broadcastToClients;
 global.sendUserBalanceUpdate = sendUserBalanceUpdate;
 global.sendUserTransactionUpdate = sendUserTransactionUpdate;
 
+// Function to get local network IP address
+function getLocalNetworkIP() {
+  const os = require('os');
+  const networkInterfaces = os.networkInterfaces();
+  
+  // Priority order for interface types
+  const interfacePriority = ['en0', 'eth0', 'wlan0', 'Wi-Fi', 'Ethernet'];
+  
+  // First, try priority interfaces
+  for (const interfaceName of interfacePriority) {
+    const networkInterface = networkInterfaces[interfaceName];
+    if (networkInterface) {
+      for (const net of networkInterface) {
+        // Skip internal (loopback) and non-IPv4 addresses
+        if (net.family === 'IPv4' && !net.internal) {
+          return net.address;
+        }
+      }
+    }
+  }
+  
+  // Fallback: search all interfaces for IPv4 non-internal addresses
+  for (const interfaceName of Object.keys(networkInterfaces)) {
+    const networkInterface = networkInterfaces[interfaceName];
+    for (const net of networkInterface) {
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  
+  return 'localhost'; // Fallback if no network IP found
+}
+
 // Start server
 async function startServer() {
   await initDB();
@@ -806,13 +840,16 @@ async function startServer() {
   // Cache existing chart data from database to Redis for instant access
   await dataService.cacheExistingChartData();
   
+  // Get dynamic network IP
+  const networkIP = getLocalNetworkIP();
+  
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 BitTrade API Server running on port ${PORT}`);
     console.log(`📱 Server accessible at:`);
-    console.log(`   - http://localhost:${PORT}`);
-    console.log(`   - http://0.0.0.0:${PORT}`);
-    console.log(`   - http://192.168.1.164:${PORT}`);
-    console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`[SERVER]    - http://localhost:${PORT}`);
+    console.log(`[SERVER]    - http://0.0.0.0:${PORT}`);
+    console.log(`[SERVER]    - http://${networkIP}:${PORT}`);
+    console.log(`[SERVER] 🏥 Health check: http://localhost:${PORT}/api/health`);
     console.log(`🌐 WebSocket server ready for real-time data broadcasting`);
     console.log(`📡 WebSocket 'btc_price_update' broadcasts enabled`);
     console.log(`📡 Connected clients: ${io.engine.clientsCount}`);
