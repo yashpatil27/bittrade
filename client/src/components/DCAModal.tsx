@@ -35,7 +35,7 @@ interface DCAPlanData {
   min_price?: number; // Optional min price per BTC
 }
 
-type DCAStep = 'type' | 'amount' | 'frequency' | 'optionalSettings' | 'executions' | 'maxPrice' | 'minPrice' | 'review';
+type DCAStep = 'type' | 'amount' | 'frequency' | 'optionalSettings' | 'executions' | 'maxPrice' | 'minPrice' | 'review' | 'priceControls';
 
 const DCAModal: React.FC<DCAModalProps> = ({
   isOpen,
