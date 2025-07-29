@@ -47,6 +47,29 @@ export interface MarketData {
   lastUpdated: string;
 }
 
+// DCA Plan types
+export interface DCAPlan {
+  id: number;
+  plan_type: 'DCA_BUY' | 'DCA_SELL';
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
+  frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  amount_per_execution: number;
+  next_execution_at: string;
+  total_executions: number;
+  remaining_executions?: number;
+  max_price?: number;
+  min_price?: number;
+  created_at: string;
+  completed_at?: string;
+  recent_executions: any[];
+  performance: {
+    total_executed: number;
+    total_invested: number;
+    total_btc: number;
+    avg_price: number;
+  };
+}
+
 // Transaction types
 export interface Transaction {
   id: string;

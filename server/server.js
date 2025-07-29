@@ -474,6 +474,67 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
   }
 });
 
+// Get user's DCA plans
+app.get('/api/dca-plans', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const [plans] = await db.execute(
+      `SELECT id, plan_type, status, frequency, amount_per_execution, next_execution_at, 
+              total_executions, remaining_executions, max_price, min_price, created_at, completed_at
+       FROM active_plans 
+       WHERE user_id = ? 
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+
+    // Get execution history for each plan
+    const plansWithHistory = await Promise.all(plans.map(async (plan) => {
+      const [executions] = await db.execute(
+        `SELECT id, btc_amount, inr_amount, execution_price, executed_at, status
+         FROM transactions 
+         WHERE user_id = ? AND parent_id = ? AND type = ? 
+         ORDER BY executed_at DESC 
+         LIMIT 10`,
+        [userId, plan.id, plan.plan_type]
+      );
+
+      // Calculate performance metrics
+      const [metrics] = await db.execute(
+        `SELECT 
+           COUNT(*) as total_executed,
+           SUM(inr_amount) as total_invested,
+           SUM(btc_amount) as total_btc,
+           AVG(execution_price) as avg_price
+         FROM transactions 
+         WHERE user_id = ? AND parent_id = ? AND type = ? AND status = 'EXECUTED'`,
+        [userId, plan.id, plan.plan_type]
+      );
+
+      return {
+        ...plan,
+        recent_executions: executions,
+        performance: metrics[0] || {
+          total_executed: 0,
+          total_invested: 0,
+          total_btc: 0,
+          avg_price: 0
+        }
+      };
+    }));
+
+    res.json({
+      plans: plansWithHistory,
+      total_plans: plans.length,
+      active_plans: plans.filter(p => p.status === 'ACTIVE').length,
+      paused_plans: plans.filter(p => p.status === 'PAUSED').length
+    });
+  } catch (error) {
+    console.error('Error fetching DCA plans:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Create a new DCA plan
 app.post('/api/dca-plans', authenticateToken, async (req, res) => {
   const userId = req.user.id;
@@ -489,26 +550,63 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
     const safeMaxPrice = max_price !== undefined ? max_price : null;
     const safeMinPrice = min_price !== undefined ? min_price : null;
     
-    console.log('📝 Creating DCA plan:', {
-      userId,
-      plan_type,
-      frequency,
-      amount_per_execution,
-      remaining_executions: safeRemainingExecutions,
-      max_price: safeMaxPrice,
-      min_price: safeMinPrice
-    });
-    
     const [result] = await db.execute(
       `INSERT INTO active_plans (user_id, plan_type, status, frequency, amount_per_execution, next_execution_at, remaining_executions, max_price, min_price, created_at)
        VALUES (?, ?, 'ACTIVE', ?, ?, NOW(), ?, ?, ?, NOW())`,
       [userId, plan_type, frequency, amount_per_execution, safeRemainingExecutions, safeMaxPrice, safeMinPrice]
     );
-
-    console.log(`✅ DCA plan created successfully: ID ${result.insertId} for user ${userId}`);
     res.status(201).json({ planId: result.insertId, message: 'DCA plan created successfully' });
   } catch (error) {
     console.error('Error creating DCA plan:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update DCA plan status (pause/resume)
+app.patch('/api/dca-plans/:planId/status', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { planId } = req.params;
+  const { status } = req.body;
+
+  if (!['ACTIVE', 'PAUSED'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid status. Must be ACTIVE or PAUSED' });
+  }
+
+  try {
+    const [result] = await db.execute(
+      'UPDATE active_plans SET status = ? WHERE id = ? AND user_id = ?',
+      [status, planId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Plan not found or unauthorized' });
+    }
+
+    res.json({ message: `Plan ${status.toLowerCase()} successfully` });
+  } catch (error) {
+    console.error('Error updating DCA plan status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete DCA plan
+app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { planId } = req.params;
+
+  try {
+    const [result] = await db.execute(
+      'UPDATE active_plans SET status = "CANCELLED" WHERE id = ? AND user_id = ?',
+      [planId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Plan not found or unauthorized' });
+    }
+
+    res.json({ message: 'Plan cancelled successfully' });
+  } catch (error) {
+    console.error('Error cancelling DCA plan:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

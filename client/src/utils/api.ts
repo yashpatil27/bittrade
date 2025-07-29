@@ -78,10 +78,6 @@ export const createDCAPlan = async (planData: {
 
   const apiUrl = getApiUrl();
   
-  console.log('Creating DCA Plan:', planData);
-  console.log('Using token:', token ? 'Token found' : 'No token');
-  console.log('API URL:', `${apiUrl}/api/dca-plans`);
-  
   const response = await fetch(`${apiUrl}/api/dca-plans`, {
     method: 'POST',
     headers: {
@@ -90,6 +86,77 @@ export const createDCAPlan = async (planData: {
     },
     body: JSON.stringify(planData),
   });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Get user's DCA plans
+export const getDCAPlans = async () => {
+  const token = localStorage.getItem('bittrade_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/dca-plans`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Update DCA plan status (pause/resume)
+export const updateDCAPlanStatus = async (planId: number, status: 'ACTIVE' | 'PAUSED') => {
+  const token = localStorage.getItem('bittrade_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/dca-plans/${planId}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Delete DCA plan
+export const deleteDCAPlan = async (planId: number) => {
+  const token = localStorage.getItem('bittrade_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/dca-plans/${planId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
