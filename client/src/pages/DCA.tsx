@@ -3,7 +3,7 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import DCAModal from '../components/DCAModal';
 import MarketRate from '../components/MarketRate';
-import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
+import { TrendingUp, Calendar, Repeat, Target, ArrowRight, Play, Pause, Trash2, Clock, DollarSign, BarChart3, Plus } from 'lucide-react';
 import { getUserBalance } from '../utils/tradingApi';
 import { getDCAPlans } from '../utils/api';
 import { DCAPlan } from '../types';
@@ -134,9 +134,101 @@ const DCA: React.FC = () => {
         />
         {/* Main Content */}
         <div className="px-4 py-3 space-y-3">
-          {(dcaPlans?.total_plans || 0) > 0 ? (
-            <div className="text-center py-20">
-              <p className="text-gray-500 text-lg">DCA Plans Management Coming Soon</p>
+          {(dcaPlans?.total_plans || 0) > 0 && dcaPlans?.plans && dcaPlans.plans.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white px-1">
+                  Active DCA Plans
+                </h3>
+                <button 
+                  onClick={handleStartDCA} 
+                  className="btn-strike-primary rounded-xl flex items-center space-x-2 px-4"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Plan</span>
+                </button>
+              </div>
+              
+              {dcaPlans?.plans.map((plan, index) => (
+                <Card key={index} className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        {plan.plan_type === 'DCA_BUY' ? (
+                          <div className="p-2 bg-green-500/10 rounded-lg">
+                            <DollarSign className="text-green-400 w-5 h-5" />
+                          </div>
+                        ) : (
+                          <div className="p-2 bg-red-500/10 rounded-lg">
+                            <TrendingUp className="text-red-400 w-5 h-5" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium">
+                          {plan.plan_type === 'DCA_BUY' ? 'DCA Buy Plan' : 'DCA Sell Plan'}
+                        </h4>
+                        <p className="text-gray-400 text-sm">
+                          ₹{plan.amount_per_execution.toLocaleString()} • {plan.frequency.toLowerCase()}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        plan.status === 'ACTIVE' 
+                          ? 'bg-green-500/10 text-green-400' 
+                          : plan.status === 'PAUSED' 
+                          ? 'bg-yellow-500/10 text-yellow-400'
+                          : 'bg-gray-500/10 text-gray-400'
+                      }`}>
+                        {plan.status.toLowerCase()}
+                      </div>
+                      
+                      <div className="flex space-x-1">
+                        {plan.status === 'ACTIVE' ? (
+                          <button className="bg-gray-800 hover:bg-gray-700 text-white rounded-full p-1.5 transition-colors">
+                            <Pause className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <button className="bg-gray-800 hover:bg-gray-700 text-white rounded-full p-1.5 transition-colors">
+                            <Play className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button className="bg-red-800 hover:bg-red-700 text-white rounded-full p-1.5 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Clock className="text-gray-400 w-4 h-4" />
+                      <span className="text-gray-400">Next: {new Date(plan.next_execution_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <BarChart3 className="text-gray-400 w-4 h-4" />
+                      <span className="text-gray-400">
+                        {plan.remaining_executions || plan.total_executions} executions left
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {plan.performance && plan.performance.total_invested != null && plan.performance.avg_price != null && (
+                    <div className="mt-3 pt-3 border-t border-gray-800">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-400">Total Invested</span>
+                        <span className="text-white font-medium">₹{plan.performance.total_invested.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <span className="text-gray-400">Avg Price</span>
+                        <span className="text-white font-medium">₹{plan.performance.avg_price.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              ))}
             </div>
           ) : (
             <>
