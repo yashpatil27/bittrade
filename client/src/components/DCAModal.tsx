@@ -4,6 +4,7 @@ import ConfirmationModal from './ConfirmationModal';
 import OptionsModal from './OptionsModal';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
+import { createDCAPlan } from '../utils/api';
 import { TrendingUp, DollarSign, Calendar, Repeat, Target, Clock } from 'lucide-react';
 
 interface BalanceData {
@@ -218,12 +219,9 @@ const DCAModal: React.FC<DCAModalProps> = ({
         min_price: minPriceInput ? parseFloat(minPriceInput) : undefined,
       };
 
-      // Call API to create DCA plan
-      console.log('🔄 Creating DCA plan:', finalPlan);
-      
-      // TODO: Add actual API call here
-      // const result = await createDCAPlan(finalPlan);
-      console.log('✅ DCA plan created successfully:', finalPlan);
+// Call API to create DCA plan
+      const result = await createDCAPlan(finalPlan);
+      console.log('✅ DCA plan created successfully, ID:', result.planId);
       
       if (onComplete) {
         onComplete(finalPlan);

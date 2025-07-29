@@ -474,6 +474,45 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
   }
 });
 
+// Create a new DCA plan
+app.post('/api/dca-plans', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { plan_type, frequency, amount_per_execution, remaining_executions, max_price, min_price } = req.body;
+
+  if (!['DCA_BUY', 'DCA_SELL'].includes(plan_type) || !['HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY'].includes(frequency)) {
+    return res.status(400).json({ error: 'Invalid plan type or frequency' });
+  }
+
+  try {
+    // Convert undefined values to null for MySQL
+    const safeRemainingExecutions = remaining_executions !== undefined ? remaining_executions : null;
+    const safeMaxPrice = max_price !== undefined ? max_price : null;
+    const safeMinPrice = min_price !== undefined ? min_price : null;
+    
+    console.log('📝 Creating DCA plan:', {
+      userId,
+      plan_type,
+      frequency,
+      amount_per_execution,
+      remaining_executions: safeRemainingExecutions,
+      max_price: safeMaxPrice,
+      min_price: safeMinPrice
+    });
+    
+    const [result] = await db.execute(
+      `INSERT INTO active_plans (user_id, plan_type, status, frequency, amount_per_execution, next_execution_at, remaining_executions, max_price, min_price, created_at)
+       VALUES (?, ?, 'ACTIVE', ?, ?, NOW(), ?, ?, ?, NOW())`,
+      [userId, plan_type, frequency, amount_per_execution, safeRemainingExecutions, safeMaxPrice, safeMinPrice]
+    );
+
+    console.log(`✅ DCA plan created successfully: ID ${result.insertId} for user ${userId}`);
+    res.status(201).json({ planId: result.insertId, message: 'DCA plan created successfully' });
+  } catch (error) {
+    console.error('Error creating DCA plan:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get user balance (real data with Redis caching)
 app.get('/api/balance', authenticateToken, async (req, res) => {
   try {

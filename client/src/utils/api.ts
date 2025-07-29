@@ -24,6 +24,9 @@ export const API_CONFIG = {
     BALANCE: `${API_BASE_URL}/api/balance`,
     PORTFOLIO: `${API_BASE_URL}/api/portfolio`,
     
+    // DCA Plans
+    DCA_PLANS: `${API_BASE_URL}/api/dca-plans`,
+    
     // System
     HEALTH: `${API_BASE_URL}/api/health`,
   }
@@ -55,6 +58,44 @@ export const getWebSocketUrl = () => {
   }
   
   return WS_BASE_URL;
+};
+
+// API utility functions
+
+// DCA Plan creation function
+export const createDCAPlan = async (planData: {
+  plan_type: 'DCA_BUY' | 'DCA_SELL';
+  frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
+  amount_per_execution: number;
+  remaining_executions?: number;
+  max_price?: number;
+  min_price?: number;
+}) => {
+  const token = localStorage.getItem('bittrade_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const apiUrl = getApiUrl();
+  
+  console.log('Creating DCA Plan:', planData);
+  console.log('Using token:', token ? 'Token found' : 'No token');
+  console.log('API URL:', `${apiUrl}/api/dca-plans`);
+  
+  const response = await fetch(`${apiUrl}/api/dca-plans`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify(planData),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
 };
 
 export default API_CONFIG;
