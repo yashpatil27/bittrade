@@ -3,7 +3,7 @@ import Header from '../components/Header';
 import Card from '../components/Card';
 import DCAModal from '../components/DCAModal';
 import MarketRate from '../components/MarketRate';
-import { TrendingUp, Calendar, Repeat, Target, ArrowRight, Play, Pause, Trash2, Clock, DollarSign, BarChart3, Plus } from 'lucide-react';
+import { TrendingUp, Calendar, Repeat, Target, ArrowRight, Play, Pause, Trash2, Clock, DollarSign, BarChart3, Plus, Bitcoin } from 'lucide-react';
 import { getUserBalance } from '../utils/tradingApi';
 import { getDCAPlans } from '../utils/api';
 import { DCAPlan } from '../types';
@@ -91,6 +91,57 @@ const DCA: React.FC = () => {
     setBalanceData(newBalanceData);
   };
 
+  const handlePlanClick = (plan: DCAPlan) => {
+    console.log('DCA Plan clicked:', plan);
+    // TODO: Add plan details modal or navigation
+  };
+
+  const formatTimeUntilNext = (nextExecutionAt: string): string => {
+    const now = new Date();
+    const nextExecution = new Date(nextExecutionAt);
+    const diffMs = nextExecution.getTime() - now.getTime();
+    
+    // If in the past, return "Soon"
+    if (diffMs <= 0) {
+      return 'Soon';
+    }
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMinutes < 60) {
+      return `in ${diffMinutes} min${diffMinutes === 1 ? '' : 's'}`;
+    } else if (diffHours < 24) {
+      return `in ${diffHours} hr${diffHours === 1 ? '' : 's'}`;
+    } else if (diffDays < 7) {
+      return `in ${diffDays} day${diffDays === 1 ? '' : 's'}`;
+    } else {
+      const diffWeeks = Math.floor(diffDays / 7);
+      return `in ${diffWeeks} week${diffWeeks === 1 ? '' : 's'}`;
+    }
+  };
+
+  const formatExecutionsRemaining = (plan: DCAPlan): string => {
+    // Based on the database structure:
+    // - remaining_executions is null for unlimited plans
+    // - total_executions is always set (but irrelevant for unlimited plans)
+    const remainingExecutions = plan.remaining_executions;
+    
+    // If remaining_executions is null/undefined, it's an unlimited plan
+    if (remainingExecutions == null) {
+      return 'Unlimited';
+    }
+    
+    // If remaining_executions is 0, the plan is completed (shouldn't show in active plans)
+    if (remainingExecutions <= 0) {
+      return 'Completed';
+    }
+    
+    // Otherwise, show the actual remaining executions
+    return `${remainingExecutions} execution${remainingExecutions === 1 ? '' : 's'} left`;
+  };
+
   const benefits = [
     {
       icon: TrendingUp,
@@ -150,17 +201,21 @@ const DCA: React.FC = () => {
               </div>
               
               {dcaPlans?.plans.map((plan, index) => (
-                <Card key={index} className="p-4">
+                <Card 
+                  key={index} 
+                  className="p-4 cursor-pointer hover:border-gray-600 transition-colors"
+                  onClick={() => handlePlanClick(plan)}
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <div className="flex-shrink-0">
                         {plan.plan_type === 'DCA_BUY' ? (
                           <div className="p-2 bg-green-500/10 rounded-lg">
-                            <DollarSign className="text-green-400 w-5 h-5" />
+                            <Bitcoin className="text-green-400 w-5 h-5" />
                           </div>
                         ) : (
                           <div className="p-2 bg-red-500/10 rounded-lg">
-                            <TrendingUp className="text-red-400 w-5 h-5" />
+                            <DollarSign className="text-red-400 w-5 h-5" />
                           </div>
                         )}
                       </div>
@@ -187,15 +242,36 @@ const DCA: React.FC = () => {
                       
                       <div className="flex space-x-1">
                         {plan.status === 'ACTIVE' ? (
-                          <button className="bg-gray-800 hover:bg-gray-700 text-white rounded-full p-1.5 transition-colors">
+                          <button 
+                            className="bg-gray-800 hover:bg-gray-700 text-white rounded-lg p-1.5 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('Pause plan:', plan.id);
+                              // TODO: Add pause functionality
+                            }}
+                          >
                             <Pause className="w-3.5 h-3.5" />
                           </button>
                         ) : (
-                          <button className="bg-gray-800 hover:bg-gray-700 text-white rounded-full p-1.5 transition-colors">
+                          <button 
+                            className="bg-gray-800 hover:bg-gray-700 text-white rounded-lg p-1.5 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              console.log('Resume plan:', plan.id);
+                              // TODO: Add resume functionality
+                            }}
+                          >
                             <Play className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        <button className="bg-red-800 hover:bg-red-700 text-white rounded-full p-1.5 transition-colors">
+                        <button 
+                          className="bg-red-800 hover:bg-red-700 text-white rounded-lg p-1.5 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log('Delete plan:', plan.id);
+                            // TODO: Add delete confirmation and functionality
+                          }}
+                        >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -205,12 +281,12 @@ const DCA: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex items-center space-x-2">
                       <Clock className="text-gray-400 w-4 h-4" />
-                      <span className="text-gray-400">Next: {new Date(plan.next_execution_at).toLocaleDateString()}</span>
+                      <span className="text-gray-400">Next: {formatTimeUntilNext(plan.next_execution_at)}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <BarChart3 className="text-gray-400 w-4 h-4" />
                       <span className="text-gray-400">
-                        {plan.remaining_executions || plan.total_executions} executions left
+                        {formatExecutionsRemaining(plan)}
                       </span>
                     </div>
                   </div>
