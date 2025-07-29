@@ -35,7 +35,7 @@ interface DCAPlanData {
   min_price?: number; // Optional min price per BTC
 }
 
-type DCAStep = 'type' | 'amount' | 'frequency' | 'executions' | 'priceControls' | 'review';
+type DCAStep = 'type' | 'amount' | 'frequency' | 'optionalSettings' | 'executions' | 'maxPrice' | 'minPrice' | 'review';
 
 const DCAModal: React.FC<DCAModalProps> = ({
   isOpen,
@@ -56,6 +56,10 @@ const DCAModal: React.FC<DCAModalProps> = ({
   const [minPriceInput, setMinPriceInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showOptionalSettingsModal, setShowOptionalSettingsModal] = useState(false);
+  const [showExecutionsModal, setShowExecutionsModal] = useState(false);
+  const [showMaxPriceModal, setShowMaxPriceModal] = useState(false);
+  const [showMinPriceModal, setShowMinPriceModal] = useState(false);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -68,19 +72,23 @@ const DCAModal: React.FC<DCAModalProps> = ({
       setMinPriceInput('');
       setIsLoading(false);
       setShowConfirmation(false);
+      setShowOptionalSettingsModal(false);
+      setShowExecutionsModal(false);
+      setShowMaxPriceModal(false);
+      setShowMinPriceModal(false);
     }
   }, [isOpen]);
 
-  // Handle price controls step - auto-skip for now
+  // Handle optional settings step - show the options modal
   useEffect(() => {
-    if (currentStep === 'priceControls') {
-      goToNextStep();
+    if (currentStep === 'optionalSettings') {
+      setShowOptionalSettingsModal(true);
     }
   }, [currentStep]);
 
   // Handle step navigation
   const goToNextStep = () => {
-    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'executions', 'priceControls', 'review'];
+    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'optionalSettings', 'review'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex < stepOrder.length - 1) {
       setCurrentStep(stepOrder[currentIndex + 1]);
@@ -88,15 +96,10 @@ const DCAModal: React.FC<DCAModalProps> = ({
   };
 
   const goToPreviousStep = () => {
-    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'executions', 'priceControls', 'review'];
+    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'optionalSettings', 'review'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
-      let previousIndex = currentIndex - 1;
-      // Skip priceControls step when going backwards since it's auto-skipped
-      if (stepOrder[previousIndex] === 'priceControls') {
-        previousIndex = Math.max(0, previousIndex - 1);
-      }
-      setCurrentStep(stepOrder[previousIndex]);
+      setCurrentStep(stepOrder[currentIndex - 1]);
     } else {
       onClose();
     }
@@ -136,10 +139,67 @@ const DCAModal: React.FC<DCAModalProps> = ({
     goToNextStep();
   };
 
+  // Handle optional settings handlers
+  const handleOptionalSettingsClose = () => {
+    setShowOptionalSettingsModal(false);
+    // Go back to frequency step
+    setCurrentStep('frequency');
+  };
+
+  const handleSetDuration = () => {
+    setShowOptionalSettingsModal(false);
+    setShowExecutionsModal(true);
+  };
+
+  const handleSetMaxPrice = () => {
+    setShowOptionalSettingsModal(false);
+    setShowMaxPriceModal(true);
+  };
+
+  const handleSetMinPrice = () => {
+    setShowOptionalSettingsModal(false);
+    setShowMinPriceModal(true);
+  };
+
+  const handleReviewPlan = () => {
+    setShowOptionalSettingsModal(false);
+    setCurrentStep('review');
+  };
+
   // Handle executions input confirmation
   const handleExecutionsConfirm = (value: string) => {
     setExecutionsInput(value);
-    goToNextStep();
+    setShowExecutionsModal(false);
+    setShowOptionalSettingsModal(true);
+  };
+
+  const handleExecutionsClose = () => {
+    setShowExecutionsModal(false);
+    setShowOptionalSettingsModal(true);
+  };
+
+  // Handle max price input confirmation
+  const handleMaxPriceConfirm = (value: string) => {
+    setMaxPriceInput(value);
+    setShowMaxPriceModal(false);
+    setShowOptionalSettingsModal(true);
+  };
+
+  const handleMaxPriceClose = () => {
+    setShowMaxPriceModal(false);
+    setShowOptionalSettingsModal(true);
+  };
+
+  // Handle min price input confirmation
+  const handleMinPriceConfirm = (value: string) => {
+    setMinPriceInput(value);
+    setShowMinPriceModal(false);
+    setShowOptionalSettingsModal(true);
+  };
+
+  const handleMinPriceClose = () => {
+    setShowMinPriceModal(false);
+    setShowOptionalSettingsModal(true);
   };
 
   // Handle final submission
@@ -507,6 +567,138 @@ const DCAModal: React.FC<DCAModalProps> = ({
         onConfirm={handleCreatePlan}
         isLoading={isLoading}
         mode="confirm"
+      />
+    );
+  }
+
+  // Render optional settings modal
+  if (showOptionalSettingsModal) {
+    return (
+      <OptionsModal
+        isOpen={showOptionalSettingsModal}
+        onClose={handleOptionalSettingsClose}
+        title="Optional Settings"
+        type="custom"
+      >
+        <div className="space-y-3">
+          {/* Set Duration Option */}
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleSetDuration}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Set Duration</h3>
+                <p className="text-gray-400 text-xs mt-1">Limit the number of executions</p>
+              </div>
+              {executionsInput && (
+                <div className="text-brand text-xs">{executionsInput} times</div>
+              )}
+            </div>
+          </div>
+          
+          {/* Set Max Price Option */}
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleSetMaxPrice}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Set Max Price</h3>
+                <p className="text-gray-400 text-xs mt-1">Stop buying when BTC price exceeds this limit</p>
+              </div>
+              {maxPriceInput && (
+                <div className="text-brand text-xs">₹{parseFloat(maxPriceInput).toLocaleString('en-IN')}</div>
+              )}
+            </div>
+          </div>
+          
+          {/* Set Min Price Option */}
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleSetMinPrice}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Set Min Price</h3>
+                <p className="text-gray-400 text-xs mt-1">Stop selling when BTC price falls below this limit</p>
+              </div>
+              {minPriceInput && (
+                <div className="text-brand text-xs">₹{parseFloat(minPriceInput).toLocaleString('en-IN')}</div>
+              )}
+            </div>
+          </div>
+          
+          {/* Review DCA Plan Option */}
+          <div 
+            className="bg-brand/10 hover:bg-brand/20 border border-brand rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleReviewPlan}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-brand text-sm font-medium">Review DCA Plan</h3>
+                <p className="text-gray-400 text-xs mt-1">Proceed to review and create your plan</p>
+              </div>
+              <div className="text-brand text-xs">→</div>
+            </div>
+          </div>
+        </div>
+      </OptionsModal>
+    );
+  }
+
+  // Render executions input modal
+  if (showExecutionsModal) {
+    return (
+      <SingleInputModal
+        isOpen={showExecutionsModal}
+        onClose={handleExecutionsClose}
+        title="Set Duration"
+        type="number"
+        confirmText="Set Duration"
+        onConfirm={handleExecutionsConfirm}
+        sectionTitle="Number of Executions"
+        sectionDetail="How many times should we execute this plan? Leave blank for unlimited executions."
+        initialValue={executionsInput}
+        showInfinityPlaceholder={true}
+      />
+    );
+  }
+
+  // Render max price input modal
+  if (showMaxPriceModal) {
+    return (
+      <SingleInputModal
+        isOpen={showMaxPriceModal}
+        onClose={handleMaxPriceClose}
+        title="Set Max Price"
+        type="inr"
+        confirmText="Set Max Price"
+        onConfirm={handleMaxPriceConfirm}
+        sectionTitle="Maximum Price Limit"
+        sectionDetail="The plan will pause when Bitcoin price exceeds this amount. This helps you avoid buying at high prices."
+        initialValue={maxPriceInput}
+      />
+    );
+  }
+
+  // Render min price input modal
+  if (showMinPriceModal) {
+    return (
+      <SingleInputModal
+        isOpen={showMinPriceModal}
+        onClose={handleMinPriceClose}
+        title="Set Min Price"
+        type="inr"
+        confirmText="Set Min Price"
+        onConfirm={handleMinPriceConfirm}
+        sectionTitle="Minimum Price Limit"
+        sectionDetail="The plan will pause when Bitcoin price falls below this amount. This helps you avoid selling at low prices."
+        initialValue={minPriceInput}
       />
     );
   }
