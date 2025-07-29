@@ -253,13 +253,17 @@ const DCAModal: React.FC<DCAModalProps> = ({
   const getConfirmationDetails = () => {
     if (!amountInput) return [];
     
-    const totalPerDay = dcaPlan.frequency === 'HOURLY' ? parseFloat(amountInput) * 24 :
-                       dcaPlan.frequency === 'DAILY' ? parseFloat(amountInput) :
-                       dcaPlan.frequency === 'WEEKLY' ? parseFloat(amountInput) / 7 :
-                       parseFloat(amountInput) / 30;
-
     const conversion = calculateConversion(amountInput);
     const rate = dcaPlan.plan_type === 'DCA_BUY' ? buyRate : sellRate;
+    
+    // Calculate daily average based on plan type
+    // For BUY plans: use INR amount (what user invests)
+    // For SELL plans: use INR amount (what user gets from selling)
+    const baseAmount = dcaPlan.plan_type === 'DCA_BUY' ? parseFloat(amountInput) : conversion.inrAmount;
+    const totalPerDay = dcaPlan.frequency === 'HOURLY' ? baseAmount * 24 :
+                       dcaPlan.frequency === 'DAILY' ? baseAmount :
+                       dcaPlan.frequency === 'WEEKLY' ? baseAmount / 7 :
+                       baseAmount / 30;
 
     const details = [
       {
@@ -332,7 +336,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
     }
     
     details.push({
-      label: 'Avg. daily investment',
+      label: dcaPlan.plan_type === 'DCA_BUY' ? 'Avg. daily investment' : 'Avg. daily sale',
       value: <AnimateINR value={totalPerDay} className="text-sm font-normal text-brand" />,
       highlight: true
     });
