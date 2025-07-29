@@ -421,7 +421,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           {/* Keypad */}
           <div className="mb-3">
             <div className="grid grid-cols-3 gap-1">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', (type === 'btc' || type === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', type === 'btc' ? '.' : (type === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
                 key === '' ? (
                   <div key={`empty-${index}`} className="h-16" />
                 ) : (
