@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Header from '../components/Header';
 import Card from '../components/Card';
 import DCAModal from '../components/DCAModal';
+import MarketRate from '../components/MarketRate';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
 import { getUserBalance } from '../utils/tradingApi';
 
@@ -19,6 +20,8 @@ const DCA: React.FC = () => {
   const [isDCAModalOpen, setIsDCAModalOpen] = useState(false);
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [currentBitcoinPrice, setCurrentBitcoinPrice] = useState(0);
+  const [buyRate, setBuyRate] = useState<number>(0);
+  const [sellRate, setSellRate] = useState<number>(0);
 
   const handleProfileClick = () => {
     console.log('Profile clicked');
@@ -42,6 +45,15 @@ const DCA: React.FC = () => {
   const handleDCAComplete = (dcaPlan: any) => {
     console.log('DCA Plan created:', dcaPlan);
     // Here you would typically update the UI, show success message, etc.
+  };
+
+  const handleRatesUpdate = (newBuyRate: number, newSellRate: number) => {
+    setBuyRate(newBuyRate);
+    setSellRate(newSellRate);
+  };
+
+  const handleBalanceUpdate = (newBalanceData: BalanceData | null) => {
+    setBalanceData(newBalanceData);
   };
 
   const benefits = [
@@ -77,6 +89,13 @@ const DCA: React.FC = () => {
         <Header 
           title="₿itTrade" 
           onProfileClick={handleProfileClick}
+        />
+        
+        {/* Hidden MarketRate component to get rates */}
+        <MarketRate 
+          className="hidden"
+          onRatesUpdate={handleRatesUpdate}
+          onBalanceUpdate={handleBalanceUpdate}
         />
         
         {/* Main Content */}
@@ -186,6 +205,8 @@ const DCA: React.FC = () => {
         onClose={handleCloseDCAModal}
         balanceData={balanceData}
         currentBitcoinPrice={currentBitcoinPrice}
+        buyRate={buyRate}
+        sellRate={sellRate}
         onComplete={handleDCAComplete}
       />
     </div>

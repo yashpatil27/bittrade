@@ -21,6 +21,8 @@ interface DCAModalProps {
   onClose: () => void;
   balanceData?: BalanceData | null;
   currentBitcoinPrice?: number;
+  buyRate?: number;
+  sellRate?: number;
   onComplete?: (dcaPlan: DCAPlanData) => void;
 }
 
@@ -40,6 +42,8 @@ const DCAModal: React.FC<DCAModalProps> = ({
   onClose,
   balanceData,
   currentBitcoinPrice = 0,
+  buyRate = 0,
+  sellRate = 0,
   onComplete,
 }) => {
   const [currentStep, setCurrentStep] = useState<DCAStep>('type');
@@ -220,6 +224,31 @@ const DCAModal: React.FC<DCAModalProps> = ({
     }
   };
 
+  // Calculate conversion values
+  const calculateConversion = (amount: string) => {
+    const numAmount = parseFloat(amount) || 0;
+
+    if (dcaPlan.plan_type === 'DCA_BUY') {
+      // Buy: User inputs INR, gets BTC
+      const btcAmount = buyRate > 0 ? numAmount / buyRate : 0;
+      return {
+        inrAmount: numAmount,
+        btcAmount: btcAmount,
+        formattedBtc: formatBitcoinForDisplay(btcAmount * 100000000),
+        formattedInr: formatRupeesForDisplay(numAmount),
+      };
+    } else {
+      // Sell: User inputs BTC, gets INR
+      const inrAmount = sellRate > 0 ? numAmount * sellRate : 0;
+      return {
+        inrAmount: inrAmount,
+        btcAmount: numAmount,
+        formattedBtc: formatBitcoinForDisplay(numAmount * 100000000),
+        formattedInr: formatRupeesForDisplay(inrAmount),
+      };
+    }
+  };
+
   // Get confirmation details
   const getConfirmationDetails = () => {
     if (!amountInput) return [];
@@ -229,6 +258,9 @@ const DCAModal: React.FC<DCAModalProps> = ({
                        dcaPlan.frequency === 'WEEKLY' ? parseFloat(amountInput) / 7 :
                        parseFloat(amountInput) / 30;
 
+    const conversion = calculateConversion(amountInput);
+    const rate = dcaPlan.plan_type === 'DCA_BUY' ? buyRate : sellRate;
+
     const details = [
       {
         label: 'Plan Type',
@@ -237,20 +269,51 @@ const DCAModal: React.FC<DCAModalProps> = ({
       },
       {
         label: 'Amount per execution',
-        value: <AnimateINR value={parseFloat(amountInput)} className="text-sm font-normal text-white" />,
+        value: dcaPlan.plan_type === 'DCA_BUY' ? (
+          <AnimateINR value={parseFloat(amountInput)} className="text-sm font-normal text-white" />
+        ) : (
+          <AnimateBTC value={parseFloat(amountInput) * 100000000} className="text-sm font-normal text-white" />
+        ),
         highlight: true
       },
       {
         label: 'Frequency',
         value: formatFrequency(dcaPlan.frequency!),
         highlight: false
-      },
-      {
-        label: 'Executions',
-        value: executionsInput || 'Unlimited',
-        highlight: false
       }
     ];
+
+    // Add rate information
+    if (rate > 0) {
+      details.push({
+        label: 'Rate',
+        value: <AnimateINR value={rate} className="text-sm font-normal text-white" />,
+        highlight: false
+      });
+    } else {
+      details.push({
+        label: 'Rate',
+        value: 'Rate unavailable',
+        highlight: false
+      });
+    }
+
+    // Add "You will receive/pay" information similar to TradingModal
+    details.push({
+      label: 'You will ' + (dcaPlan.plan_type === 'DCA_BUY' ? 'receive' : 'get'),
+      value: dcaPlan.plan_type === 'DCA_BUY' ? (
+        <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-normal text-white" />
+      ) : (
+        <AnimateINR value={conversion.inrAmount} className="text-sm font-normal text-white" />
+      ),
+      highlight: true
+    });
+    
+    details.push({
+      label: 'Executions',
+      value: executionsInput || 'Unlimited',
+      highlight: false
+    });
     
     if (maxPriceInput) {
       details.push({
@@ -427,7 +490,14 @@ const DCAModal: React.FC<DCAModalProps> = ({
           <AnimateBTC value={parseFloat(amountInput) * 100000000} className="justify-center text-white text-5xl font-semibold" />
         )}
         amountType={dcaPlan.plan_type === 'DCA_BUY' ? 'inr' : 'btc'}
-        subAmount={`${formatFrequency(dcaPlan.frequency!)} ${dcaPlan.plan_type === 'DCA_BUY' ? 'investment' : 'sale'}`}
+        subAmount={amountInput ? (
+          dcaPlan.plan_type === 'DCA_BUY' ? (
+            <AnimateBTC value={calculateConversion(amountInput).btcAmount * 100000000} className="justify-center text-white text-sm font-normal" />
+          ) : (
+            <AnimateINR value={calculateConversion(amountInput).inrAmount} className="justify-center text-white text-sm font-normal" />
+          )
+        ) : undefined}
+        subAmountType={dcaPlan.plan_type === 'DCA_BUY' ? 'btc' : 'inr'}
         details={getConfirmationDetails()}
         confirmText="Create Plan"
         onConfirm={handleCreatePlan}
