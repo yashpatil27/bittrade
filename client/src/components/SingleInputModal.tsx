@@ -22,6 +22,7 @@ interface SingleInputModalProps {
   showSettingsIcon?: boolean;
   onSettingsClick?: () => void;
   showInfinityPlaceholder?: boolean;
+  onValueChange?: (value: string) => void; // Real-time value updates
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -42,7 +43,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   initialValue = '',
   showSettingsIcon = false,
   onSettingsClick,
-  showInfinityPlaceholder = false
+  showInfinityPlaceholder = false,
+  onValueChange
 }) => {
   const [value, setValue] = useState('');
   const [dragStartY, setDragStartY] = useState(0);
@@ -219,18 +221,22 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   };
 
   const handleKeypadPress = (keyValue: string) => {
+    let newValue = value;
+    
     if (keyValue === 'backspace') {
-      setValue(prev => prev.slice(0, -1));
+      newValue = value.slice(0, -1);
     } else if (keyValue === 'clear') {
-      setValue('');
+      newValue = '';
     } else if (keyValue === '.') {
       if (type === 'btc' && !value.includes('.')) {
-        setValue(prev => prev === '' ? '0.' : prev + keyValue);
+        newValue = value === '' ? '0.' : value + keyValue;
+      } else {
+        return; // Don't update if invalid
       }
     } else {
       // Validate the new value before setting it
-      const newValue = value + keyValue;
-      const numValue = parseFloat(newValue);
+      const testValue = value + keyValue;
+      const numValue = parseFloat(testValue);
       
       // Don't allow negative values or values exceeding max
       if (numValue < 0) {
@@ -241,13 +247,26 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         return; // Don't update if it would exceed max value
       }
       
-      setValue(prev => prev + keyValue);
+      newValue = testValue;
+    }
+    
+    setValue(newValue);
+    
+    // Call the real-time value change callback
+    if (onValueChange) {
+      onValueChange(newValue);
     }
   };
 
   const handleMaxAmount = () => {
     if (maxValue !== undefined) {
-      setValue(maxValue.toString());
+      const maxValueStr = maxValue.toString();
+      setValue(maxValueStr);
+      
+      // Call the real-time value change callback
+      if (onValueChange) {
+        onValueChange(maxValueStr);
+      }
     }
   };
 

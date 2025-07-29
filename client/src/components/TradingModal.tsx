@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
 import OptionsModal from './OptionsModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { executeTrade, createLimitOrder } from '../utils/tradingApi';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
+import DCAModal from './DCAModal';
 
 interface BalanceData {
   available_inr: number;
@@ -40,9 +41,13 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
   const [orderType, setOrderType] = useState<'market' | 'limit' | 'recurring'>('market');
+  const [showDCAModal, setShowDCAModal] = useState(false);
   const [showTargetPriceModal, setShowTargetPriceModal] = useState(false);
   const [targetPrice, setTargetPrice] = useState('');
   
+  // Track the current input value in real-time
+  const [currentInputValue, setCurrentInputValue] = useState('');
+
   // Handle settings icon click
   const handleSettingsClick = () => {
     console.log('Settings icon clicked');
@@ -75,6 +80,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
     if (selectedOrderType === 'limit') {
       setShowTargetPriceModal(true);
     }
+    // If recurring order is selected, just return to SingleInputModal
+    // The DCA flow will be triggered when user clicks Next
   };
 
   // Reset state when modal opens/closes
@@ -84,6 +91,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
       setIsProcessing(false);
       setShowConfirmation(false);
       setOrderType('market');
+      setShowDCAModal(false);
       setShowTargetPriceModal(false);
       setTargetPrice('');
     }
@@ -130,7 +138,13 @@ const TradingModal: React.FC<TradingModalProps> = ({
     }
 
     setInputValue(value);
-    setShowConfirmation(true);
+    
+    // If recurring order type is selected, show DCA modal instead of confirmation
+    if (orderType === 'recurring') {
+      setShowDCAModal(true);
+    } else {
+      setShowConfirmation(true);
+    }
   };
 
   // Handle input modal close
@@ -341,6 +355,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         type={type === 'buy' ? 'inr' : 'btc'}
         confirmText="Next"
         onConfirm={handleInputConfirm}
+        onValueChange={setCurrentInputValue} // Real-time value updates
         sectionTitle={orderType === 'limit' && targetPrice ? 'Target Price' : `${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
         sectionAmount={orderType === 'limit' && targetPrice ? (
           <AnimateINR value={parseFloat(targetPrice)} className="text-sm font-medium text-gray-300" />
@@ -440,11 +455,32 @@ const TradingModal: React.FC<TradingModalProps> = ({
                 <h3 className="text-white text-sm font-medium">Recurring Order (DCA)</h3>
                 <p className="text-gray-400 text-xs mt-1">Set up automatic recurring {type === 'buy' ? 'purchases' : 'sales'}</p>
               </div>
+              {/* Show 'Current' if recurring order is selected */}
+              {orderType === 'recurring' && (
+                <div className="text-brand text-xs">Current</div>
+              )}
             </div>
           </div>
         </div>
       </OptionsModal>
       
+{/* DCA Modal for recurring orders */}
+      <DCAModal
+        isOpen={isOpen && showDCAModal}
+        onClose={() => setShowDCAModal(false)}
+        balanceData={balanceData}
+        currentBitcoinPrice={buyRate || 0}
+        buyRate={buyRate}
+        sellRate={sellRate}
+        initialAmount={currentInputValue || inputValue}
+        initialPlanType={type === 'buy' ? 'DCA_BUY' : 'DCA_SELL'}
+        onComplete={(plan) => {
+          console.log('DCA Plan completed:', plan);
+          setShowDCAModal(false);
+          onClose(); // Close the entire trading modal when DCA plan is completed
+        }}
+      />
+
       {/* Target Price Modal - Opens when limit order is selected */}
       <SingleInputModal
         isOpen={isOpen && showTargetPriceModal}

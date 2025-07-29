@@ -25,6 +25,8 @@ interface DCAModalProps {
   buyRate?: number;
   sellRate?: number;
   onComplete?: (dcaPlan: DCAPlanData) => void;
+  initialAmount?: string;
+  initialPlanType?: 'DCA_BUY' | 'DCA_SELL';
 }
 
 interface DCAPlanData {
@@ -46,12 +48,14 @@ const DCAModal: React.FC<DCAModalProps> = ({
   buyRate = 0,
   sellRate = 0,
   onComplete,
+  initialAmount = '',
+  initialPlanType = 'DCA_BUY',
 }) => {
-  const [currentStep, setCurrentStep] = useState<DCAStep>('type');
+const [currentStep, setCurrentStep] = useState<DCAStep>('frequency');
   const [dcaPlan, setDcaPlan] = useState<Partial<DCAPlanData>>({
-    plan_type: 'DCA_BUY',
+    plan_type: initialPlanType,
   });
-  const [amountInput, setAmountInput] = useState('');
+const [amountInput, setAmountInput] = useState(''); // This will be set via props
   const [executionsInput, setExecutionsInput] = useState('');
   const [maxPriceInput, setMaxPriceInput] = useState('');
   const [minPriceInput, setMinPriceInput] = useState('');
@@ -65,9 +69,10 @@ const DCAModal: React.FC<DCAModalProps> = ({
   // Reset state when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      setCurrentStep('type');
-      setDcaPlan({ plan_type: 'DCA_BUY' });
-      setAmountInput('');
+      // If we have initial values, skip to frequency step, otherwise start from type step
+      setCurrentStep(initialAmount ? 'frequency' : 'type');
+      setDcaPlan({ plan_type: initialPlanType });
+      setAmountInput(initialAmount);
       setExecutionsInput('');
       setMaxPriceInput('');
       setMinPriceInput('');
@@ -78,7 +83,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
       setShowMaxPriceModal(false);
       setShowMinPriceModal(false);
     }
-  }, [isOpen]);
+  }, [isOpen, initialAmount, initialPlanType]);
 
   // Handle optional settings step - show the options modal
   useEffect(() => {
@@ -97,6 +102,13 @@ const DCAModal: React.FC<DCAModalProps> = ({
   };
 
   const goToPreviousStep = () => {
+    // If we started with initial values (integrated with trading modal),
+    // and we're at the frequency step, close the modal instead of going to previous steps
+    if (initialAmount && currentStep === 'frequency') {
+      onClose();
+      return;
+    }
+    
     const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'optionalSettings', 'review'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
@@ -143,8 +155,10 @@ const DCAModal: React.FC<DCAModalProps> = ({
   // Handle optional settings handlers
   const handleOptionalSettingsClose = () => {
     setShowOptionalSettingsModal(false);
-    // Go back to frequency step
-    setCurrentStep('frequency');
+    // Go back to frequency step with a small delay to allow modal transition
+    setTimeout(() => {
+      setCurrentStep('frequency');
+    }, 100);
   };
 
   const handleSetDuration = () => {
