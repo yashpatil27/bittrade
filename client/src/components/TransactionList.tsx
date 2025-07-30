@@ -190,11 +190,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   };
 
 
-  useEffect(() => {
-    if (page === 1 && transactions.length === 0) {
-      fetchTransactions();
-    }
-  }, [transactions, fetchTransactions, page]);
+  // Removed the problematic useEffect that was causing infinite fetching
 
   if (isLoading) {
     return (

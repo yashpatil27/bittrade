@@ -611,6 +611,186 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
   }
 });
 
+// Execute a market trade (buy or sell)
+app.post('/api/trade', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { action, type, amount, currency, execution_price } = req.body;
+
+  // Validate input
+  if (!['buy', 'sell'].includes(action)) {
+    return res.status(400).json({ error: 'Invalid action. Must be "buy" or "sell"' });
+  }
+
+  if (type !== 'market') {
+    return res.status(400).json({ error: 'Only market orders are supported in this endpoint' });
+  }
+
+  if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+    return res.status(400).json({ error: 'Invalid amount' });
+  }
+
+  if (!['inr', 'btc'].includes(currency)) {
+    return res.status(400).json({ error: 'Invalid currency. Must be "inr" or "btc"' });
+  }
+
+  try {
+    // Get current market rates
+    let marketPrice;
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cachedPrice = await global.dataService.redis.get('latest_btc_price');
+        if (cachedPrice) {
+          const bitcoinData = JSON.parse(cachedPrice);
+          const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
+          marketPrice = action === 'buy' ? rates.buy_rate_inr : rates.sell_rate_inr;
+        }
+      } catch (redisError) {
+        console.error('Redis error, falling back to database for price:', redisError);
+      }
+    }
+
+    // Fallback to database for market price
+    if (!marketPrice) {
+      const [priceRows] = await db.execute(
+        'SELECT btc_usd_price FROM bitcoin_data ORDER BY created_at DESC LIMIT 1'
+      );
+      
+      if (priceRows.length === 0) {
+        return res.status(500).json({ error: 'Unable to fetch current Bitcoin price' });
+      }
+      
+      const btcUsdPrice = priceRows[0].btc_usd_price;
+      const rates = global.dataService.calculateRates(btcUsdPrice);
+      marketPrice = action === 'buy' ? rates.buy_rate_inr : rates.sell_rate_inr;
+    }
+
+    // Convert amounts based on currency
+    const amountFloat = parseFloat(amount);
+    let btcAmount, inrAmount;
+    
+    if (currency === 'inr') {
+      // User specified INR amount
+      inrAmount = Math.round(amountFloat);
+      btcAmount = Math.round((inrAmount / marketPrice) * 100000000); // Convert to satoshis
+    } else {
+      // User specified BTC amount (frontend sends as BTC decimal, need to convert to satoshis)
+      btcAmount = Math.round(amountFloat * 100000000); // Convert BTC to satoshis
+      inrAmount = Math.round((btcAmount * marketPrice) / 100000000);
+    }
+
+    // Start database transaction
+    await db.beginTransaction();
+
+    try {
+      // Check user balance
+      const [balanceRows] = await db.execute(
+        'SELECT available_inr, available_btc FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      if (balanceRows.length === 0) {
+        throw new Error('User not found');
+      }
+      
+      const balance = balanceRows[0];
+      
+      // Validate balance based on action
+      if (action === 'buy') {
+        if (balance.available_inr < inrAmount) {
+          throw new Error(`Insufficient INR balance. Required: ₹${inrAmount}, Available: ₹${balance.available_inr}`);
+        }
+        
+        // Execute buy: deduct INR, add BTC
+        await db.execute(
+          'UPDATE users SET available_inr = available_inr - ?, available_btc = available_btc + ? WHERE id = ?',
+          [inrAmount, btcAmount, userId]
+        );
+        
+      } else { // sell
+        if (balance.available_btc < btcAmount) {
+          throw new Error(`Insufficient BTC balance. Required: ${btcAmount} satoshis, Available: ${balance.available_btc} satoshis`);
+        }
+        
+        // Execute sell: deduct BTC, add INR
+        await db.execute(
+          'UPDATE users SET available_btc = available_btc - ?, available_inr = available_inr + ? WHERE id = ?',
+          [btcAmount, inrAmount, userId]
+        );
+      }
+      
+      // Insert transaction record
+      const transactionType = action === 'buy' ? 'MARKET_BUY' : 'MARKET_SELL';
+      const [transactionResult] = await db.execute(
+        `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
+         VALUES (?, ?, 'EXECUTED', ?, ?, ?, NOW(), NOW())`,
+        [userId, transactionType, btcAmount, inrAmount, marketPrice]
+      );
+      
+      // Commit transaction
+      await db.commit();
+      
+      // Get updated balance
+      const [updatedBalanceRows] = await db.execute(
+        'SELECT available_inr, available_btc, reserved_inr, reserved_btc, collateral_btc, borrowed_inr, interest_accrued FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      const updatedBalance = updatedBalanceRows[0];
+      
+      // Clear caches
+      if (global.dataService && global.dataService.redis) {
+        try {
+          await global.dataService.redis.del(`user_transactions_${userId}`);
+          await global.dataService.redis.del(`user_balance_${userId}`);
+          console.log('💾 Cleared user caches after trade execution');
+        } catch (error) {
+          console.error('Error clearing user caches:', error);
+        }
+      }
+      
+      // Send real-time updates
+      if (global.sendUserBalanceUpdate) {
+        global.sendUserBalanceUpdate(userId);
+      }
+      
+      if (global.sendUserTransactionUpdate) {
+        global.sendUserTransactionUpdate(userId);
+      }
+      
+      console.log(`✅ MARKET ${action.toUpperCase()} executed:`, {
+        userId,
+        transactionId: transactionResult.insertId,
+        type: transactionType,
+        btc_amount: btcAmount,
+        inr_amount: inrAmount,
+        execution_price: marketPrice
+      });
+      
+      // Return success response
+      res.json({
+        id: transactionResult.insertId,
+        type: transactionType,
+        action: action,
+        btc_amount: btcAmount,
+        inr_amount: inrAmount,
+        execution_price: marketPrice,
+        status: 'EXECUTED',
+        timestamp: new Date().toISOString(),
+        updated_balance: updatedBalance
+      });
+      
+    } catch (error) {
+      // Rollback transaction on error
+      await db.rollback();
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('Error executing trade:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 // Get user balance (real data with Redis caching)
 app.get('/api/balance', authenticateToken, async (req, res) => {
   try {
