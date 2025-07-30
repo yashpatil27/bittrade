@@ -5,6 +5,135 @@ const { createClient } = require('redis');
 const config = require('../config/config');
 
 class DataService {
+  async loadPendingLimitOrdersToCache() {
+    try {
+      const [orders] = await this.db.execute(`
+        SELECT * FROM transactions 
+        WHERE status = 'PENDING' AND type IN ('LIMIT_BUY', 'LIMIT_SELL')
+      `);
+      await this.redis.set('pending_limit_orders', JSON.stringify(orders));
+      console.log(`📋 Loaded ${orders.length} pending limit orders into Redis cache`);
+      
+      // Log summary of pending orders
+      if (orders.length > 0) {
+        const buyOrders = orders.filter(o => o.type === 'LIMIT_BUY').length;
+        const sellOrders = orders.filter(o => o.type === 'LIMIT_SELL').length;
+        console.log(`   • ${buyOrders} LIMIT_BUY orders`);
+        console.log(`   • ${sellOrders} LIMIT_SELL orders`);
+      }
+    } catch (error) {
+      console.error('❌ Error loading pending limit orders:', error);
+    }
+  }
+
+  async checkAndExecuteLimitOrders(btcUsdPrice) {
+    try {
+      const rates = this.calculateRates(btcUsdPrice);
+      const ordersJson = await this.redis.get('pending_limit_orders');
+      let orders = JSON.parse(ordersJson) || [];
+      
+      const initialOrderCount = orders.length;
+      let executedCount = 0;
+
+      orders = orders.filter(order => {
+        if (order.type === 'LIMIT_BUY' && rates.buy_rate_inr <= order.execution_price) {
+          // Execute buy order
+          console.log(`\n🟢 EXECUTING LIMIT_BUY ORDER`);
+          console.log(`   Order ID: ${order.id}`);
+          console.log(`   User ID: ${order.user_id}`);
+          console.log(`   Target Price: ₹${order.execution_price.toLocaleString()}`);
+          console.log(`   Current Buy Rate: ₹${rates.buy_rate_inr.toLocaleString()}`);
+          console.log(`   BTC Amount: ${(order.btc_amount / 100000000).toFixed(8)} BTC`);
+          console.log(`   INR Amount: ₹${order.inr_amount.toLocaleString()}`);
+          
+          this.executeOrder(order, rates);
+          executedCount++;
+          return false; // Remove executed order
+        } else if (order.type === 'LIMIT_SELL' && rates.sell_rate_inr >= order.execution_price) {
+          // Execute sell order
+          console.log(`\n🔴 EXECUTING LIMIT_SELL ORDER`);
+          console.log(`   Order ID: ${order.id}`);
+          console.log(`   User ID: ${order.user_id}`);
+          console.log(`   Target Price: ₹${order.execution_price.toLocaleString()}`);
+          console.log(`   Current Sell Rate: ₹${rates.sell_rate_inr.toLocaleString()}`);
+          console.log(`   BTC Amount: ${(order.btc_amount / 100000000).toFixed(8)} BTC`);
+          console.log(`   INR Amount: ₹${order.inr_amount.toLocaleString()}`);
+          
+          this.executeOrder(order, rates);
+          executedCount++;
+          return false; // Remove executed order
+        }
+        return true; // Keep pending order
+      });
+
+      // Log summary if orders were checked
+      if (initialOrderCount > 0) {
+        console.log(`\n📊 LIMIT ORDER CHECK SUMMARY:`);
+        console.log(`   📋 Orders checked: ${initialOrderCount}`);
+        console.log(`   ✅ Orders executed: ${executedCount}`);
+        console.log(`   ⏳ Orders still pending: ${orders.length}`);
+        console.log(`   💰 Current BTC USD: $${btcUsdPrice.toLocaleString()}`);
+        console.log(`   💱 Buy Rate INR: ₹${rates.buy_rate_inr.toLocaleString()}`);
+        console.log(`   💱 Sell Rate INR: ₹${rates.sell_rate_inr.toLocaleString()}`);
+      }
+
+      await this.redis.set('pending_limit_orders', JSON.stringify(orders));
+    } catch (error) {
+      console.error('❌ Error checking/executing limit orders:', error);
+    }
+  }
+
+  async executeOrder(order, rates) {
+    try {
+      const executionTime = new Date().toISOString();
+      
+      // Start database transaction for order execution
+      await this.db.beginTransaction();
+      
+      try {
+        // Update transaction status
+        await this.db.execute(`
+          UPDATE transactions 
+          SET status = 'EXECUTED', executed_at = NOW()
+          WHERE id = ?
+        `, [order.id]);
+        
+        // Here you would also update user balances
+        // TODO: Implement balance updates based on order type
+        
+        await this.db.commit();
+        
+        console.log(`✅ ORDER EXECUTION SUCCESSFUL`);
+        console.log(`   Order ID: ${order.id}`);
+        console.log(`   Type: ${order.type}`);
+        console.log(`   User ID: ${order.user_id}`);
+        console.log(`   Executed at: ${executionTime}`);
+        console.log(`   Status: EXECUTED`);
+        
+        // Broadcast order execution to WebSocket clients if available
+        if (this.io) {
+          this.io.emit('order_executed', {
+            orderId: order.id,
+            userId: order.user_id,
+            type: order.type,
+            btcAmount: order.btc_amount,
+            inrAmount: order.inr_amount,
+            executionPrice: order.execution_price,
+            executedAt: executionTime
+          });
+          console.log(`📡 Broadcasted order execution to ${this.io.engine.clientsCount} clients`);
+        }
+        
+      } catch (dbError) {
+        await this.db.rollback();
+        throw dbError;
+      }
+      
+    } catch (error) {
+      console.error(`❌ ERROR EXECUTING ORDER ${order.id}:`, error);
+      console.error(`   Error details:`, error.message);
+    }
+  }
   constructor(io = null) {
     this.db = null;
     this.redis = null;
@@ -13,7 +142,7 @@ class DataService {
     this.settings = { buy_multiplier: 91, sell_multiplier: 88 }; // Cache settings
   }
 
-  async connect() {
+async connect() {
     try {
       // Connect to MySQL
       this.db = await mysql.createConnection(config.database);
@@ -36,6 +165,9 @@ class DataService {
       
       // Load initial settings
       await this.loadSettings();
+      
+      // Load pending limit orders into Redis cache
+      await this.loadPendingLimitOrdersToCache();
     } catch (error) {
       console.error('Database/Redis connection failed:', error);
       throw error;
@@ -234,6 +366,9 @@ class DataService {
     try {
       const bitcoinData = await this.fetchBitcoinData();
       
+// Check and execute limit orders
+      await this.checkAndExecuteLimitOrders(bitcoinData.btc_usd_price);
+
       // Insert new data
       const insertQuery = `
         INSERT INTO bitcoin_data (
