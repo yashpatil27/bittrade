@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, User, Mail, ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ProfileUpdateModal from './ProfileUpdateModal';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { user, logout } = useAuth();
   const [dragStartY, setDragStartY] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
+  const [isProfileUpdateOpen, setProfileUpdateOpen] = useState(false);
+  const [updateType, setUpdateType] = useState<'name' | 'email' | 'password'>();
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -191,7 +194,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {/* Edit Name */}
             <div 
               className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
-              onClick={onEditName}
+              onClick={() => { setUpdateType('name'); setProfileUpdateOpen(true); }}
               data-clickable="true"
             >
               <div className="flex items-center justify-between">
@@ -211,7 +214,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {/* Edit Email */}
             <div 
               className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
-              onClick={onEditEmail}
+              onClick={() => { setUpdateType('email'); setProfileUpdateOpen(true); }}
               data-clickable="true"
             >
               <div className="flex items-center justify-between">
@@ -231,7 +234,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
             {/* Change Password */}
             <div 
               className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
-              onClick={onChangePassword}
+              onClick={() => { setUpdateType('password'); setProfileUpdateOpen(true); }}
               data-clickable="true"
             >
               <div className="flex items-center justify-between">
@@ -269,7 +272,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     </div>
   );
 
-  return createPortal(modalContent, document.body);
+  return (
+    <>
+      {createPortal(modalContent, document.body)}
+      <ProfileUpdateModal
+        isOpen={isProfileUpdateOpen}
+        onRequestClose={() => setProfileUpdateOpen(false)}
+        userName={user?.name || ''}
+        userEmail={user?.email || ''}
+        updateType={updateType}
+      />
+    </>
+  );
 };
 
 export default ProfileModal;
