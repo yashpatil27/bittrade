@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { X, User, Mail, ChevronRight, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ProfileUpdateModal from './ProfileUpdateModal';
@@ -20,6 +21,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onChangePassword,
 }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [userState, setUserState] = useState(user);
   const [dragStartY, setDragStartY] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
@@ -142,6 +144,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleLogout = () => {
     logout();
     animateClose();
+    // Navigate to login page after logout
+    setTimeout(() => {
+      navigate('/login');
+    }, 300); // Wait for modal close animation
   };
 
   const handleProfileUpdate = (updatedData: { name?: string; email?: string }) => {
