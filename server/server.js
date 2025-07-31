@@ -1565,4 +1565,15 @@ process.on('unhandledRejection', (err) => {
   process.exit(1);
 });
 
-startServer().catch(console.error);
+async function startDCAExecutionService() {
+  const DCAExecutionService = require('./services/dca-execution-service');
+  const dcaExecutionService = new DCAExecutionService();
+  await dcaExecutionService.start();
+}
+
+async function startAllServices() {
+  await startServer();
+  await startDCAExecutionService();
+}
+
+startAllServices().catch(console.error);
