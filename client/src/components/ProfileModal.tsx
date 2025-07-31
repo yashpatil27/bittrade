@@ -152,8 +152,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
         ref={modalRef}
         className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col"
         style={{
-          maxHeight: '80vh',
-          minHeight: '50vh',
+          maxHeight: '90vh',
+          minHeight: '60vh',
           transform: `translateY(${isClosing ? '100%' : isAnimating ? `${dragOffset}px` : '100%'})`,
           transition: isDragging ? 'none' : (isAnimating || isClosing) ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none',
           touchAction: 'none'
