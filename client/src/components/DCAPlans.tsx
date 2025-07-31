@@ -169,15 +169,13 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
 
   const handleDelete = async (plan: DCAPlan, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this DCA plan?')) {
-      try {
-        await deleteDCAPlan(plan.id);
-        // Refresh plans
-        fetchDCAPlans();
-      } catch (error) {
-        console.error('Failed to delete plan:', error);
-        // TODO: Show error message to user
-      }
+    try {
+      await deleteDCAPlan(plan.id);
+      // Refresh plans
+      fetchDCAPlans();
+    } catch (error) {
+      console.error('Failed to delete plan:', error);
+      // TODO: Show error message to user
     }
   };
 
@@ -338,12 +336,10 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
               label: 'Cancel Plan',
               onClick: async () => {
                 try {
-                  if (window.confirm('Are you sure you want to delete this DCA plan?')) {
-                    await deleteDCAPlan(selectedPlan.id);
-                    // Refresh plans list
-                    fetchDCAPlans();
-                    setIsDetailsModalOpen(false);
-                  }
+                  await deleteDCAPlan(selectedPlan.id);
+                  // Refresh plans list
+                  fetchDCAPlans();
+                  setIsDetailsModalOpen(false);
                 } catch (error) {
                   console.error('Failed to delete DCA plan:', error);
                   // TODO: Show error message to user

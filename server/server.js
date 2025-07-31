@@ -595,18 +595,65 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
   const { planId } = req.params;
 
   try {
-    const [result] = await db.execute(
-      'UPDATE active_plans SET status = "CANCELLED" WHERE id = ? AND user_id = ?',
-      [planId, userId]
-    );
+    // Start database transaction
+    await db.beginTransaction();
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Plan not found or unauthorized' });
+    try {
+      // First, verify the plan exists and belongs to the user
+      const [planRows] = await db.execute(
+        'SELECT id, plan_type, status FROM active_plans WHERE id = ? AND user_id = ?',
+        [planId, userId]
+      );
+
+      if (planRows.length === 0) {
+        await db.rollback();
+        return res.status(404).json({ error: 'Plan not found or unauthorized' });
+      }
+
+      const plan = planRows[0];
+
+      // Delete related transactions first (to maintain referential integrity)
+      const [deleteTransactionsResult] = await db.execute(
+        'DELETE FROM transactions WHERE parent_id = ? AND user_id = ? AND type = ?',
+        [planId, userId, plan.plan_type]
+      );
+
+      // Delete the DCA plan
+      const [deletePlanResult] = await db.execute(
+        'DELETE FROM active_plans WHERE id = ? AND user_id = ?',
+        [planId, userId]
+      );
+
+      if (deletePlanResult.affectedRows === 0) {
+        await db.rollback();
+        return res.status(404).json({ error: 'Plan not found or unauthorized' });
+      }
+
+      // Commit the transaction
+      await db.commit();
+
+      console.log(`✅ DCA plan deleted:`, {
+        userId,
+        planId,
+        planType: plan.plan_type,
+        relatedTransactionsDeleted: deleteTransactionsResult.affectedRows
+      });
+
+      res.json({ 
+        message: 'Plan deleted successfully',
+        planId: planId,
+        planType: plan.plan_type,
+        relatedTransactionsDeleted: deleteTransactionsResult.affectedRows
+      });
+
+    } catch (error) {
+      // Rollback transaction on error
+      await db.rollback();
+      throw error;
     }
 
-    res.json({ message: 'Plan cancelled successfully' });
   } catch (error) {
-    console.error('Error cancelling DCA plan:', error);
+    console.error('Error deleting DCA plan:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
