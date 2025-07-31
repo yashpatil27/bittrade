@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Header from '../components/Header';
 import Card from '../components/Card';
 import DCAModal from '../components/DCAModal';
 import DCAPlans from '../components/DCAPlans';
@@ -25,10 +24,6 @@ const DCA: React.FC = () => {
   const [buyRate, setBuyRate] = useState<number>(0);
   const [sellRate, setSellRate] = useState<number>(0);
   const [hasPlans, setHasPlans] = useState(false);
-
-  const handleProfileClick = () => {
-    console.log('Profile clicked');
-  };
 
   const handleStartDCA = async () => {
     // Load balance data when opening DCA modal
@@ -94,20 +89,14 @@ const DCA: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="max-w-md mx-auto bg-black min-h-screen">
-        <Header 
-          title="₿itTrade" 
-          onProfileClick={handleProfileClick}
-        />
-        
-        {/* Hidden MarketRate component to get rates */}
-        <MarketRate 
-          className="hidden"
-          onRatesUpdate={handleRatesUpdate}
-          onBalanceUpdate={handleBalanceUpdate}
-        />
-        {/* Main Content */}
+    <div className="max-w-md mx-auto bg-black min-h-screen">
+      {/* Hidden MarketRate component to get rates */}
+      <MarketRate 
+        className="hidden"
+        onRatesUpdate={handleRatesUpdate}
+        onBalanceUpdate={handleBalanceUpdate}
+      />
+      {/* Main Content */}
         {hasPlans ? (
           <div className="px-4 py-3 space-y-3">
             {/* Plan Management Interface */}
@@ -226,7 +215,6 @@ const DCA: React.FC = () => {
             </Card>
           </div>
         )}
-      </div>
       
       {/* DCA Modal */}
       <DCAModal 

@@ -1,13 +1,8 @@
 import React from 'react';
-import Header from '../components/Header';
 import Card from '../components/Card';
 import { Banknote, TrendingUp, Shield, Clock, ArrowRight } from 'lucide-react';
 
 const Loans: React.FC = () => {
-  const handleProfileClick = () => {
-    console.log('Profile clicked');
-    // Add your profile logic here - could navigate to profile page, open profile modal, etc.
-  };
 
   const features = [
     {
@@ -37,15 +32,9 @@ const Loans: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-black">
-      <div className="max-w-md mx-auto bg-black min-h-screen">
-        <Header 
-          title="₿itTrade" 
-          onProfileClick={handleProfileClick}
-        />
-        
-        {/* Main Content */}
-        <div className="px-4 py-6 space-y-6">
+    <div className="max-w-md mx-auto bg-black min-h-screen">
+      {/* Main Content */}
+      <div className="px-4 py-6 space-y-6">
           
           {/* Coming Soon Hero Section */}
           <Card variant="gradient" className="text-center">
@@ -106,7 +95,6 @@ const Loans: React.FC = () => {
             })}
           </div>
 
-        </div>
       </div>
     </div>
   );

@@ -1,5 +1,4 @@
 import React from 'react';
-import Header from '../components/Header';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import { Transaction } from '../types';
@@ -13,10 +12,8 @@ const History: React.FC = () => {
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
-        <Header title="₿itTrade" />
-        
         {/* Main Content */}
-        <div className="px-4 py-3 space-y-3">
+      <div className="px-4 py-3 space-y-3">
           {/* Pending Orders - Only shown when there are pending limit orders */}
           <TransactionList 
             title="Pending Orders"

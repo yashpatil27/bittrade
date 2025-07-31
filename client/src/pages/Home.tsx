@@ -1,5 +1,4 @@
 import React from 'react';
-import Header from '../components/Header';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import BitcoinChart from '../components/BitcoinChart';
@@ -27,7 +26,6 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   const [buyRate, setBuyRate] = React.useState<number>(0);
   const [sellRate, setSellRate] = React.useState<number>(0);
   const [balanceData, setBalanceData] = React.useState<BalanceData | null>(null);
-  
 
   const handleBuyClick = () => {
     setModalType('buy');
@@ -64,22 +62,13 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
     setBalanceData(newBalanceData);
   };
 
-  const handleProfileClick = () => {
-    console.log('Profile clicked');
-    // Add your profile logic here - could navigate to profile page, open profile modal, etc.
-  };
 
 
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
-        <Header 
-          title="₿itTrade" 
-          onProfileClick={handleProfileClick}
-        />
-        
         {/* Main Content */}
-        <div className="px-4 py-3 space-y-3">
+      <div className="px-4 py-3 space-y-3">
         {/* Bitcoin Price Chart */}
         <BitcoinChart className="bg-black" />
         
@@ -116,7 +105,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
           />
         </Card>
 
-        {/* Trading Modal */}
+{/* Trading Modal */}
         <TradingModal
           isOpen={modalOpen}
           onClose={handleModalClose}
