@@ -601,13 +601,72 @@ app.patch('/api/dca-plans/:planId/status', authenticateToken, async (req, res) =
   }
 
   try {
-    const [result] = await db.execute(
-      'UPDATE active_plans SET status = ? WHERE id = ? AND user_id = ?',
-      [status, planId, userId]
-    );
+    // If resuming a plan (ACTIVE), recalculate next execution time
+    if (status === 'ACTIVE') {
+      // First get the plan's frequency to calculate new next execution time
+      const [planRows] = await db.execute(
+        'SELECT frequency FROM active_plans WHERE id = ? AND user_id = ?',
+        [planId, userId]
+      );
+      
+      if (planRows.length === 0) {
+        return res.status(404).json({ error: 'Plan not found or unauthorized' });
+      }
+      
+      const { frequency } = planRows[0];
+      
+      // Calculate next execution time using MySQL's date functions for timezone consistency
+      let nextExecutionSQL;
+      switch (frequency) {
+        case 'HOURLY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
+          break;
+        case 'DAILY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 DAY)';
+          break;
+        case 'WEEKLY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 WEEK)';
+          break;
+        case 'MONTHLY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)';
+          break;
+        default:
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)'; // Default to 1 hour
+      }
+      
+      // Update both status and next execution time
+      const [result] = await db.execute(
+        `UPDATE active_plans SET status = ?, next_execution_at = ${nextExecutionSQL} WHERE id = ? AND user_id = ?`,
+        [status, planId, userId]
+      );
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Plan not found or unauthorized' });
+      }
+      
+      console.log(`✅ DCA plan resumed with new execution time:`, {
+        userId,
+        planId,
+        frequency,
+        status: 'ACTIVE'
+      });
+      
+    } else {
+      // For pausing, just update the status
+      const [result] = await db.execute(
+        'UPDATE active_plans SET status = ? WHERE id = ? AND user_id = ?',
+        [status, planId, userId]
+      );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Plan not found or unauthorized' });
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Plan not found or unauthorized' });
+      }
+      
+      console.log(`✅ DCA plan paused:`, {
+        userId,
+        planId,
+        status: 'PAUSED'
+      });
     }
 
     // Send updates via WebSocket
