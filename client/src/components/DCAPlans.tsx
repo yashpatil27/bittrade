@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Play, Pause, Trash2, Clock, BarChart3, Plus, Bitcoin, DollarSign } from 'lucide-react';
 import { getDCAPlans, updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
 import { DCAPlan } from '../types';
 import Card from './Card';
+import DetailsModal from './DetailsModal';
+import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 
 interface DCAPlansProps {
   title?: string;
@@ -29,6 +31,10 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   const [dcaPlans, setDcaPlans] = React.useState<DCAPlansResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  
+  // DetailsModal state
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<DCAPlan | null>(null);
 
   // Fetch DCA plans
   const fetchDCAPlans = async () => {
@@ -99,9 +105,53 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   };
 
   const handlePlanClick = (plan: DCAPlan) => {
+    // Open DetailsModal if onPlanClick prop is provided
     if (onPlanClick) {
-      onPlanClick(plan);
+      setSelectedPlan(plan);
+      setIsDetailsModalOpen(true);
     }
+  };
+
+  const getPlanMainDetail = (plan: DCAPlan) => {
+    return formatRupeesForDisplay(plan.amount_per_execution);
+  };
+
+  const getPlanSubDetail = (plan: DCAPlan) => {
+    const frequency = plan.frequency.toLowerCase();
+    return `${frequency} • ${plan.status.toLowerCase()}`;
+  };
+
+  const getPlanDetails = (plan: DCAPlan) => {
+    const details = [
+      { label: 'Next execution', value: formatTimeUntilNext(plan.next_execution_at), highlight: false },
+      { label: 'Remaining executions', value: formatExecutionsRemaining(plan), highlight: false },
+    ];
+
+    if (plan.max_price) {
+      details.push({ label: 'Max Price', value: formatRupeesForDisplay(plan.max_price), highlight: false });
+    }
+
+    if (plan.min_price) {
+      details.push({ label: 'Min Price', value: formatRupeesForDisplay(plan.min_price), highlight: false });
+    }
+
+    if (plan.performance) {
+      details.push(
+        { label: 'Total Invested', value: formatRupeesForDisplay(plan.performance.total_invested), highlight: true },
+        { label: 'Total BTC', value: formatBitcoinForDisplay(plan.performance.total_btc), highlight: true },
+        { label: 'Average Price', value: formatRupeesForDisplay(plan.performance.avg_price), highlight: false }
+      );
+    }
+
+    details.push(
+      { label: 'Created At', value: new Date(plan.created_at).toLocaleString(), highlight: false }
+    );
+
+    if (plan.completed_at) {
+      details.push({ label: 'Completed At', value: new Date(plan.completed_at).toLocaleString(), highlight: false });
+    }
+
+    return details;
   };
 
   const handlePauseResume = async (plan: DCAPlan, e: React.MouseEvent) => {
@@ -264,6 +314,37 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
           </div>
         ))}
       </div>
+      
+      {/* Details Modal */}
+      {selectedPlan && (
+        <DetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+          title={getPlanLabel(selectedPlan)}
+          mainDetail={getPlanMainDetail(selectedPlan)}
+          subDetail={getPlanSubDetail(selectedPlan)}
+          transactionDetails={[]}
+          dcaPlanDetails={getPlanDetails(selectedPlan)}
+          actionButtons={[
+            {
+              label: selectedPlan.status === 'ACTIVE' ? 'Pause Plan' : 'Resume Plan',
+              onClick: () => {
+                handlePauseResume(selectedPlan, {} as React.MouseEvent);
+                setIsDetailsModalOpen(false);
+              },
+              variant: selectedPlan.status === 'ACTIVE' ? 'secondary' : 'primary'
+            },
+            {
+              label: 'Cancel Plan',
+              onClick: () => {
+                handleDelete(selectedPlan, {} as React.MouseEvent);
+                setIsDetailsModalOpen(false);
+              },
+              variant: 'danger'
+            }
+          ]}
+        />
+      )}
     </div>
   );
   

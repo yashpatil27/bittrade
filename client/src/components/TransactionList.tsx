@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { getTimeAgo } from '../data/mockData';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { Transaction } from '../types';
 import useTransactionUpdates from '../hooks/useTransactionUpdates';
 import Card from './Card';
+import DetailsModal from './DetailsModal';
 
 interface TransactionListProps {
   title?: string;
@@ -32,6 +33,10 @@ const TransactionList: React.FC<TransactionListProps> = ({
   wrapInCard = false
 }) => {
   const { transactions, isLoading, error, fetchTransactions, page } = useTransactionUpdates();
+  
+  // DetailsModal state
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   
   // Filter transactions based on filterPending and excludePending props
   const filteredTransactions = filterPending 
@@ -82,8 +87,10 @@ const TransactionList: React.FC<TransactionListProps> = ({
   };
 
   const handleTransactionClick = (transaction: Transaction) => {
+    // Open DetailsModal if onTransactionClick prop is provided
     if (onTransactionClick) {
-      onTransactionClick(transaction);
+      setSelectedTransaction(transaction);
+      setIsDetailsModalOpen(true);
     }
   };
 
@@ -187,6 +194,31 @@ const TransactionList: React.FC<TransactionListProps> = ({
       default:
         return null; // No sub-amount for these transaction types
     }
+  };
+
+  const getTransactionDetails = (txn: Transaction) => {
+    const details = [
+      { label: 'Transaction ID', value: txn.id, highlight: false },
+      { label: 'Status', value: txn.status, highlight: true },
+    ];
+
+    if (txn.execution_price) {
+      details.push({ label: 'Execution Price', value: formatRupeesForDisplay(txn.execution_price), highlight: false });
+    }
+
+    if (txn.fee) {
+      details.push({ label: 'Fee', value: formatRupeesForDisplay(txn.fee), highlight: false });
+    }
+
+    if (txn.executed_at) {
+      details.push({ label: 'Executed At', value: new Date(txn.executed_at).toLocaleString(), highlight: false });
+    }
+
+    if (txn.created_at) {
+      details.push({ label: 'Created At', value: new Date(txn.created_at).toLocaleString(), highlight: false });
+    }
+
+    return details;
   };
 
 
@@ -294,6 +326,33 @@ const TransactionList: React.FC<TransactionListProps> = ({
           </div>
         ))}
       </div>
+      
+      {/* Details Modal */}
+      {selectedTransaction && (
+        <DetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+          title={getTransactionLabel(selectedTransaction.type, selectedTransaction.status)}
+          mainDetail={getTransactionAmount(selectedTransaction)}
+          subDetail={getTransactionSubAmount(selectedTransaction)}
+          transactionDetails={getTransactionDetails(selectedTransaction)}
+          dcaPlanDetails={[]}
+          actionButtons={
+            selectedTransaction.status === 'PENDING' && 
+            (selectedTransaction.type === 'LIMIT_BUY' || selectedTransaction.type === 'LIMIT_SELL') 
+              ? [{
+                  label: 'Cancel Order',
+                  onClick: () => {
+                    // TODO: Implement cancel order functionality
+                    console.log('Cancel order:', selectedTransaction.id);
+                    setIsDetailsModalOpen(false);
+                  },
+                  variant: 'danger' as const
+                }]
+              : undefined
+          }
+        />
+      )}
     </div>
   );
   
