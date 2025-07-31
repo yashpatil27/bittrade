@@ -497,7 +497,7 @@ app.get('/api/dca-plans', authenticateToken, async (req, res) => {
       const [executions] = await db.execute(
         `SELECT id, btc_amount, inr_amount, execution_price, executed_at, status
          FROM transactions 
-         WHERE user_id = ? AND parent_id = ? AND type = ? 
+         WHERE user_id = ? AND dca_plan_id = ? AND type = ? 
          ORDER BY executed_at DESC 
          LIMIT 10`,
         [userId, plan.id, plan.plan_type]
@@ -511,7 +511,7 @@ app.get('/api/dca-plans', authenticateToken, async (req, res) => {
            SUM(btc_amount) as total_btc,
            AVG(execution_price) as avg_price
          FROM transactions 
-         WHERE user_id = ? AND parent_id = ? AND type = ? AND status = 'EXECUTED'`,
+         WHERE user_id = ? AND dca_plan_id = ? AND type = ? AND status = 'EXECUTED'`,
         [userId, plan.id, plan.plan_type]
       );
 
