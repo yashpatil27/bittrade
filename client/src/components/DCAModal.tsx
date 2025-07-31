@@ -32,7 +32,8 @@ interface DCAModalProps {
 interface DCAPlanData {
   plan_type: 'DCA_BUY' | 'DCA_SELL';
   frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
-  amount_per_execution: number; // INR amount
+  amount_per_execution_inr?: number;
+  amount_per_execution_btc?: number;
   remaining_executions?: number; // undefined for unlimited
   max_price?: number; // Optional max price per BTC
   min_price?: number; // Optional min price per BTC
@@ -227,7 +228,8 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
       const finalPlan: DCAPlanData = {
         plan_type: dcaPlan.plan_type!,
         frequency: dcaPlan.frequency!,
-        amount_per_execution: parseFloat(amountInput),
+        amount_per_execution_inr: dcaPlan.plan_type === 'DCA_BUY' ? parseFloat(amountInput) : undefined,
+        amount_per_execution_btc: dcaPlan.plan_type === 'DCA_SELL' ? parseFloat(amountInput) : undefined,
         remaining_executions: executionsInput ? parseInt(executionsInput) : undefined,
         max_price: maxPriceInput ? parseFloat(maxPriceInput) : undefined,
         min_price: minPriceInput ? parseFloat(minPriceInput) : undefined,

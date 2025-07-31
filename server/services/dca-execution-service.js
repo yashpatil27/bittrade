@@ -85,7 +85,7 @@ class DCAExecutionService {
 
   async executeDuePlans() {
     const [plans] = await this.db.execute(
-      'SELECT id, user_id, plan_type, frequency, amount_per_execution, max_price, min_price \
+      'SELECT id, user_id, plan_type, frequency, amount_per_execution_inr, amount_per_execution_btc, max_price, min_price \
        FROM active_plans WHERE next_execution_at <= UTC_TIMESTAMP() AND status = ?',
       ['ACTIVE']
     );
@@ -197,23 +197,25 @@ class DCAExecutionService {
       }
       
       if (plan.plan_type === 'DCA_BUY') {
+        const inrAmount = plan.amount_per_execution_inr || 0;
+
         // Check if user has sufficient INR balance
-        if (user.available_inr < plan.amount_per_execution) {
+        if (user.available_inr < inrAmount) {
           await connection.rollback();
           return { 
             success: false, 
-            error: `Insufficient INR balance. Available: ₹${user.available_inr}, Required: ₹${plan.amount_per_execution}` 
+            error: `Insufficient INR balance. Available: ₹${user.available_inr}, Required: ₹${inrAmount}` 
           };
         }
         
         // Calculate BTC amount (price is in paise, amount is in paise)
         // BTC amount in satoshis = (INR amount in paise * 100,000,000) / (price in paise)
-        const btcAmountSatoshis = Math.floor((plan.amount_per_execution * 100000000) / currentPrice);
+        const btcAmountSatoshis = Math.floor((inrAmount * 100000000) / currentPrice);
         
         // Update user balances
         await connection.execute(
           'UPDATE users SET available_inr = available_inr - ?, available_btc = available_btc + ? WHERE id = ?',
-          [plan.amount_per_execution, btcAmountSatoshis, plan.user_id]
+          [inrAmount, btcAmountSatoshis, plan.user_id]
         );
         
         // Create transaction record
@@ -222,18 +224,17 @@ class DCAExecutionService {
             user_id, type, inr_amount, btc_amount, execution_price, 
             status, executed_at, dca_plan_id
           ) VALUES (?, 'DCA_BUY', ?, ?, ?, 'EXECUTED', UTC_TIMESTAMP(), ?)`,
-          [plan.user_id, plan.amount_per_execution, btcAmountSatoshis, currentPrice, plan.id]
+          [plan.user_id, inrAmount, btcAmountSatoshis, currentPrice, plan.id]
         );
         
         await connection.commit();
         
-        console.log(`💰 DCA BUY executed: User ${plan.user_id} bought ${btcAmountSatoshis} satoshis for ₹${plan.amount_per_execution} at ₹${currentPrice}/BTC`);
+        console.log(`💰 DCA BUY executed: User ${plan.user_id} bought ${btcAmountSatoshis} satoshis for ₹${inrAmount} at ₹${currentPrice}/BTC`);
         
         return { success: true, btcAmount: btcAmountSatoshis, price: currentPrice };
         
       } else if (plan.plan_type === 'DCA_SELL') {
-        // Calculate BTC amount to sell for the target INR amount
-        const btcAmountSatoshis = Math.floor((plan.amount_per_execution * 100000000) / currentPrice);
+        const btcAmountSatoshis = plan.amount_per_execution_btc || 0;
         
         // Check if user has sufficient BTC balance
         if (user.available_btc < btcAmountSatoshis) {
@@ -244,10 +245,13 @@ class DCAExecutionService {
           };
         }
         
+        // Calculate INR amount from BTC amount at current sell price
+        const inrAmount = Math.floor((btcAmountSatoshis * currentPrice) / 100000000);
+        
         // Update user balances
         await connection.execute(
           'UPDATE users SET available_btc = available_btc - ?, available_inr = available_inr + ? WHERE id = ?',
-          [btcAmountSatoshis, plan.amount_per_execution, plan.user_id]
+          [btcAmountSatoshis, inrAmount, plan.user_id]
         );
         
         // Create transaction record
@@ -256,12 +260,12 @@ class DCAExecutionService {
             user_id, type, inr_amount, btc_amount, execution_price, 
             status, executed_at, dca_plan_id
           ) VALUES (?, 'DCA_SELL', ?, ?, ?, 'EXECUTED', UTC_TIMESTAMP(), ?)`,
-          [plan.user_id, plan.amount_per_execution, btcAmountSatoshis, currentPrice, plan.id]
+          [plan.user_id, inrAmount, btcAmountSatoshis, currentPrice, plan.id]
         );
         
         await connection.commit();
         
-        console.log(`💰 DCA SELL executed: User ${plan.user_id} sold ${btcAmountSatoshis} satoshis for ₹${plan.amount_per_execution} at ₹${currentPrice}/BTC`);
+        console.log(`💰 DCA SELL executed: User ${plan.user_id} sold ${btcAmountSatoshis} satoshis for ₹${inrAmount} at ₹${currentPrice}/BTC`);
         
         return { success: true, btcAmount: btcAmountSatoshis, price: currentPrice };
       }

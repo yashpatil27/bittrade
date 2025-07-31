@@ -484,7 +484,7 @@ app.get('/api/dca-plans', authenticateToken, async (req, res) => {
 
   try {
     const [plans] = await db.execute(
-      `SELECT id, plan_type, status, frequency, amount_per_execution, next_execution_at, 
+      `SELECT id, plan_type, status, frequency, amount_per_execution_inr, amount_per_execution_btc, next_execution_at, 
               total_executions, remaining_executions, max_price, min_price, created_at, completed_at
        FROM active_plans 
        WHERE user_id = ? 
@@ -542,10 +542,19 @@ app.get('/api/dca-plans', authenticateToken, async (req, res) => {
 // Create a new DCA plan
 app.post('/api/dca-plans', authenticateToken, async (req, res) => {
   const userId = req.user.id;
-  const { plan_type, frequency, amount_per_execution, remaining_executions, max_price, min_price } = req.body;
+  const { plan_type, frequency, amount_per_execution_inr, amount_per_execution_btc, remaining_executions, max_price, min_price } = req.body;
 
   if (!['DCA_BUY', 'DCA_SELL'].includes(plan_type) || !['HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY'].includes(frequency)) {
     return res.status(400).json({ error: 'Invalid plan type or frequency' });
+  }
+
+  // Validate that the correct amount field is provided for each plan type
+  if (plan_type === 'DCA_BUY' && (!amount_per_execution_inr || amount_per_execution_inr <= 0)) {
+    return res.status(400).json({ error: 'DCA_BUY plans require a valid amount_per_execution_inr' });
+  }
+  
+  if (plan_type === 'DCA_SELL' && (!amount_per_execution_btc || amount_per_execution_btc <= 0)) {
+    return res.status(400).json({ error: 'DCA_SELL plans require a valid amount_per_execution_btc' });
   }
 
   try {
@@ -553,6 +562,8 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
     const safeRemainingExecutions = remaining_executions !== undefined ? remaining_executions : null;
     const safeMaxPrice = max_price !== undefined ? max_price : null;
     const safeMinPrice = min_price !== undefined ? min_price : null;
+    const safeAmountInr = plan_type === 'DCA_BUY' ? amount_per_execution_inr : null;
+    const safeAmountBtc = plan_type === 'DCA_SELL' ? amount_per_execution_btc : null;
     
     // Calculate next execution time using MySQL's date functions for timezone consistency
     let nextExecutionSQL;
@@ -574,9 +585,9 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
     }
     
     const [result] = await db.execute(
-      `INSERT INTO active_plans (user_id, plan_type, status, frequency, amount_per_execution, next_execution_at, remaining_executions, max_price, min_price, created_at)
-       VALUES (?, ?, 'ACTIVE', ?, ?, ${nextExecutionSQL}, ?, ?, ?, UTC_TIMESTAMP())`,
-      [userId, plan_type, frequency, amount_per_execution, safeRemainingExecutions, safeMaxPrice, safeMinPrice]
+      `INSERT INTO active_plans (user_id, plan_type, status, frequency, amount_per_execution_inr, amount_per_execution_btc, next_execution_at, remaining_executions, max_price, min_price, created_at)
+       VALUES (?, ?, 'ACTIVE', ?, ?, ?, ${nextExecutionSQL}, ?, ?, ?, UTC_TIMESTAMP())`,
+      [userId, plan_type, frequency, safeAmountInr, safeAmountBtc, safeRemainingExecutions, safeMaxPrice, safeMinPrice]
     );
     // Send updates via WebSocket
     if (global.sendUserDCAPlansUpdate) {
@@ -1375,7 +1386,7 @@ async function sendUserDCAPlansUpdate(userId) {
     
     // Fetch DCA plans from database
     const [rows] = await db.execute(
-      `SELECT id, plan_type, status, amount_per_execution, frequency, max_price, min_price, 
+      `SELECT id, plan_type, status, amount_per_execution_inr, amount_per_execution_btc, frequency, max_price, min_price, 
               remaining_executions, next_execution_at, created_at, completed_at
        FROM active_plans 
        WHERE user_id = ? AND status IN ('ACTIVE', 'PAUSED')
@@ -1392,7 +1403,7 @@ async function sendUserDCAPlansUpdate(userId) {
                   SUM(btc_amount) as total_btc,
                   AVG(execution_price) as avg_price
            FROM transactions 
-           WHERE parent_id = ? AND status = 'EXECUTED'`,
+           WHERE dca_plan_id = ? AND status = 'EXECUTED'`,
           [plan.id]
         );
         

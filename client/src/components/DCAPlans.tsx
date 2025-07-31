@@ -86,7 +86,11 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   };
 
   const getPlanMainDetail = (plan: DCAPlan) => {
-    return formatRupeesForDisplay(plan.amount_per_execution);
+    if (plan.plan_type === 'DCA_BUY') {
+      return formatRupeesForDisplay(plan.amount_per_execution_inr || 0);
+    } else {
+      return formatBitcoinForDisplay(plan.amount_per_execution_btc || 0);
+    }
   };
 
   const getPlanSubDetail = (plan: DCAPlan) => {
@@ -181,7 +185,10 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   };
 
   const getPlanSubLabel = (plan: DCAPlan) => {
-    return `₹${plan.amount_per_execution.toLocaleString()} • ${plan.frequency.toLowerCase()}`;
+    const amountStr = plan.plan_type === 'DCA_BUY' 
+      ? `₹${(plan.amount_per_execution_inr || 0).toLocaleString()}`
+      : `${formatBitcoinForDisplay(plan.amount_per_execution_btc || 0)}`;
+    return `${amountStr} • ${plan.frequency.toLowerCase()}`;
   };
 
   if (isLoading) {

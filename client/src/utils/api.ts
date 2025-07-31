@@ -66,7 +66,8 @@ export const getWebSocketUrl = () => {
 export const createDCAPlan = async (planData: {
   plan_type: 'DCA_BUY' | 'DCA_SELL';
   frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
-  amount_per_execution: number;
+  amount_per_execution_inr?: number;
+  amount_per_execution_btc?: number;
   remaining_executions?: number;
   max_price?: number;
   min_price?: number;

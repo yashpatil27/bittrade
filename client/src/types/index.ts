@@ -53,7 +53,8 @@ export interface DCAPlan {
   plan_type: 'DCA_BUY' | 'DCA_SELL';
   status: 'ACTIVE' | 'PAUSED' | 'COMPLETED' | 'CANCELLED';
   frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
-  amount_per_execution: number;
+  amount_per_execution_inr?: number;
+  amount_per_execution_btc?: number;
   next_execution_at: string;
   total_executions: number;
   remaining_executions?: number;
