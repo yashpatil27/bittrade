@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Play, Pause, Trash2, Clock, BarChart3, Plus, Bitcoin, DollarSign } from 'lucide-react';
-import { getDCAPlans, updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
+import { updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
 import { DCAPlan } from '../types';
 import Card from './Card';
 import DetailsModal from './DetailsModal';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
+import useDCAPlansUpdates from '../hooks/useDCAPlansUpdates';
 
 interface DCAPlansProps {
   title?: string;
@@ -14,12 +15,6 @@ interface DCAPlansProps {
   onPlansLoaded?: (hasPlans: boolean) => void;
 }
 
-interface DCAPlansResponse {
-  plans: DCAPlan[];
-  total_plans: number;
-  active_plans: number;
-  paused_plans: number;
-}
 
 const DCAPlans: React.FC<DCAPlansProps> = ({
   title = 'Active DCA Plans',
@@ -28,42 +23,18 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   wrapInCard = false,
   onPlansLoaded
 }) => {
-  const [dcaPlans, setDcaPlans] = React.useState<DCAPlansResponse | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const { dcaPlans, isLoading, error, fetchDCAPlans } = useDCAPlansUpdates();
   
   // DetailsModal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<DCAPlan | null>(null);
 
-  // Fetch DCA plans
-  const fetchDCAPlans = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const plansData = await getDCAPlans();
-      setDcaPlans(plansData);
-      // Notify parent component about plans status
-      if (onPlansLoaded) {
-        onPlansLoaded(plansData.plans.length > 0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch DCA plans:', error);
-      setError('Failed to load DCA plans');
-      const emptyPlans = { plans: [], total_plans: 0, active_plans: 0, paused_plans: 0 };
-      setDcaPlans(emptyPlans);
-      // Notify parent component about plans status
-      if (onPlansLoaded) {
-        onPlansLoaded(false);
-      }
-    } finally {
-      setIsLoading(false);
+  // Notify parent component about plans status when dcaPlans changes
+  React.useEffect(() => {
+    if (onPlansLoaded && dcaPlans) {
+      onPlansLoaded(dcaPlans.plans.length > 0);
     }
-  };
-
-  useEffect(() => {
-    fetchDCAPlans();
-  }, []);
+  }, [dcaPlans, onPlansLoaded]);
 
   const formatTimeUntilNext = (nextExecutionAt: string): string => {
     const now = new Date();

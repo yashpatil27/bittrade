@@ -555,6 +555,11 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
        VALUES (?, ?, 'ACTIVE', ?, ?, NOW(), ?, ?, ?, NOW())`,
       [userId, plan_type, frequency, amount_per_execution, safeRemainingExecutions, safeMaxPrice, safeMinPrice]
     );
+    // Send updates via WebSocket
+    if (global.sendUserDCAPlansUpdate) {
+      global.sendUserDCAPlansUpdate(userId);
+    }
+
     res.status(201).json({ planId: result.insertId, message: 'DCA plan created successfully' });
   } catch (error) {
     console.error('Error creating DCA plan:', error);
@@ -580,6 +585,11 @@ app.patch('/api/dca-plans/:planId/status', authenticateToken, async (req, res) =
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Plan not found or unauthorized' });
+    }
+
+    // Send updates via WebSocket
+    if (global.sendUserDCAPlansUpdate) {
+      global.sendUserDCAPlansUpdate(userId);
     }
 
     res.json({ message: `Plan ${status.toLowerCase()} successfully` });
@@ -638,6 +648,11 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
         planType: plan.plan_type,
         relatedTransactionsDeleted: deleteTransactionsResult.affectedRows
       });
+
+      // Send updates via WebSocket
+      if (global.sendUserDCAPlansUpdate) {
+        global.sendUserDCAPlansUpdate(userId);
+      }
 
       res.json({ 
         message: 'Plan deleted successfully',
@@ -1077,6 +1092,9 @@ io.on('connection', async (socket) => {
       // Send initial transaction data after authentication
       await sendUserTransactionUpdate(decoded.id);
       
+      // Send initial DCA plans data after authentication
+      await sendUserDCAPlansUpdate(decoded.id);
+      
       socket.emit('authentication_success', {
         message: 'WebSocket authenticated successfully',
         userId: decoded.id, // Fixed: use 'id' instead of 'userId'
@@ -1262,6 +1280,107 @@ async function sendUserTransactionUpdate(userId) {
   }
 }
 
+// Function to send DCA plans update to specific user
+async function sendUserDCAPlansUpdate(userId) {
+  try {
+    // Validate userId
+    if (!userId) {
+      console.error('❌ sendUserDCAPlansUpdate: userId is undefined');
+      return;
+    }
+    
+    console.log(`🔍 Sending DCA plans update for userId: ${userId}`);
+    
+    // Fetch DCA plans from database
+    const [rows] = await db.execute(
+      `SELECT id, plan_type, status, amount_per_execution, frequency, max_price, min_price, 
+              remaining_executions, next_execution_at, created_at, completed_at
+       FROM active_plans 
+       WHERE user_id = ? AND status IN ('ACTIVE', 'PAUSED')
+       ORDER BY created_at DESC`,
+      [userId]
+    );
+    
+    // Get performance data for each plan
+    const plansWithPerformance = await Promise.all(rows.map(async (plan) => {
+      try {
+        const [perfRows] = await db.execute(
+          `SELECT COUNT(*) as total_executions,
+                  SUM(inr_amount) as total_invested,
+                  SUM(btc_amount) as total_btc,
+                  AVG(execution_price) as avg_price
+           FROM transactions 
+           WHERE dca_plan_id = ? AND status = 'EXECUTED'`,
+          [plan.id]
+        );
+        
+        const performance = perfRows[0];
+        return {
+          ...plan,
+          performance: {
+            total_executions: performance.total_executions || 0,
+            total_invested: performance.total_invested || 0,
+            total_btc: performance.total_btc || 0,
+            avg_price: performance.avg_price || 0
+          }
+        };
+      } catch (error) {
+        console.error(`Error fetching performance for plan ${plan.id}:`, error);
+        return {
+          ...plan,
+          performance: {
+            total_executions: 0,
+            total_invested: 0,
+            total_btc: 0,
+            avg_price: 0
+          }
+        };
+      }
+    }));
+    
+    // Calculate summary statistics
+    const totalPlans = plansWithPerformance.length;
+    const activePlans = plansWithPerformance.filter(p => p.status === 'ACTIVE').length;
+    const pausedPlans = plansWithPerformance.filter(p => p.status === 'PAUSED').length;
+    
+    const dcaPlansData = {
+      plans: plansWithPerformance,
+      total_plans: totalPlans,
+      active_plans: activePlans,
+      paused_plans: pausedPlans
+    };
+    
+    console.log(`📋 Sending ${totalPlans} DCA plans for user ${userId} (${activePlans} active, ${pausedPlans} paused)`);
+
+    // Cache DCA plans data in Redis (if available)
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const redisKey = `user_dca_plans_${userId}`;
+        await global.dataService.redis.set(redisKey, JSON.stringify(dcaPlansData), 'EX', 60 * 30); // Cache for 30 minutes
+        console.log(`💾 DCA plans data cached in Redis: ${redisKey}`);
+      } catch (redisError) {
+        console.error('Error caching DCA plans data in Redis:', redisError);
+      }
+    }
+
+    // Emit update to all sockets of the user
+    const userSocketSet = userSockets.get(userId);
+    if (userSocketSet && userSocketSet.size > 0) {
+      userSocketSet.forEach((socketId) => {
+        io.to(socketId).emit('user_dca_plans_update', {
+          ...dcaPlansData,
+          timestamp: new Date().toISOString()
+        });
+      });
+      console.log(`📡 DCA plans update sent to ${userSocketSet.size} client(s) for user ${userId}`);
+    } else {
+      console.log(`⚠️  No active connections for user ${userId}`);
+    }
+  } catch (error) {
+    console.error(`Error sending DCA plans update for user ${userId}:`, error);
+  }
+}
+
 // Function to broadcast data to all connected clients
 function broadcastToClients(eventName, data) {
   io.emit(eventName, {
@@ -1274,6 +1393,7 @@ function broadcastToClients(eventName, data) {
 global.broadcastToClients = broadcastToClients;
 global.sendUserBalanceUpdate = sendUserBalanceUpdate;
 global.sendUserTransactionUpdate = sendUserTransactionUpdate;
+global.sendUserDCAPlansUpdate = sendUserDCAPlansUpdate;
 
 // Function to get local network IP address
 function getLocalNetworkIP() {
