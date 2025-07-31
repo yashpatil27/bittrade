@@ -611,6 +611,126 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
   }
 });
 
+// Cancel limit order (delete pending transaction and release reserved funds)
+app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { transactionId } = req.params;
+
+  try {
+    // Start database transaction
+    await db.beginTransaction();
+
+    try {
+      // Get the transaction details to verify ownership and get amounts for fund release
+      const [transactionRows] = await db.execute(
+        'SELECT id, user_id, type, status, btc_amount, inr_amount FROM transactions WHERE id = ? AND user_id = ?',
+        [transactionId, userId]
+      );
+
+      if (transactionRows.length === 0) {
+        await db.rollback();
+        return res.status(404).json({ error: 'Transaction not found or unauthorized' });
+      }
+
+      const transaction = transactionRows[0];
+
+      // Only allow cancellation of PENDING limit orders
+      if (transaction.status !== 'PENDING') {
+        await db.rollback();
+        return res.status(400).json({ error: 'Only pending transactions can be cancelled' });
+      }
+
+      if (!transaction.type.startsWith('LIMIT')) {
+        await db.rollback();
+        return res.status(400).json({ error: 'Only limit orders can be cancelled' });
+      }
+
+      // Release reserved funds based on order type
+      if (transaction.type === 'LIMIT_BUY') {
+        // For limit buy: release reserved INR back to available INR
+        await db.execute(
+          'UPDATE users SET available_inr = available_inr + ?, reserved_inr = reserved_inr - ? WHERE id = ?',
+          [transaction.inr_amount, transaction.inr_amount, userId]
+        );
+        console.log(`💰 Released ₹${transaction.inr_amount} from cancelled limit buy order (User ${userId})`);
+        
+      } else if (transaction.type === 'LIMIT_SELL') {
+        // For limit sell: release reserved BTC back to available BTC
+        await db.execute(
+          'UPDATE users SET available_btc = available_btc + ?, reserved_btc = reserved_btc - ? WHERE id = ?',
+          [transaction.btc_amount, transaction.btc_amount, userId]
+        );
+        console.log(`₿ Released ${transaction.btc_amount} satoshis from cancelled limit sell order (User ${userId})`);
+      }
+
+      // Update transaction status to CANCELLED
+      await db.execute(
+        'UPDATE transactions SET status = "CANCELLED" WHERE id = ?',
+        [transactionId]
+      );
+
+      // Remove from pending limit orders cache
+      if (global.dataService && global.dataService.redis) {
+        try {
+          await global.dataService.loadPendingLimitOrdersToCache();
+          console.log('🔄 Refreshed pending limit orders cache after cancellation');
+        } catch (redisError) {
+          console.error('Error refreshing limit orders cache:', redisError);
+        }
+      }
+
+      // Commit the transaction
+      await db.commit();
+
+      // Clear user caches
+      if (global.dataService && global.dataService.redis) {
+        try {
+          await global.dataService.redis.del(`user_transactions_${userId}`);
+          await global.dataService.redis.del(`user_balance_${userId}`);
+          console.log('💾 Cleared user caches after order cancellation');
+        } catch (error) {
+          console.error('Error clearing user caches:', error);
+        }
+      }
+
+      // Send real-time updates
+      if (global.sendUserBalanceUpdate) {
+        global.sendUserBalanceUpdate(userId);
+      }
+
+      if (global.sendUserTransactionUpdate) {
+        global.sendUserTransactionUpdate(userId);
+      }
+
+      console.log(`✅ LIMIT order cancelled:`, {
+        userId,
+        transactionId,
+        type: transaction.type,
+        btc_amount: transaction.btc_amount,
+        inr_amount: transaction.inr_amount
+      });
+
+      res.json({ 
+        message: 'Limit order cancelled successfully',
+        transactionId: transactionId,
+        type: transaction.type,
+        funds_released: transaction.type === 'LIMIT_BUY' 
+          ? { inr_amount: transaction.inr_amount }
+          : { btc_amount: transaction.btc_amount }
+      });
+
+    } catch (error) {
+      // Rollback transaction on error
+      await db.rollback();
+      throw error;
+    }
+
+  } catch (error) {
+    console.error('Error cancelling limit order:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Execute a market trade (buy or sell)
 app.post('/api/trade', authenticateToken, async (req, res) => {
   const userId = req.user.id;

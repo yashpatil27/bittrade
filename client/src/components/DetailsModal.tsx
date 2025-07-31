@@ -11,7 +11,7 @@ interface DetailItem {
 interface ActionButton {
   label: string;
   onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'danger' | 'warning' | 'success';
   disabled?: boolean;
 }
 
@@ -245,7 +245,11 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                     disabled={actionButtons[0].disabled}
                     className={`px-6 h-12 text-sm font-medium rounded-xl ${
                       actionButtons[0].variant === 'danger' 
-                        ? 'bg-red-600 hover:bg-red-500 text-white disabled:bg-red-600/50'
+                        ? 'bg-red-200 hover:bg-red-250 text-red-800 border border-red-400 disabled:bg-red-200/50'
+                        : actionButtons[0].variant === 'warning'
+                        ? 'bg-amber-100 hover:bg-amber-150 text-amber-800 border border-amber-300 disabled:bg-amber-100/50'
+                        : actionButtons[0].variant === 'success'
+                        ? 'bg-green-100 hover:bg-green-150 text-green-800 border border-green-300 disabled:bg-green-100/50'
                         : actionButtons[0].variant === 'primary'
                         ? 'btn-strike-primary'
                         : 'btn-strike-secondary'
@@ -263,7 +267,11 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                       disabled={button.disabled}
                       className={`flex-1 h-12 text-sm font-medium rounded-xl ${
                         button.variant === 'danger' 
-                          ? 'bg-red-600 hover:bg-red-500 text-white disabled:bg-red-600/50'
+                          ? 'bg-red-200 hover:bg-red-250 text-red-800 border border-red-400 disabled:bg-red-200/50'
+                          : button.variant === 'warning'
+                          ? 'bg-amber-100 hover:bg-amber-150 text-amber-800 border border-amber-300 disabled:bg-amber-100/50'
+                          : button.variant === 'success'
+                          ? 'bg-green-100 hover:bg-green-150 text-green-800 border border-green-300 disabled:bg-green-100/50'
                           : button.variant === 'primary'
                           ? 'btn-strike-primary'
                           : 'btn-strike-secondary'

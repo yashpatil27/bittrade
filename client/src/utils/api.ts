@@ -165,4 +165,27 @@ export const deleteDCAPlan = async (planId: number) => {
   return response.json();
 };
 
+// Cancel limit order (delete pending transaction)
+export const cancelLimitOrder = async (transactionId: string) => {
+  const token = localStorage.getItem('bittrade_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/transactions/${transactionId}/cancel`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 export default API_CONFIG;

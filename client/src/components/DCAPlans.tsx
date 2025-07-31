@@ -332,13 +332,22 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
                 handlePauseResume(selectedPlan, {} as React.MouseEvent);
                 setIsDetailsModalOpen(false);
               },
-              variant: selectedPlan.status === 'ACTIVE' ? 'secondary' : 'primary'
+              variant: selectedPlan.status === 'ACTIVE' ? 'warning' : 'success'
             },
             {
               label: 'Cancel Plan',
-              onClick: () => {
-                handleDelete(selectedPlan, {} as React.MouseEvent);
-                setIsDetailsModalOpen(false);
+              onClick: async () => {
+                try {
+                  if (window.confirm('Are you sure you want to delete this DCA plan?')) {
+                    await deleteDCAPlan(selectedPlan.id);
+                    // Refresh plans list
+                    fetchDCAPlans();
+                    setIsDetailsModalOpen(false);
+                  }
+                } catch (error) {
+                  console.error('Failed to delete DCA plan:', error);
+                  // TODO: Show error message to user
+                }
               },
               variant: 'danger'
             }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { getTimeAgo } from '../data/mockData';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
+import { cancelLimitOrder } from '../utils/api';
 import { Transaction } from '../types';
 import useTransactionUpdates from '../hooks/useTransactionUpdates';
 import Card from './Card';
@@ -342,10 +343,16 @@ const TransactionList: React.FC<TransactionListProps> = ({
             (selectedTransaction.type === 'LIMIT_BUY' || selectedTransaction.type === 'LIMIT_SELL') 
               ? [{
                   label: 'Cancel Order',
-                  onClick: () => {
-                    // TODO: Implement cancel order functionality
-                    console.log('Cancel order:', selectedTransaction.id);
-                    setIsDetailsModalOpen(false);
+                  onClick: async () => {
+                    try {
+                      await cancelLimitOrder(selectedTransaction.id);
+                      // Refresh transactions list
+                      fetchTransactions();
+                      setIsDetailsModalOpen(false);
+                    } catch (error) {
+                      console.error('Failed to cancel limit order:', error);
+                      // TODO: Show error message to user
+                    }
                   },
                   variant: 'danger' as const
                 }]
