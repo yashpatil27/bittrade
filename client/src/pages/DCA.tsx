@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import Card from '../components/Card';
 import DCAModal from '../components/DCAModal';
 import DCAPlans from '../components/DCAPlans';
+import DCATransactionList from '../components/DCATransactionList';
 import MarketRate from '../components/MarketRate';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
 import { getUserBalance } from '../utils/tradingApi';
-import { DCAPlan } from '../types';
+import { DCAPlan, Transaction } from '../types';
 
 interface BalanceData {
   available_inr: number;
@@ -107,6 +108,14 @@ const DCA: React.FC = () => {
               onPlanClick={handlePlanClick}
               wrapInCard={true}
               onPlansLoaded={setHasPlans}
+            />
+            
+            {/* DCA Transaction History */}
+            <DCATransactionList
+              onTransactionClick={(transaction: Transaction) => {
+                console.log('DCA Transaction clicked:', transaction);
+              }}
+              maxItems={10}
             />
           </div>
         ) : (

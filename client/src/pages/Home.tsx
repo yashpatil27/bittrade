@@ -1,6 +1,7 @@
 import React from 'react';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
+import PendingOrdersList from '../components/PendingOrdersList';
 import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
@@ -84,13 +85,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
         />
         
 {/* Pending Orders - Only shown when there are pending limit orders */}
-        <TransactionList 
-          title="Pending Orders"
-          filterPending={true}
-          showTargetPrice={true}
-          showCount={true}
-          showViewAll={false}
-          wrapInCard={true}
+        <PendingOrdersList 
           onTransactionClick={(order) => console.log('Clicked pending order:', order)}
         />
 
