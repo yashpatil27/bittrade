@@ -38,7 +38,9 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
 
   const formatTimeUntilNext = (nextExecutionAt: string): string => {
     const now = new Date();
-    const nextExecution = new Date(nextExecutionAt);
+    // Ensure the timestamp is treated as UTC by appending 'Z' if it doesn't have timezone info
+    const utcTimestamp = nextExecutionAt.includes('Z') ? nextExecutionAt : nextExecutionAt + 'Z';
+    const nextExecution = new Date(utcTimestamp);
     const diffMs = nextExecution.getTime() - now.getTime();
     
     if (diffMs <= 0) {

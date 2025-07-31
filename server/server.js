@@ -554,9 +554,28 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
     const safeMaxPrice = max_price !== undefined ? max_price : null;
     const safeMinPrice = min_price !== undefined ? min_price : null;
     
+    // Calculate next execution time using MySQL's date functions for timezone consistency
+    let nextExecutionSQL;
+    switch (frequency) {
+      case 'HOURLY':
+        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
+        break;
+      case 'DAILY':
+        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 DAY)';
+        break;
+      case 'WEEKLY':
+        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 WEEK)';
+        break;
+      case 'MONTHLY':
+        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)';
+        break;
+      default:
+        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)'; // Default to 1 hour
+    }
+    
     const [result] = await db.execute(
       `INSERT INTO active_plans (user_id, plan_type, status, frequency, amount_per_execution, next_execution_at, remaining_executions, max_price, min_price, created_at)
-       VALUES (?, ?, 'ACTIVE', ?, ?, NOW(), ?, ?, ?, NOW())`,
+       VALUES (?, ?, 'ACTIVE', ?, ?, ${nextExecutionSQL}, ?, ?, ?, UTC_TIMESTAMP())`,
       [userId, plan_type, frequency, amount_per_execution, safeRemainingExecutions, safeMaxPrice, safeMinPrice]
     );
     // Send updates via WebSocket
@@ -1314,7 +1333,7 @@ async function sendUserDCAPlansUpdate(userId) {
                   SUM(btc_amount) as total_btc,
                   AVG(execution_price) as avg_price
            FROM transactions 
-           WHERE dca_plan_id = ? AND status = 'EXECUTED'`,
+           WHERE parent_id = ? AND status = 'EXECUTED'`,
           [plan.id]
         );
         

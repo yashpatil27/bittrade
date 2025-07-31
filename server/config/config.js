@@ -3,7 +3,8 @@ module.exports = {
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '', // Set your MySQL password here or use environment variable
-    database: process.env.DB_NAME || 'bittrade'
+    database: process.env.DB_NAME || 'bittrade',
+    timezone: 'Z' // Force UTC timezone for all datetime operations
   },
   
   redis: {
