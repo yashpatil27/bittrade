@@ -138,6 +138,18 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
     }
   };
 
+  const handlePauseResumeFromModal = async (plan: DCAPlan) => {
+    try {
+      const newStatus = plan.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+      await updateDCAPlanStatus(plan.id, newStatus);
+      // Refresh plans
+      fetchDCAPlans();
+    } catch (error) {
+      console.error('Failed to update plan status:', error);
+      // TODO: Show error message to user
+    }
+  };
+
   const handleDelete = async (plan: DCAPlan, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -254,27 +266,6 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
                 }`}>
                   {plan.status.toLowerCase()}
                 </div>
-                
-                <div className="flex items-center space-x-1">
-                  <button
-                    className="bg-gray-600 hover:bg-gray-500 text-white rounded-full p-1.5 transition-colors"
-                    onClick={(e) => handlePauseResume(plan, e)}
-                    title={plan.status === 'ACTIVE' ? 'Pause plan' : 'Resume plan'}
-                  >
-                    {plan.status === 'ACTIVE' ? (
-                      <Pause className="w-3.5 h-3.5" />
-                    ) : (
-                      <Play className="w-3.5 h-3.5" />
-                    )}
-                  </button>
-                  <button
-                    className="bg-red-600 hover:bg-red-500 text-white rounded-full p-1.5 transition-colors"
-                    onClick={(e) => handleDelete(plan, e)}
-                    title="Delete plan"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
             </div>
             {index < dcaPlans.plans.length - 1 && (
@@ -298,7 +289,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
             {
               label: selectedPlan.status === 'ACTIVE' ? 'Pause Plan' : 'Resume Plan',
               onClick: () => {
-                handlePauseResume(selectedPlan, {} as React.MouseEvent);
+                handlePauseResumeFromModal(selectedPlan);
                 setIsDetailsModalOpen(false);
               },
               variant: selectedPlan.status === 'ACTIVE' ? 'warning' : 'success'
