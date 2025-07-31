@@ -89,7 +89,8 @@ const DCA: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-md mx-auto bg-black min-h-screen">
+    <div className="min-h-screen bg-black">
+      <div className="max-w-md mx-auto bg-black min-h-screen">
       {/* Hidden MarketRate component to get rates */}
       <MarketRate 
         className="hidden"
@@ -226,6 +227,7 @@ const DCA: React.FC = () => {
         sellRate={sellRate}
         onComplete={handleDCAComplete}
       />
+      </div>
     </div>
   );
 };
