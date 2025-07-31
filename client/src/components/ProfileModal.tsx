@@ -20,6 +20,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   onChangePassword,
 }) => {
   const { user, logout } = useAuth();
+  const [userState, setUserState] = useState(user);
   const [dragStartY, setDragStartY] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isProfileUpdateOpen, setProfileUpdateOpen] = useState(false);
@@ -29,6 +30,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [isClosing, setIsClosing] = useState(false);
   const [screenHeight] = useState(window.innerHeight);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Update local user state when auth user changes
+  useEffect(() => {
+    setUserState(user);
+  }, [user]);
 
   // Animation control
   useEffect(() => {
@@ -138,6 +144,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     animateClose();
   };
 
+  const handleProfileUpdate = (updatedData: { name?: string; email?: string }) => {
+    // Update local state immediately to reflect changes
+    setUserState(prevUser => {
+      if (!prevUser) return prevUser;
+      return {
+        ...prevUser,
+        ...(updatedData.name && { name: updatedData.name }),
+        ...(updatedData.email && { email: updatedData.email })
+      };
+    });
+  };
+
   if (!isOpen) return null;
 
   const modalContent = (
@@ -184,8 +202,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="w-20 h-20 bg-brand/10 rounded-full flex items-center justify-center mb-4">
             <User className="w-10 h-10 text-brand" />
           </div>
-          <h3 className="text-white text-xl font-medium mb-1">{user?.name}</h3>
-          <p className="text-gray-400 text-sm">{user?.email}</p>
+          <h3 className="text-white text-xl font-medium mb-1">{userState?.name}</h3>
+          <p className="text-gray-400 text-sm">{userState?.email}</p>
         </div>
 
         {/* Profile Options */}
@@ -204,7 +222,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
                   <div>
                     <h3 className="text-white text-sm font-medium">Name</h3>
-                    <p className="text-gray-400 text-xs mt-1">{user?.name}</p>
+                    <p className="text-gray-400 text-xs mt-1">{userState?.name}</p>
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -224,7 +242,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </div>
                   <div>
                     <h3 className="text-white text-sm font-medium">Email Address</h3>
-                    <p className="text-gray-400 text-xs mt-1">{user?.email}</p>
+                    <p className="text-gray-400 text-xs mt-1">{userState?.email}</p>
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
@@ -278,9 +296,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       <ProfileUpdateModal
         isOpen={isProfileUpdateOpen}
         onRequestClose={() => setProfileUpdateOpen(false)}
-        userName={user?.name || ''}
-        userEmail={user?.email || ''}
+        userName={userState?.name || ''}
+        userEmail={userState?.email || ''}
         updateType={updateType}
+        onProfileUpdate={handleProfileUpdate}
       />
     </>
   );

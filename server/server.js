@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const config = require('./config/config');
 const DataService = require('./services/data-service');
 const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 const { authenticateToken, optionalAuth } = require('./middleware/auth');
 
 const app = express();
@@ -31,6 +32,9 @@ async function initDB() {
 
 // Authentication Routes
 app.use('/api/auth', authRoutes);
+
+// User Profile Routes
+app.use('/api/user', userRoutes);
 
 // API Routes
 
