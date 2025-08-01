@@ -4,6 +4,7 @@ import Card from '../../components/Card';
 import OptionsModal from '../../components/OptionsModal';
 import DepositBitcoinModal from '../../components/DepositBitcoinModal';
 import DepositCashModal from '../../components/DepositCashModal';
+import AdminChangePasswordModal from '../../components/AdminChangePasswordModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../../utils/formatters';
 import { Bitcoin, DollarSign, Key, Trash2 } from 'lucide-react';
 
@@ -21,6 +22,7 @@ const AdminUsers: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserWithBalance | null>(null);
   const [isDepositBitcoinModalOpen, setIsDepositBitcoinModalOpen] = useState(false);
   const [isDepositCashModalOpen, setIsDepositCashModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
   
   const handleUserClick = (user: UserWithBalance) => {
     setSelectedUser(user);
@@ -57,11 +59,14 @@ const AdminUsers: React.FC = () => {
     // Refresh users list to show updated balances
     fetchUsers();
   };
-  
   const handleChangePassword = () => {
-    console.log('Change Password for user:', selectedUser?.name);
-    // TODO: Implement change password functionality
-    handleCloseModal();
+    setIsOptionsModalOpen(false);
+    setIsChangePasswordModalOpen(true);
+  };
+
+  const handleChangePasswordClose = () => {
+    setIsChangePasswordModalOpen(false);
+    setSelectedUser(null);
   };
   
   const handleDeleteUser = () => {
@@ -258,6 +263,13 @@ const AdminUsers: React.FC = () => {
         onClose={handleDepositCashClose}
         user={selectedUser}
         onComplete={handleDepositComplete}
+      />
+      
+      {/* Admin Change Password Modal */}
+      <AdminChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onRequestClose={handleChangePasswordClose}
+        user={selectedUser}
       />
     </div>
   );

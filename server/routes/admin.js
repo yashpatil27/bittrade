@@ -1,5 +1,6 @@
 const express = require('express');
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -410,6 +411,63 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
     });
   } catch (error) {
     console.error('Error withdrawing cash:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Change user password (admin only)
+router.put('/users/:userId/password', authenticateToken, async (req, res) => {
+  try {
+    const adminUserId = req.user.id;
+    const { userId } = req.params;
+    const { password } = req.body;
+    
+    // Check if user is admin from database
+    const [userRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [adminUserId]
+    );
+    
+    if (userRows.length === 0 || !userRows[0].is_admin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Validate password
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+
+    // Check if target user exists
+    const [targetUserRows] = await db.execute(
+      'SELECT id, name, email FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (targetUserRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const targetUser = targetUserRows[0];
+
+    // Hash the new password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    // Update user's password
+    await db.execute(
+      'UPDATE users SET password_hash = ? WHERE id = ?',
+      [hashedPassword, userId]
+    );
+
+    console.log(`✅ Admin ${adminUserId} changed password for user ${userId} (${targetUser.name})`);
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully',
+      user: targetUser
+    });
+  } catch (error) {
+    console.error('Error changing user password:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
