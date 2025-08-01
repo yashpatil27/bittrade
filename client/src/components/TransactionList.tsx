@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Clock } from 'lucide-react';
-import { getTimeAgo } from '../data/mockData';
+import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';
 import { Transaction } from '../types';
@@ -302,10 +302,10 @@ const TransactionList: React.FC<TransactionListProps> = ({
                     <div className="flex items-center space-x-2 text-xs text-gray-400">
                       <span>Target: {formatRupeesForDisplay(txn.execution_price)}</span>
                       <span>•</span>
-                      <span>{getTimeAgo(txn.created_at || '')}</span>
+                      <span>{formatRelativeTime(txn.created_at || '')}</span>
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">{getTimeAgo(txn.executed_at || txn.created_at || '')}</p>
+                    <p className="text-xs text-gray-400">{formatRelativeTime(txn.executed_at || txn.created_at || '')}</p>
                   )}
                 </div>
               </div>

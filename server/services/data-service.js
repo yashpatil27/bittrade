@@ -7,10 +7,14 @@ const config = require('../config/config');
 class DataService {
   async loadPendingLimitOrdersToCache() {
     try {
+      console.log('🔄 Loading pending limit orders from database...');
       const [orders] = await this.db.execute(`
         SELECT * FROM transactions 
         WHERE status = 'PENDING' AND type IN ('LIMIT_BUY', 'LIMIT_SELL')
       `);
+      
+      console.log('📊 Raw database query result:', orders);
+      
       await this.redis.set('pending_limit_orders', JSON.stringify(orders));
       console.log(`📋 Loaded ${orders.length} pending limit orders into Redis cache`);
       
@@ -20,9 +24,16 @@ class DataService {
         const sellOrders = orders.filter(o => o.type === 'LIMIT_SELL').length;
         console.log(`   • ${buyOrders} LIMIT_BUY orders`);
         console.log(`   • ${sellOrders} LIMIT_SELL orders`);
+        
+        // Log individual orders for debugging
+        orders.forEach(order => {
+          console.log(`   📝 Order ${order.id}: ${order.type} - Target: ₹${order.execution_price?.toLocaleString()} - User: ${order.user_id}`);
+        });
       }
     } catch (error) {
       console.error('❌ Error loading pending limit orders:', error);
+      console.error('   Error details:', error.message);
+      console.error('   Stack:', error.stack);
     }
   }
 
@@ -34,6 +45,13 @@ class DataService {
       
       const initialOrderCount = orders.length;
       let executedCount = 0;
+      
+      // Debug logging
+      console.log(`\n🔍 LIMIT ORDER CHECK:`);
+      console.log(`   📊 BTC USD Price: $${btcUsdPrice.toLocaleString()}`);
+      console.log(`   💱 Buy Rate INR: ₹${rates.buy_rate_inr.toLocaleString()}`);
+      console.log(`   💱 Sell Rate INR: ₹${rates.sell_rate_inr.toLocaleString()}`);
+      console.log(`   📋 Pending orders in cache: ${initialOrderCount}`);
 
       orders = orders.filter(order => {
         if (order.type === 'LIMIT_BUY' && rates.buy_rate_inr <= order.execution_price) {
@@ -94,7 +112,7 @@ class DataService {
         // Update transaction status
         await this.db.execute(`
           UPDATE transactions 
-          SET status = 'EXECUTED', executed_at = NOW()
+          SET status = 'EXECUTED', executed_at = UTC_TIMESTAMP()
           WHERE id = ?
         `, [order.id]);
         

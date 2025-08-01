@@ -99,7 +99,9 @@ function parseTimestamp(timestamp: any): Date | null {
     date = timestamp;
   } else if (typeof timestamp === 'string') {
     // Handle ISO strings, MySQL datetime strings, etc.
-    date = new Date(timestamp);
+    // Ensure the timestamp is treated as UTC by appending 'Z' if it doesn't have timezone info
+    const utcTimestamp = timestamp.includes('Z') ? timestamp : timestamp + 'Z';
+    date = new Date(utcTimestamp);
   } else if (typeof timestamp === 'number') {
     // Handle Unix timestamps (seconds or milliseconds)
     // If the number is small, it's likely seconds; if large, milliseconds
@@ -133,6 +135,15 @@ export function formatRelativeTime(timestamp: any): string {
   if (!timestamp) {
     console.warn('formatRelativeTime: Empty timestamp provided');
     return 'Unknown time';
+  }
+  
+  // Debug logging for pending limit orders
+  if (typeof timestamp === 'string' && !timestamp.includes('Z')) {
+    console.log('🐛 formatRelativeTime DEBUG:', {
+      originalTimestamp: timestamp,
+      willAppendZ: true,
+      currentTime: new Date().toISOString()
+    });
   }
   
   const date = parseTimestamp(timestamp);

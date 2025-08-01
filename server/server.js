@@ -415,7 +415,7 @@ async function executeTrade(userId, type, btcAmount, inrAmount, price, action) {
     // Insert transaction record
     const [transactionResult] = await db.execute(
       `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at) 
-       VALUES (?, ?, 'PENDING', ?, ?, ?, NOW())`,
+       VALUES (?, ?, 'PENDING', ?, ?, ?, UTC_TIMESTAMP())`,
       [userId, type, btcAmount, inrAmount, price]
     );
 
@@ -997,7 +997,7 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
       const transactionType = action === 'buy' ? 'MARKET_BUY' : 'MARKET_SELL';
       const [transactionResult] = await db.execute(
         `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
-         VALUES (?, ?, 'EXECUTED', ?, ?, ?, NOW(), NOW())`,
+         VALUES (?, ?, 'EXECUTED', ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
         [userId, transactionType, btcAmount, inrAmount, marketPrice]
       );
       
