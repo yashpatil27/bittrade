@@ -228,9 +228,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
         {/* INR Balance */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm text-gray-400">
-              {showAllUsers ? '₹ INR (All Users)' : '₹ INR'}
-            </span>
+            <span className="text-sm text-gray-400">₹ INR</span>
             <span className="text-base font-semibold text-white">
               {showBalances ? (
                 <AnimateINR value={inrValue} />
@@ -251,9 +249,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
         {/* BTC Balance */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-sm text-gray-400">
-              {showAllUsers ? '₿ BTC (All Users)' : '₿ BTC'}
-            </span>
+            <span className="text-sm text-gray-400">₿ BTC</span>
             <span className="text-base font-semibold text-white">
               {showBalances ? (
                 <AnimateBTC value={showAllUsers 
