@@ -7,6 +7,7 @@ const config = require('./config/config');
 const DataService = require('./services/data-service');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
+const adminRoutes = require('./routes/admin');
 const { authenticateToken, optionalAuth } = require('./middleware/auth');
 
 const app = express();
@@ -35,6 +36,9 @@ app.use('/api/auth', authRoutes);
 
 // User Profile Routes
 app.use('/api/user', userRoutes);
+
+// Admin Routes
+app.use('/api/admin', adminRoutes);
 
 // API Routes
 

@@ -8,6 +8,7 @@ export interface User {
   isVerified: boolean;
   createdAt: string;
   avatar?: string;
+  is_admin?: boolean;
 }
 
 // Bitcoin balance and portfolio

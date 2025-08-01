@@ -122,7 +122,7 @@ router.post('/login', async (req, res) => {
 
     // Find user
     const [users] = await db.execute(
-      'SELECT id, email, name, password_hash FROM users WHERE email = ?',
+      'SELECT id, email, name, password_hash, is_admin FROM users WHERE email = ?',
       [email]
     );
 
@@ -159,7 +159,8 @@ router.post('/login', async (req, res) => {
       user: {
         id: user.id,
         email: user.email,
-        name: user.name
+        name: user.name,
+        is_admin: user.is_admin
       }
     });
 
@@ -186,7 +187,7 @@ router.get('/verify', async (req, res) => {
     
     // Get fresh user data
     const [users] = await db.execute(
-      'SELECT id, email, name FROM users WHERE id = ?',
+      'SELECT id, email, name, is_admin FROM users WHERE id = ?',
       [decoded.id]
     );
 
