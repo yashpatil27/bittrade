@@ -1,6 +1,7 @@
--- ₿itTrade Database Schema v2.0
+-- ₿itTrade Database Schema v2.1
 -- Comprehensive schema for limit orders, DCA, and overcollateralized loans
 -- MySQL Implementation
+-- Updated to reflect current database structure
 
 -- Create database
 CREATE DATABASE IF NOT EXISTS bittrade;
@@ -51,6 +52,7 @@ CREATE TABLE transactions (
   -- Relationships
   parent_id INT,                         -- For DCA installments or related transactions
   loan_id INT,                          -- Reference to loan for loan transactions
+  dca_plan_id INT,                      -- Reference to DCA plan for DCA transactions
   
   -- Scheduling
   scheduled_at TIMESTAMP,               -- When transaction should execute
@@ -82,7 +84,8 @@ CREATE TABLE active_plans (
   
   -- Plan configuration
   frequency ENUM('HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY') NOT NULL,
-  amount_per_execution INT NOT NULL,     -- INR amount per execution (rupees)
+  amount_per_execution_inr INT,          -- INR amount per execution (rupees)
+  amount_per_execution_btc BIGINT,       -- BTC amount per execution (satoshis)
   next_execution_at TIMESTAMP NOT NULL,
   
   -- Execution tracking
@@ -215,4 +218,24 @@ CREATE TABLE migration_log (
   INDEX idx_migration_log_file (migration_file),
   INDEX idx_migration_log_applied_at (applied_at)
 );
+
+-- ========================================================================
+-- CURRENT DATABASE STATE SUMMARY
+-- ========================================================================
+-- This schema reflects the current database structure as of January 2025:
+-- 
+-- STRUCTURAL CHANGES APPLIED:
+-- - operations table renamed to transactions (from migration 004)
+-- - price_change_pct column added to bitcoin_chart_data (from migration add_price_change_pct)
+-- - dca_plan_id column added to transactions table
+-- - active_plans table uses separate amount_per_execution_inr and amount_per_execution_btc columns
+-- 
+-- TIMESTAMP COLUMNS:
+-- - All timestamp columns use DEFAULT CURRENT_TIMESTAMP (NOT the UTC_TIMESTAMP migration)
+-- - Migration 006 (UTC timestamps) was NOT applied to the current database
+-- 
+-- MIGRATION STATUS:
+-- - No formal migrations have been logged in migration_log table
+-- - Database structure evolved manually without migration tracking
+-- ========================================================================
 
