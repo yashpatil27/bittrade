@@ -442,13 +442,19 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
   try {
     const transactionId = await executeTrade(userId, type, btc_amount, inr_amount, execution_price, req.body.action);
     
-    // Clear transaction cache and send real-time updates
+    // Clear transaction cache and reload pending limit orders cache
     if (global.dataService && global.dataService.redis) {
       try {
         await global.dataService.redis.del(`user_transactions_${userId}`);
         console.log('💾 Cleared transaction cache for user:', userId);
+        
+        // Reload pending limit orders cache for limit orders
+        if (type.startsWith('LIMIT')) {
+          await global.dataService.loadPendingLimitOrdersToCache();
+          console.log('🔄 Refreshed pending limit orders cache after order creation');
+        }
       } catch (error) {
-        console.error('Error clearing transaction cache:', error);
+        console.error('Error clearing transaction cache or reloading limit orders:', error);
       }
     }
     

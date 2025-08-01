@@ -116,8 +116,23 @@ class DataService {
           WHERE id = ?
         `, [order.id]);
         
-        // Here you would also update user balances
-        // TODO: Implement balance updates based on order type
+        // Update user balances based on order type
+        if (order.type === 'LIMIT_BUY') {
+          // For limit buy: convert reserved INR to available BTC
+          await this.db.execute(
+            'UPDATE users SET reserved_inr = reserved_inr - ?, available_btc = available_btc + ? WHERE id = ?',
+            [order.inr_amount, order.btc_amount, order.user_id]
+          );
+          console.log(`   💰 Converted ₹${order.inr_amount} to ${order.btc_amount} satoshis for user ${order.user_id}`);
+          
+        } else if (order.type === 'LIMIT_SELL') {
+          // For limit sell: convert reserved BTC to available INR
+          await this.db.execute(
+            'UPDATE users SET reserved_btc = reserved_btc - ?, available_inr = available_inr + ? WHERE id = ?',
+            [order.btc_amount, order.inr_amount, order.user_id]
+          );
+          console.log(`   ₿ Converted ${order.btc_amount} satoshis to ₹${order.inr_amount} for user ${order.user_id}`);
+        }
         
         await this.db.commit();
         
@@ -140,6 +155,15 @@ class DataService {
             executedAt: executionTime
           });
           console.log(`📡 Broadcasted order execution to ${this.io.engine.clientsCount} clients`);
+        }
+        
+        // Send real-time updates to the specific user
+        if (global.sendUserBalanceUpdate) {
+          global.sendUserBalanceUpdate(order.user_id);
+        }
+        
+        if (global.sendUserTransactionUpdate) {
+          global.sendUserTransactionUpdate(order.user_id);
         }
         
       } catch (dbError) {
