@@ -120,6 +120,59 @@ router.get('/dca-plans', authenticateToken, async (req, res) => {
   }
 });
 
+// Get total balance across all non-admin users
+router.get('/total-balance', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if user is admin from database
+    const [userRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (userRows.length === 0 || !userRows[0].is_admin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Get total balance for all non-admin users
+    const [balanceRows] = await db.execute(
+      `SELECT 
+         SUM(available_inr) as total_available_inr,
+         SUM(available_btc) as total_available_btc,
+         SUM(reserved_inr) as total_reserved_inr,
+         SUM(reserved_btc) as total_reserved_btc,
+         SUM(collateral_btc) as total_collateral_btc,
+         SUM(borrowed_inr) as total_borrowed_inr,
+         SUM(interest_accrued) as total_interest_accrued
+       FROM users 
+       WHERE is_admin = false OR is_admin IS NULL`
+    );
+
+    const result = balanceRows[0] || {
+      total_available_inr: 0,
+      total_available_btc: 0,
+      total_reserved_inr: 0,
+      total_reserved_btc: 0,
+      total_collateral_btc: 0,
+      total_borrowed_inr: 0,
+      total_interest_accrued: 0
+    };
+
+    // Convert nulls to 0
+    Object.keys(result).forEach(key => {
+      if (result[key] === null) {
+        result[key] = 0;
+      }
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching admin total balance:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get all users for admin
 router.get('/users', authenticateToken, async (req, res) => {
   try {
