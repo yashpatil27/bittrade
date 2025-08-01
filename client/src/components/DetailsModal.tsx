@@ -245,11 +245,11 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                     disabled={actionButtons[0].disabled}
                     className={`px-6 h-12 text-sm font-medium rounded-xl ${
                       actionButtons[0].variant === 'danger' 
-                        ? 'bg-red-200 hover:bg-red-250 text-red-800 border border-red-400 disabled:bg-red-200/50'
+                        ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30'
                         : actionButtons[0].variant === 'warning'
-                        ? 'bg-amber-100 hover:bg-amber-150 text-amber-800 border border-amber-300 disabled:bg-amber-100/50'
+                        ? 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                         : actionButtons[0].variant === 'success'
-                        ? 'bg-green-100 hover:bg-green-150 text-green-800 border border-green-300 disabled:bg-green-100/50'
+                        ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30'
                         : actionButtons[0].variant === 'primary'
                         ? 'btn-strike-primary'
                         : 'btn-strike-secondary'
@@ -267,11 +267,11 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                       disabled={button.disabled}
                       className={`flex-1 h-12 text-sm font-medium rounded-xl ${
                         button.variant === 'danger' 
-                          ? 'bg-red-200 hover:bg-red-250 text-red-800 border border-red-400 disabled:bg-red-200/50'
+                          ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30'
                           : button.variant === 'warning'
-                          ? 'bg-amber-100 hover:bg-amber-150 text-amber-800 border border-amber-300 disabled:bg-amber-100/50'
+                          ? 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                           : button.variant === 'success'
-                          ? 'bg-green-100 hover:bg-green-150 text-green-800 border border-green-300 disabled:bg-green-100/50'
+                          ? 'bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/30'
                           : button.variant === 'primary'
                           ? 'btn-strike-primary'
                           : 'btn-strike-secondary'
