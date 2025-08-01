@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useUsers } from '../../hooks/useUsers';
 import Card from '../../components/Card';
 import OptionsModal from '../../components/OptionsModal';
+import DepositBitcoinModal from '../../components/DepositBitcoinModal';
+import DepositCashModal from '../../components/DepositCashModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../../utils/formatters';
 import { Bitcoin, DollarSign, Key, Trash2 } from 'lucide-react';
 
@@ -14,9 +16,11 @@ interface UserWithBalance {
 }
 
 const AdminUsers: React.FC = () => {
-  const { users, isLoading, error } = useUsers();
+  const { users, isLoading, error, fetchUsers } = useUsers();
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithBalance | null>(null);
+  const [isDepositBitcoinModalOpen, setIsDepositBitcoinModalOpen] = useState(false);
+  const [isDepositCashModalOpen, setIsDepositCashModalOpen] = useState(false);
   
   const handleUserClick = (user: UserWithBalance) => {
     setSelectedUser(user);
@@ -29,15 +33,29 @@ const AdminUsers: React.FC = () => {
   };
   
   const handleDepositBitcoin = () => {
-    console.log('Deposit Bitcoin for user:', selectedUser?.name);
-    // TODO: Implement deposit Bitcoin functionality
-    handleCloseModal();
+    setIsOptionsModalOpen(false);
+    setIsDepositBitcoinModalOpen(true);
   };
   
   const handleDepositCash = () => {
-    console.log('Deposit Cash for user:', selectedUser?.name);
-    // TODO: Implement deposit cash functionality
-    handleCloseModal();
+    setIsOptionsModalOpen(false);
+    setIsDepositCashModalOpen(true);
+  };
+  
+  const handleDepositBitcoinClose = () => {
+    setIsDepositBitcoinModalOpen(false);
+    setSelectedUser(null);
+  };
+  
+  const handleDepositCashClose = () => {
+    setIsDepositCashModalOpen(false);
+    setSelectedUser(null);
+  };
+  
+  const handleDepositComplete = (user: UserWithBalance, amount: string) => {
+    console.log(`Deposit completed for ${user.name}: ${amount}`);
+    // Refresh users list to show updated balances
+    fetchUsers();
   };
   
   const handleChangePassword = () => {
@@ -225,6 +243,22 @@ const AdminUsers: React.FC = () => {
           </div>
         </div>
       </OptionsModal>
+      
+      {/* Deposit Bitcoin Modal */}
+      <DepositBitcoinModal
+        isOpen={isDepositBitcoinModalOpen}
+        onClose={handleDepositBitcoinClose}
+        user={selectedUser}
+        onComplete={handleDepositComplete}
+      />
+      
+      {/* Deposit Cash Modal */}
+      <DepositCashModal
+        isOpen={isDepositCashModalOpen}
+        onClose={handleDepositCashClose}
+        user={selectedUser}
+        onComplete={handleDepositComplete}
+      />
     </div>
   );
 };
