@@ -10,6 +10,7 @@ interface HeaderProps {
   onProfileClick?: () => void;
   onSettingsClick?: () => void;
   onMenuClick?: () => void;
+  onTitleClick?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -19,7 +20,8 @@ const Header: React.FC<HeaderProps> = ({
   showMenu = false,
   onProfileClick,
   onSettingsClick,
-  onMenuClick
+  onMenuClick,
+  onTitleClick
 }) => {
   return (
     <div className="bg-black border-b border-gray-800">
@@ -34,7 +36,12 @@ const Header: React.FC<HeaderProps> = ({
               <Menu className="w-5 h-5 text-gray-400" />
             </button>
           )}
-          <h1 className="text-lg font-medium text-white">{title}</h1>
+          <h1 
+            className="text-lg font-medium text-white cursor-pointer hover:text-gray-300 transition-colors"
+            onClick={onTitleClick}
+          >
+            {title}
+          </h1>
         </div>
         
         {/* Right side */}

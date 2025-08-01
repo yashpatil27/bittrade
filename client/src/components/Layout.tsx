@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import Header from './Header';
 import ProfileModal from './ProfileModal';
@@ -11,12 +11,17 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, showBottomNav = true }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup' || location.pathname === '/register';
   const isModalOpen = !showBottomNav && !isAuthPage;
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   const handleProfileClick = () => {
     setProfileModalOpen(true);
+  };
+
+  const handleTitleClick = () => {
+    navigate('/');
   };
 
   return (
@@ -26,6 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children, showBottomNav = true }) => {
         <Header 
           title="₿itTrade" 
           onProfileClick={handleProfileClick}
+          onTitleClick={handleTitleClick}
         />
       )}
       
