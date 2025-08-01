@@ -1,8 +1,8 @@
 import React from 'react';
 import Card from '../../components/Card';
-import AdminTransactionList from '../../components/AdminTransactionList';
-import AdminPendingOrdersList from '../../components/AdminPendingOrdersList';
-import AdminDCAPlans from '../../components/AdminDCAPlans';
+import TransactionList from '../../components/TransactionList';
+import PendingOrdersList from '../../components/PendingOrdersList';
+import DCAPlans from '../../components/DCAPlans';
 import { Transaction, DCAPlan } from '../../types';
 
 const AdminHistory: React.FC = () => {
@@ -20,24 +20,30 @@ const AdminHistory: React.FC = () => {
         {/* Main Content */}
         <div className="px-4 py-3 space-y-3">
           {/* DCA Plans */}
-          <AdminDCAPlans
+          <DCAPlans
             title="All DCA Plans"
             onPlanClick={handlePlanClick}
             wrapInCard={true}
+            showAllUsers={true}
+            disableActions={true}
           />
           
           {/* Pending Orders - Only shown when there are pending limit orders */}
-          <AdminPendingOrdersList 
+          <PendingOrdersList 
             onTransactionClick={handleTransactionClick}
+            showAllUsers={true}
+            disableActions={true}
           />
           
           {/* All Transactions */}
           <Card>
-            <AdminTransactionList 
+            <TransactionList 
               title="All Transactions (All Users)"
               showViewAll={false}
               excludePending={true}
               onTransactionClick={handleTransactionClick}
+              showAllUsers={true}
+              disableActions={true}
             />
           </Card>
         </div>

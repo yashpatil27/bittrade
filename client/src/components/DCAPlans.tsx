@@ -6,6 +6,7 @@ import Card from './Card';
 import DetailsModal from './DetailsModal';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import useDCAPlansUpdates from '../hooks/useDCAPlansUpdates';
+import useAllDCAPlans from '../hooks/useAllDCAPlans';
 
 interface DCAPlansProps {
   title?: string;
@@ -13,6 +14,8 @@ interface DCAPlansProps {
   onPlanClick?: (plan: DCAPlan) => void;
   wrapInCard?: boolean;
   onPlansLoaded?: (hasPlans: boolean) => void;
+  showAllUsers?: boolean; // If true, show DCA plans from all users (admin view)
+  disableActions?: boolean; // If true, disable pause/resume/delete functionality
 }
 
 
@@ -21,9 +24,17 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   onAddPlan,
   onPlanClick,
   wrapInCard = false,
-  onPlansLoaded
+  onPlansLoaded,
+  showAllUsers = false,
+  disableActions = false
 }) => {
-  const { dcaPlans, isLoading, error, fetchDCAPlans } = useDCAPlansUpdates();
+  // Use appropriate data source based on showAllUsers prop
+  const userPlans = useDCAPlansUpdates();
+  const adminPlans = useAllDCAPlans();
+  
+  const { dcaPlans, isLoading, error, fetchDCAPlans } = showAllUsers 
+    ? { ...adminPlans, fetchDCAPlans: adminPlans.fetchAllDCAPlans }
+    : userPlans;
   
   // DetailsModal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -227,7 +238,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
             </span>
           )}
         </div>
-        {onAddPlan && (
+        {onAddPlan && !showAllUsers && (
           <button 
             onClick={onAddPlan}
             className="btn-strike-primary rounded-xl flex items-center space-x-2 px-4"
@@ -294,7 +305,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
           subDetail={getPlanSubDetail(selectedPlan)}
           transactionDetails={[]}
           dcaPlanDetails={getPlanDetails(selectedPlan)}
-          actionButtons={[
+          actionButtons={!disableActions ? [
             {
               label: selectedPlan.status === 'ACTIVE' ? 'Pause Plan' : 'Resume Plan',
               onClick: () => {
@@ -318,7 +329,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
               },
               variant: 'danger'
             }
-          ]}
+          ] : undefined}
         />
       )}
     </div>

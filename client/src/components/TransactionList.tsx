@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';
 import { Transaction } from '../types';
 import useTransactionUpdates from '../hooks/useTransactionUpdates';
+import useAllTransactions from '../hooks/useAllTransactions';
 import Card from './Card';
 import DetailsModal from './DetailsModal';
 
@@ -19,6 +20,8 @@ interface TransactionListProps {
   showTargetPrice?: boolean; // If true, show target price for pending orders
   showCount?: boolean; // If true, show count badge next to title
   wrapInCard?: boolean; // If true, wrap content in Card component
+  showAllUsers?: boolean; // If true, use admin data source (all users)
+  disableActions?: boolean; // If true, disable cancel order functionality
 }
 
 const TransactionList: React.FC<TransactionListProps> = ({
@@ -31,9 +34,17 @@ const TransactionList: React.FC<TransactionListProps> = ({
   excludePending = false,
   showTargetPrice = false,
   showCount = false,
-  wrapInCard = false
+  wrapInCard = false,
+  showAllUsers = false,
+  disableActions = false
 }) => {
-  const { transactions, isLoading, error, fetchTransactions, page } = useTransactionUpdates();
+  // Use appropriate data source based on showAllUsers prop
+  const userTransactions = useTransactionUpdates();
+  const adminTransactions = useAllTransactions();
+  
+  const { transactions, isLoading, error, fetchTransactions } = showAllUsers 
+    ? { ...adminTransactions, fetchTransactions: adminTransactions.fetchAllTransactions }
+    : userTransactions;
   
   // DetailsModal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -339,7 +350,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
           transactionDetails={getTransactionDetails(selectedTransaction)}
           dcaPlanDetails={[]}
           actionButtons={
-            selectedTransaction.status === 'PENDING' && 
+            !disableActions && selectedTransaction.status === 'PENDING' && 
             (selectedTransaction.type === 'LIMIT_BUY' || selectedTransaction.type === 'LIMIT_SELL') 
               ? [{
                   label: 'Cancel Order',
