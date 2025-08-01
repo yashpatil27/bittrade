@@ -205,6 +205,19 @@ export function formatRelativeTime(timestamp: any): string {
   }
 }
 
+export function getTimeAgo(timestamp: string): string {
+  const now = new Date();
+  const time = new Date(timestamp);
+  const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
+  
+  if (diffInSeconds < 60) return 'Just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  
+  return time.toLocaleDateString('en-IN');
+}
+
 /**
  * Formats timestamp for order execution logs
  * @param timestamp - UTC timestamp from database

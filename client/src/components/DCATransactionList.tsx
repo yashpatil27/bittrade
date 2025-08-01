@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { getTimeAgo } from '../data/mockData';
+import { getTimeAgo } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { Transaction } from '../types';
 import useTransactionUpdates from '../hooks/useTransactionUpdates';
