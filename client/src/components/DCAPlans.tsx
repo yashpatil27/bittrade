@@ -77,6 +77,11 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   const formatExecutionsRemaining = (plan: DCAPlan): string => {
     const remainingExecutions = plan.remaining_executions;
     
+    // Check plan status first
+    if (plan.status === 'COMPLETED') {
+      return 'Completed';
+    }
+    
     if (remainingExecutions == null) {
       return 'Unlimited';
     }
@@ -282,6 +287,8 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
                     ? 'bg-green-500/10 text-green-400' 
                     : plan.status === 'PAUSED' 
                     ? 'bg-yellow-500/10 text-yellow-400'
+                    : plan.status === 'COMPLETED'
+                    ? 'bg-blue-500/10 text-blue-400'
                     : 'bg-gray-500/10 text-gray-400'
                 }`}>
                   {plan.status.toLowerCase()}
@@ -305,7 +312,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
           subDetail={getPlanSubDetail(selectedPlan)}
           transactionDetails={[]}
           dcaPlanDetails={getPlanDetails(selectedPlan)}
-          actionButtons={!disableActions ? [
+          actionButtons={!disableActions && selectedPlan.status !== 'COMPLETED' ? [
             {
               label: selectedPlan.status === 'ACTIVE' ? 'Pause Plan' : 'Resume Plan',
               onClick: () => {

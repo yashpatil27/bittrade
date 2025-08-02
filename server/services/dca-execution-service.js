@@ -85,7 +85,7 @@ class DCAExecutionService {
 
   async executeDuePlans() {
     const [plans] = await this.db.execute(
-      'SELECT id, user_id, plan_type, frequency, amount_per_execution_inr, amount_per_execution_btc, max_price, min_price \
+      'SELECT id, user_id, plan_type, frequency, amount_per_execution_inr, amount_per_execution_btc, max_price, min_price, remaining_executions \
        FROM active_plans WHERE next_execution_at <= UTC_TIMESTAMP() AND status = ?',
       ['ACTIVE']
     );
@@ -96,12 +96,21 @@ class DCAExecutionService {
       try {
         console.log(`🔄 Executing DCA plan ${plan.id} for user ${plan.user_id}`);
         
+        // CRITICAL: Check and atomically update the plan status BEFORE executing trade
+        // This prevents race conditions where multiple instances try to execute the same plan
+        const shouldExecute = await this.checkAndReservePlanForExecution(plan);
+        
+        if (!shouldExecute) {
+          console.log(`⏭️ DCA plan ${plan.id} already completed or being processed by another instance`);
+          continue;
+        }
+        
         // Execute the actual trade
         const tradeResult = await this.executeTrade(plan);
         
         if (tradeResult.success) {
-          // Update next execution time only if trade was successful
-          await this.updateNextExecutionTime(plan);
+          // Finalize the execution (update next execution time or mark as completed)
+          await this.finalizeExecution(plan);
           
           // Notify user about execution
           await this.sendUserTransactionUpdate(plan.user_id);
@@ -109,44 +118,23 @@ class DCAExecutionService {
           
           console.log(`✅ DCA plan ${plan.id} executed successfully`);
         } else {
+          // If trade failed, revert the reservation
+          await this.revertPlanReservation(plan);
           console.log(`❌ DCA plan ${plan.id} execution failed: ${tradeResult.error}`);
         }
   
       } catch (error) {
         console.error(`Failed to execute DCA plan ${plan.id} for user ${plan.user_id}:`, error);
-        // Optional: Could pause the plan on persistent failure
-        // await this.db.execute('UPDATE active_plans SET status = "PAUSED" WHERE id = ?', [plan.id]);
+        // Revert reservation on error
+        try {
+          await this.revertPlanReservation(plan);
+        } catch (revertError) {
+          console.error(`Failed to revert plan reservation for ${plan.id}:`, revertError);
+        }
       }
     }
   }
 
-  async updateNextExecutionTime(plan) {
-    let nextExecutionSQL;
-    switch (plan.frequency) {
-      case 'HOURLY':
-        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
-        break;
-      case 'DAILY':
-        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 DAY)';
-        break;
-      case 'WEEKLY':
-        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 WEEK)';
-        break;
-      case 'MONTHLY':
-        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)';
-        break;
-      default:
-        nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)'; // Default to 1 hour
-    }
-
-    await this.db.execute(
-      `UPDATE active_plans SET next_execution_at = ${nextExecutionSQL}, remaining_executions = remaining_executions - 1 \
-       WHERE id = ? AND (remaining_executions > 0 OR remaining_executions IS NULL)`,
-      [plan.id]
-    );
-
-    console.log(`Next execution time updated for plan ${plan.id}`);
-  }
 
   async sendUserTransactionUpdate(userId) {
     console.log(`Placeholder: Send transaction update to user ${userId}`);
@@ -312,6 +300,136 @@ class DCAExecutionService {
       console.log('DCA Execution Service - Settings loaded:', this.settings);
     } catch (error) {
       console.error('Error loading settings for DCA service:', error);
+    }
+  }
+
+  // Atomically check and reserve a plan for execution to prevent race conditions
+  async checkAndReservePlanForExecution(plan) {
+    try {
+      // Use atomic UPDATE with WHERE conditions to reserve the plan
+      // This will only succeed if the plan is still ACTIVE and ready for execution
+      const [result] = await this.db.execute(
+        `UPDATE active_plans 
+         SET next_execution_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 SECOND)
+         WHERE id = ? 
+           AND status = 'ACTIVE' 
+           AND next_execution_at <= UTC_TIMESTAMP()
+           AND (remaining_executions IS NULL OR remaining_executions > 0)`,
+        [plan.id]
+      );
+      
+      // If affectedRows is 0, the plan was already processed by another instance
+      return result.affectedRows > 0;
+    } catch (error) {
+      console.error(`Error reserving plan ${plan.id}:`, error);
+      return false;
+    }
+  }
+  
+  // Finalize the execution by updating next execution time or completing the plan
+  async finalizeExecution(plan) {
+    try {
+      // Get current remaining executions
+      const [currentPlanRows] = await this.db.execute(
+        'SELECT remaining_executions FROM active_plans WHERE id = ?',
+        [plan.id]
+      );
+      
+      if (currentPlanRows.length === 0) {
+        console.log(`Plan ${plan.id} not found during finalization`);
+        return;
+      }
+      
+      const currentRemainingExecutions = currentPlanRows[0].remaining_executions;
+      
+      // If this was the final execution, mark as completed
+      if (currentRemainingExecutions === 1) {
+        await this.db.execute(
+          `UPDATE active_plans SET 
+             status = 'COMPLETED', 
+             remaining_executions = 0, 
+             completed_at = UTC_TIMESTAMP()
+           WHERE id = ?`,
+          [plan.id]
+        );
+        
+        console.log(`✅ DCA plan ${plan.id} completed after final execution`);
+        return;
+      }
+      
+      // Otherwise, update next execution time
+      let nextExecutionSQL;
+      switch (plan.frequency) {
+        case 'HOURLY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
+          break;
+        case 'DAILY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 DAY)';
+          break;
+        case 'WEEKLY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 WEEK)';
+          break;
+        case 'MONTHLY':
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)';
+          break;
+        default:
+          nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
+      }
+      
+      // For unlimited plans (remaining_executions IS NULL), don't decrement
+      // For limited plans, decrement remaining_executions
+      if (currentRemainingExecutions === null) {
+        await this.db.execute(
+          `UPDATE active_plans SET next_execution_at = ${nextExecutionSQL} WHERE id = ?`,
+          [plan.id]
+        );
+      } else {
+        await this.db.execute(
+          `UPDATE active_plans SET 
+             next_execution_at = ${nextExecutionSQL}, 
+             remaining_executions = remaining_executions - 1 
+           WHERE id = ?`,
+          [plan.id]
+        );
+      }
+      
+      console.log(`Next execution scheduled for plan ${plan.id}. Remaining: ${currentRemainingExecutions === null ? 'unlimited' : currentRemainingExecutions - 1}`);
+      
+    } catch (error) {
+      console.error(`Error finalizing execution for plan ${plan.id}:`, error);
+    }
+  }
+  
+  // Revert plan reservation if trade execution fails
+  async revertPlanReservation(plan) {
+    try {
+      // Reset the next execution time back to what it should be
+      let nextExecutionSQL;
+      switch (plan.frequency) {
+        case 'HOURLY':
+          nextExecutionSQL = 'UTC_TIMESTAMP()';
+          break;
+        case 'DAILY':
+          nextExecutionSQL = 'UTC_TIMESTAMP()';
+          break;
+        case 'WEEKLY':
+          nextExecutionSQL = 'UTC_TIMESTAMP()';
+          break;
+        case 'MONTHLY':
+          nextExecutionSQL = 'UTC_TIMESTAMP()';
+          break;
+        default:
+          nextExecutionSQL = 'UTC_TIMESTAMP()';
+      }
+      
+      await this.db.execute(
+        `UPDATE active_plans SET next_execution_at = ${nextExecutionSQL} WHERE id = ?`,
+        [plan.id]
+      );
+      
+      console.log(`Reverted reservation for plan ${plan.id}`);
+    } catch (error) {
+      console.error(`Error reverting reservation for plan ${plan.id}:`, error);
     }
   }
 
