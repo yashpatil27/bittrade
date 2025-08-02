@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { X, User, Mail, ChevronRight, LogOut } from 'lucide-react';
+import { X, User, Mail, ChevronRight, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import ProfileUpdateModal from './ProfileUpdateModal';
 
@@ -162,6 +162,20 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
     });
   };
 
+  const handleAdminToggle = () => {
+    const currentPath = window.location.pathname;
+    
+    if (currentPath.startsWith('/admin')) {
+      // Currently in admin view, go back to regular view
+      navigate('/');
+    } else {
+      // Currently in regular view, go to admin view
+      navigate('/admin');
+    }
+    
+    animateClose();
+  };
+
   if (!isOpen) return null;
 
   const modalContent = (
@@ -199,7 +213,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               <X className="w-5 h-5" />
             </button>
             <h2 className="text-white text-sm font-medium text-center flex-1">Profile</h2>
-            <div className="w-10"></div> {/* Spacer for centering */}
+            <div className="w-12 h-12 flex items-center justify-center">
+              {userState?.is_admin && (
+                <button
+                  onClick={handleAdminToggle}
+                  className="text-secondary hover:text-brand p-2 w-12 h-12 flex items-center justify-center transition-all duration-200 transform hover:scale-110 hover:bg-gray-800/50 rounded-lg"
+                  title={window.location.pathname.startsWith('/admin') ? 'Switch to User View' : 'Switch to Admin View'}
+                >
+                  <Shield className={`w-5 h-5 transition-all duration-200 ${window.location.pathname.startsWith('/admin') ? 'text-brand' : 'text-gray-400 hover:text-brand'}`} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
