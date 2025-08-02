@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
+import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -26,22 +27,90 @@ function App() {
         <WebSocketAuthenticator />
         <Router>
           <Routes>
-            {/* User Routes */}
-            <Route path="/" element={<Layout showBottomNav={!modalOpen}><Home setModalOpen={setModalOpen} /></Layout>} />
+            {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/loans" element={<Layout showBottomNav={!modalOpen}><Loans /></Layout>} />
-            <Route path="/dca" element={<Layout showBottomNav={!modalOpen}><DCA /></Layout>} />
-            <Route path="/portfolio" element={<Layout showBottomNav={!modalOpen}><div className="p-4 text-white">Portfolio Page Coming Soon</div></Layout>} />
-            <Route path="/trade" element={<Layout showBottomNav={!modalOpen}><div className="p-4 text-white">Trade Page Coming Soon</div></Layout>} />
-            <Route path="/history" element={<Layout showBottomNav={!modalOpen}><History /></Layout>} />
-            <Route path="/profile" element={<Layout showBottomNav={!modalOpen}><div className="p-4 text-white">Profile Page Coming Soon</div></Layout>} />
             
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminLayout><AdminHome /></AdminLayout>} />
-            <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
-            <Route path="/admin/history" element={<AdminLayout><AdminHistory /></AdminLayout>} />
-            <Route path="/admin/settings" element={<AdminLayout><AdminSettings /></AdminLayout>} />
+            {/* Protected User Routes */}
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout showBottomNav={!modalOpen}>
+                  <Home setModalOpen={setModalOpen} />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/loans" element={
+              <ProtectedRoute>
+                <Layout showBottomNav={!modalOpen}>
+                  <Loans />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/dca" element={
+              <ProtectedRoute>
+                <Layout showBottomNav={!modalOpen}>
+                  <DCA />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/portfolio" element={
+              <ProtectedRoute>
+                <Layout showBottomNav={!modalOpen}>
+                  <div className="p-4 text-white">Portfolio Page Coming Soon</div>
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/trade" element={
+              <ProtectedRoute>
+                <Layout showBottomNav={!modalOpen}>
+                  <div className="p-4 text-white">Trade Page Coming Soon</div>
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/history" element={
+              <ProtectedRoute>
+                <Layout showBottomNav={!modalOpen}>
+                  <History />
+                </Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Layout showBottomNav={!modalOpen}>
+                  <div className="p-4 text-white">Profile Page Coming Soon</div>
+                </Layout>
+              </ProtectedRoute>
+            } />
+            
+            {/* Protected Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminHome />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminUsers />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/history" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminHistory />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/settings" element={
+              <ProtectedRoute>
+                <AdminLayout>
+                  <AdminSettings />
+                </AdminLayout>
+              </ProtectedRoute>
+            } />
           </Routes>
         </Router>
       </WebSocketProvider>
