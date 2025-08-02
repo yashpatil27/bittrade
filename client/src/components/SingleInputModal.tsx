@@ -90,6 +90,59 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     }
   }, [isOpen, initialValue]);
 
+  // Physical keyboard handling
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default behavior for handled keys
+      const handledKeys = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', 'Backspace', 'Delete', 'Enter', 'Escape'];
+      if (handledKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+
+      switch (e.key) {
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':
+        case '8':
+        case '9':
+          handleKeypadPress(e.key);
+          break;
+        case '.':
+          if (type === 'btc') {
+            handleKeypadPress('.');
+          }
+          break;
+        case 'Backspace':
+        case 'Delete':
+          handleKeypadPress('backspace');
+          break;
+        case 'Enter':
+          handleConfirm();
+          break;
+        case 'Escape':
+          animateClose();
+          break;
+        default:
+          break;
+      }
+    };
+
+    // Add event listener
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, type, value, maxValue, isLoading]); // Dependencies for the keyboard handler
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
