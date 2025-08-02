@@ -372,7 +372,12 @@ async connect() {
   }
 
   // Fetch Bitcoin data from CoinGecko
-  async fetchBitcoinData() {
+async reloadSettings() {
+  console.log('Reloading settings...');
+  await this.loadSettings();
+}
+
+async fetchBitcoinData() {
     try {
       const response = await axios.get(`${config.apis.coingecko}/coins/bitcoin`, {
         params: {

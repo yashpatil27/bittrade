@@ -618,4 +618,101 @@ router.put('/users/:userId/password', authenticateToken, async (req, res) => {
   }
 });
 
+// Get settings (admin only)
+router.get('/settings', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if user is admin from database
+    const [userRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (userRows.length === 0 || !userRows[0].is_admin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Get all settings
+    const [settings] = await db.execute(
+      'SELECT `key`, value, updated_at FROM settings ORDER BY `key`'
+    );
+
+    // Convert to object for easier use
+    const settingsObj = {};
+    settings.forEach(setting => {
+      settingsObj[setting.key] = {
+        value: setting.value,
+        updated_at: setting.updated_at
+      };
+    });
+
+    res.json(settingsObj);
+  } catch (error) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update settings (admin only)
+router.put('/settings', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { settings } = req.body; // Expected format: { key: value, key2: value2 }
+    
+    // Check if user is admin from database
+    const [userRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (userRows.length === 0 || !userRows[0].is_admin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    if (!settings || typeof settings !== 'object') {
+      return res.status(400).json({ error: 'Settings object is required' });
+    }
+
+    // Update each setting
+    const updatedSettings = {};
+    for (const [key, value] of Object.entries(settings)) {
+      // Validate value is a number for these settings
+      if (!['buy_multiplier', 'sell_multiplier', 'loan_interest_rate'].includes(key)) {
+        continue; // Skip unknown settings
+      }
+      
+      const numValue = Number(value);
+      if (isNaN(numValue) || numValue <= 0) {
+        return res.status(400).json({ error: `Invalid value for ${key}. Must be a positive number.` });
+      }
+
+      // Update or insert setting
+      await db.execute(
+        'INSERT INTO settings (`key`, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value), updated_at = CURRENT_TIMESTAMP',
+        [key, numValue]
+      );
+      
+      updatedSettings[key] = numValue;
+    }
+
+    console.log(`✅ Admin ${userId} updated settings:`, updatedSettings);
+
+    // Reload settings in DataService to update cached multipliers
+    if (global.dataService && global.dataService.reloadSettings) {
+      await global.dataService.reloadSettings();
+      console.log('🔄 DataService settings reloaded');
+    }
+
+    res.json({
+      success: true,
+      message: 'Settings updated successfully',
+      updatedSettings
+    });
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
