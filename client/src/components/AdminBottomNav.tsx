@@ -7,7 +7,7 @@ const AdminBottomNav: React.FC = () => {
   const navigate = useNavigate();
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home, path: '/admin' },
+    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/admin' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'history', label: 'History', icon: Clock, path: '/admin/history' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
@@ -15,6 +15,7 @@ const AdminBottomNav: React.FC = () => {
 
   const handleNavigation = (path: string) => {
     navigate(path);
+    window.scrollTo(0, 0);
   };
 
   return (
@@ -49,4 +50,3 @@ const AdminBottomNav: React.FC = () => {
 };
 
 export default AdminBottomNav;
-

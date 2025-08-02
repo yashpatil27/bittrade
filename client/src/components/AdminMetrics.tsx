@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, BarChart3, ShoppingCart, TrendingDown, Repeat, Calculator } from 'lucide-react';
 import { getApiUrl } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { AnimateINR } from './AnimateNumberFlow';
 
-interface AdminMetrics {
+interface AdminMetricsData {
   total_trades: number;
   total_volume: number;
   buy_volume: number;
@@ -18,12 +18,12 @@ interface AdminMetricsProps {
 }
 
 const AdminMetrics: React.FC<AdminMetricsProps> = ({ className = '' }) => {
-  const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
+  const [metrics, setMetrics] = useState<AdminMetricsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
 
-  const fetchMetrics = async () => {
+  const fetchMetrics = useCallback(async () => {
     if (!token) {
       setError('Authentication required');
       setLoading(false);
@@ -52,11 +52,11 @@ const AdminMetrics: React.FC<AdminMetricsProps> = ({ className = '' }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchMetrics();
-  }, [token]);
+  }, [fetchMetrics]);
 
   const metricsCards = [
     {

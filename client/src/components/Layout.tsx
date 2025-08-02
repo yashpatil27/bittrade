@@ -24,6 +24,11 @@ const Layout: React.FC<LayoutProps> = ({ children, showBottomNav = true }) => {
     navigate('/');
   };
 
+  // Reset scroll position on route change
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <div className={`min-h-screen bg-black text-white overflow-x-hidden ${isModalOpen ? 'overflow-y-hidden' : ''}`}>
       {/* Header - Only show on non-auth pages */}
