@@ -334,7 +334,7 @@ router.post('/users/:userId/deposit-bitcoin', authenticateToken, async (req, res
     // Create transaction record for the deposit
     await db.execute(
       `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at, executed_at)
-       VALUES (?, 'DEPOSIT_BTC', 'EXECUTED', ?, 0, 0, NOW(), NOW())`,
+       VALUES (?, 'DEPOSIT_BTC', 'EXECUTED', ?, 0, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
       [userId, amount]
     );
 
@@ -414,7 +414,7 @@ router.post('/users/:userId/deposit-cash', authenticateToken, async (req, res) =
     // Create transaction record for the deposit
     await db.execute(
       `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at, executed_at)
-       VALUES (?, 'DEPOSIT_INR', 'EXECUTED', 0, ?, 0, NOW(), NOW())`,
+       VALUES (?, 'DEPOSIT_INR', 'EXECUTED', 0, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
       [userId, amount]
     );
 
@@ -427,6 +427,16 @@ router.post('/users/:userId/deposit-cash', authenticateToken, async (req, res) =
     const newBalance = updatedBalanceRows[0].available_inr;
 
     console.log(`✅ Admin ${adminUserId} deposited ₹${amount} to user ${userId} (transaction created)`);
+
+    // Broadcast balance update to user's connected clients
+    if (global.sendUserBalanceUpdate) {
+      await global.sendUserBalanceUpdate(userId);
+    }
+
+    // Broadcast transaction update to user's connected clients
+    if (global.sendUserTransactionUpdate) {
+      await global.sendUserTransactionUpdate(userId);
+    }
 
     res.json({
       success: true,
@@ -489,7 +499,7 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
     // Create transaction record for the withdrawal
     await db.execute(
       `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at, executed_at)
-       VALUES (?, 'WITHDRAW_BTC', 'EXECUTED', ?, 0, 0, NOW(), NOW())`,
+       VALUES (?, 'WITHDRAW_BTC', 'EXECUTED', ?, 0, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
       [userId, amount]
     );
 
@@ -502,6 +512,16 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
     const newBalance = updatedBalanceRows[0].available_btc;
 
     console.log(`✅ Admin ${adminUserId} withdrew ${amount} satoshis from user ${userId} (transaction created)`);
+
+    // Broadcast balance update to user's connected clients
+    if (global.sendUserBalanceUpdate) {
+      await global.sendUserBalanceUpdate(userId);
+    }
+
+    // Broadcast transaction update to user's connected clients
+    if (global.sendUserTransactionUpdate) {
+      await global.sendUserTransactionUpdate(userId);
+    }
 
     res.json({
       success: true,
@@ -657,7 +677,7 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
     // Create transaction record for the withdrawal
     await db.execute(
       `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at, executed_at)
-       VALUES (?, 'WITHDRAW_INR', 'EXECUTED', 0, ?, 0, NOW(), NOW())`,
+       VALUES (?, 'WITHDRAW_INR', 'EXECUTED', 0, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
       [userId, amount]
     );
 
@@ -670,6 +690,16 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
     const newBalance = updatedBalanceRows[0].available_inr;
 
     console.log(`✅ Admin ${adminUserId} withdrew ₹${amount} from user ${userId} (transaction created)`);
+
+    // Broadcast balance update to user's connected clients
+    if (global.sendUserBalanceUpdate) {
+      await global.sendUserBalanceUpdate(userId);
+    }
+
+    // Broadcast transaction update to user's connected clients
+    if (global.sendUserTransactionUpdate) {
+      await global.sendUserTransactionUpdate(userId);
+    }
 
     res.json({
       success: true,
