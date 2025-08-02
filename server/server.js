@@ -1300,7 +1300,17 @@ async function sendUserBalanceUpdate(userId) {
     }
 
     // Emit update to all sockets of the user
-    const userSocketSet = userSockets.get(userId);
+    let userSocketSet = userSockets.get(userId);
+    
+    // Try alternate type if primary lookup failed
+    if (!userSocketSet || userSocketSet.size === 0) {
+      if (typeof userId === 'number') {
+        userSocketSet = userSockets.get(String(userId));
+      } else if (typeof userId === 'string') {
+        userSocketSet = userSockets.get(Number(userId));
+      }
+    }
+    
     if (userSocketSet && userSocketSet.size > 0) {
       userSocketSet.forEach((socketId) => {
         io.to(socketId).emit('user_balance_update', {
@@ -1366,7 +1376,17 @@ async function sendUserTransactionUpdate(userId) {
     }
 
     // Emit update to all sockets of the user
-    const userSocketSet = userSockets.get(userId);
+    let userSocketSet = userSockets.get(userId);
+    
+    // Try alternate type if primary lookup failed
+    if (!userSocketSet || userSocketSet.size === 0) {
+      if (typeof userId === 'number') {
+        userSocketSet = userSockets.get(String(userId));
+      } else if (typeof userId === 'string') {
+        userSocketSet = userSockets.get(Number(userId));
+      }
+    }
+    
     if (userSocketSet && userSocketSet.size > 0) {
       userSocketSet.forEach((socketId) => {
         io.to(socketId).emit('user_transaction_update', {
