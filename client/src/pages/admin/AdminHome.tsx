@@ -2,6 +2,7 @@ import React from 'react';
 import Balance from '../../components/Balance';
 import MarketRate from '../../components/MarketRate';
 import BitcoinChart from '../../components/BitcoinChart';
+import AdminMetrics from '../../components/AdminMetrics';
 
 const AdminHome: React.FC = () => {
   return (
@@ -16,6 +17,9 @@ const AdminHome: React.FC = () => {
 
           {/* Market Rates - Public data, no buy/sell functionality */}
           <MarketRate />
+
+          {/* Platform Metrics */}
+          <AdminMetrics />
 
         </div>
       </div>

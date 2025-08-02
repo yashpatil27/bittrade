@@ -400,6 +400,99 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
   }
 });
 
+// Get admin metrics
+router.get('/metrics', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check if user is admin from database
+    const [userRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [userId]
+    );
+    
+    if (userRows.length === 0 || !userRows[0].is_admin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Get total trades count (excluding admin users)
+    const [tradesCountRows] = await db.execute(
+      `SELECT COUNT(*) as total_trades 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get total volume (sum of all executed INR amounts, excluding admin users)
+    const [totalVolumeRows] = await db.execute(
+      `SELECT SUM(t.inr_amount) as total_volume 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get buy volume (sum of all executed buy transactions, excluding admin users)
+    const [buyVolumeRows] = await db.execute(
+      `SELECT SUM(t.inr_amount) as buy_volume 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' 
+       AND t.type IN ('MARKET_BUY', 'LIMIT_BUY', 'DCA_BUY')
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get sell volume (sum of all executed sell transactions, excluding admin users)
+    const [sellVolumeRows] = await db.execute(
+      `SELECT SUM(t.inr_amount) as sell_volume 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' 
+       AND t.type IN ('MARKET_SELL', 'LIMIT_SELL', 'DCA_SELL')
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get total active DCA plans (excluding admin users)
+    const [activeDCAPlansRows] = await db.execute(
+      `SELECT COUNT(*) as active_dca_plans 
+       FROM active_plans ap
+       JOIN users u ON ap.user_id = u.id
+       WHERE ap.status = 'ACTIVE' AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get average daily DCA amount (only from active DCA plans with INR amounts, excluding admin users)
+    const [avgDCAAmountRows] = await db.execute(
+      `SELECT 
+         AVG(CASE 
+           WHEN ap.frequency = 'DAILY' THEN ap.amount_per_execution_inr
+           WHEN ap.frequency = 'WEEKLY' THEN ap.amount_per_execution_inr / 7
+           WHEN ap.frequency = 'MONTHLY' THEN ap.amount_per_execution_inr / 30
+           WHEN ap.frequency = 'HOURLY' THEN ap.amount_per_execution_inr * 24
+           ELSE 0
+         END) as avg_daily_dca_amount
+       FROM active_plans ap
+       JOIN users u ON ap.user_id = u.id
+       WHERE ap.status = 'ACTIVE' 
+       AND ap.plan_type = 'DCA_BUY' 
+       AND ap.amount_per_execution_inr IS NOT NULL
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    const metrics = {
+      total_trades: tradesCountRows[0]?.total_trades || 0,
+      total_volume: totalVolumeRows[0]?.total_volume || 0,
+      buy_volume: buyVolumeRows[0]?.buy_volume || 0,
+      sell_volume: sellVolumeRows[0]?.sell_volume || 0,
+      active_dca_plans: activeDCAPlansRows[0]?.active_dca_plans || 0,
+      avg_daily_dca_amount: Math.round(avgDCAAmountRows[0]?.avg_daily_dca_amount || 0)
+    };
+
+    res.json(metrics);
+  } catch (error) {
+    console.error('Error fetching admin metrics:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Withdraw cash from user account
 router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) => {
   try {
