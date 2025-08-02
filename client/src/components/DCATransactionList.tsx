@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Clock, BarChart3, Bitcoin } from 'lucide-react';
 import { getTimeAgo } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { Transaction } from '../types';
@@ -117,7 +117,11 @@ const DCATransactionList: React.FC<DCATransactionListProps> = ({ onTransactionCl
           <h3 className="text-base font-medium text-white">DCA Transactions</h3>
         </div>
         <div className="text-center py-8">
-          <p className="text-gray-400 text-sm">No DCA transactions found</p>
+          <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Bitcoin className="w-6 h-6 text-brand" />
+          </div>
+          <h4 className="text-white font-medium mb-1">No DCA transactions yet</h4>
+          <p className="text-gray-400 text-xs">Create a DCA plan to start automated investing</p>
         </div>
       </Card>
     );

@@ -57,7 +57,12 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
     }
   }, [refreshTrigger, fetchDCAPlans]);
 
-  const formatTimeUntilNext = (nextExecutionAt: string): string => {
+  const formatTimeUntilNext = (nextExecutionAt: string, planStatus: string): string => {
+    // If plan is completed, there are no more executions
+    if (planStatus === 'COMPLETED') {
+      return 'No more executions';
+    }
+    
     const now = new Date();
     // Ensure the timestamp is treated as UTC by appending 'Z' if it doesn't have timezone info
     const utcTimestamp = nextExecutionAt.includes('Z') ? nextExecutionAt : nextExecutionAt + 'Z';
@@ -126,7 +131,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
 
   const getPlanDetails = (plan: DCAPlan) => {
     const details = [
-      { label: 'Next execution', value: formatTimeUntilNext(plan.next_execution_at), highlight: false },
+      { label: 'Next execution', value: formatTimeUntilNext(plan.next_execution_at, plan.status), highlight: false },
       { label: 'Remaining executions', value: formatExecutionsRemaining(plan), highlight: false },
     ];
 
@@ -281,7 +286,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
                   <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-3 h-3" />
-                      <span>Next: {formatTimeUntilNext(plan.next_execution_at)}</span>
+                      <span>Next: {formatTimeUntilNext(plan.next_execution_at, plan.status)}</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <BarChart3 className="w-3 h-3" />

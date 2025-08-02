@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Bitcoin } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';
@@ -269,7 +269,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
           <h3 className="text-base font-medium text-white">{title}</h3>
         </div>
         <div className="text-center py-8">
-          <p className="text-gray-400 text-sm">No transactions found</p>
+          <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Bitcoin className="w-6 h-6 text-brand" />
+          </div>
+          <h4 className="text-white font-medium mb-1">No transactions yet</h4>
+          <p className="text-gray-400 text-xs">Start trading to see your history</p>
         </div>
       </div>
     );
