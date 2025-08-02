@@ -129,11 +129,11 @@ CREATE TABLE loans (
 );
 
 
--- Settings table (unchanged)
+-- Settings table (updated to support decimal values)
 CREATE TABLE settings (
   id INT PRIMARY KEY AUTO_INCREMENT,
   `key` VARCHAR(100) UNIQUE NOT NULL,
-  value INT NOT NULL,
+  value DECIMAL(10,4) NOT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
@@ -188,9 +188,9 @@ CREATE TABLE bitcoin_chart_data (
 
 -- Insert default settings
 INSERT INTO settings (`key`, value) VALUES 
-('buy_multiplier', 91), -- USDINR rate for converting BTCUSD to BTCINR for BUY Transactions
-('sell_multiplier', 88), -- USDINR rate for converting BTCUSD to BTCINR for SELL Transactions
-('loan_interest_rate', 15.00);
+('buy_multiplier', 91.0000), -- USDINR rate for converting BTCUSD to BTCINR for BUY Transactions
+('sell_multiplier', 88.0000), -- USDINR rate for converting BTCUSD to BTCINR for SELL Transactions
+('loan_interest_rate', 15.0000);
 
 -- Create additional indexes for performance
 CREATE INDEX idx_users_email ON users(email);
@@ -229,6 +229,7 @@ CREATE TABLE migration_log (
 -- - price_change_pct column added to bitcoin_chart_data (from migration add_price_change_pct)
 -- - dca_plan_id column added to transactions table
 -- - active_plans table uses separate amount_per_execution_inr and amount_per_execution_btc columns
+-- - settings.value column changed from INT to DECIMAL(10,4) to support decimal multipliers (migration 007)
 -- 
 -- TIMESTAMP COLUMNS:
 -- - All timestamp columns use DEFAULT CURRENT_TIMESTAMP (NOT the UTC_TIMESTAMP migration)

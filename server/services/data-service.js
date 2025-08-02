@@ -181,7 +181,7 @@ class DataService {
     this.redis = null;
     this.io = io; // Socket.IO instance for broadcasting
     this.lastBtcPrice = null; // Track last price to detect changes
-    this.settings = { buy_multiplier: 91, sell_multiplier: 88 }; // Cache settings
+    this.settings = { buy_multiplier: 91.0, sell_multiplier: 88.0 }; // Cache settings
   }
 
 async connect() {
