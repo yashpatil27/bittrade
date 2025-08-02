@@ -25,6 +25,7 @@ const DCA: React.FC = () => {
   const [buyRate, setBuyRate] = useState<number>(0);
   const [sellRate, setSellRate] = useState<number>(0);
   const [hasPlans, setHasPlans] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleStartDCA = async () => {
     // Load balance data when opening DCA modal
@@ -44,7 +45,8 @@ const DCA: React.FC = () => {
   const handleDCAComplete = (dcaPlan: any) => {
     console.log('DCA Plan created:', dcaPlan);
     setIsDCAModalOpen(false);
-    // The DCAPlans component will automatically refresh its data
+    // Trigger a refresh of the DCA plans
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleRatesUpdate = (newBuyRate: number, newSellRate: number) => {
@@ -108,6 +110,7 @@ const DCA: React.FC = () => {
               onPlanClick={handlePlanClick}
               wrapInCard={true}
               onPlansLoaded={setHasPlans}
+              refreshTrigger={refreshTrigger}
             />
             
             {/* DCA Transaction History */}
@@ -127,6 +130,7 @@ const DCA: React.FC = () => {
               onPlanClick={handlePlanClick}
               wrapInCard={false}
               onPlansLoaded={setHasPlans}
+              refreshTrigger={refreshTrigger}
             />
             
             {/* Hero Section */}

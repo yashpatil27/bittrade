@@ -16,6 +16,7 @@ interface DCAPlansProps {
   onPlansLoaded?: (hasPlans: boolean) => void;
   showAllUsers?: boolean; // If true, show DCA plans from all users (admin view)
   disableActions?: boolean; // If true, disable pause/resume/delete functionality
+  refreshTrigger?: number; // Trigger to refresh plans data
 }
 
 
@@ -26,7 +27,8 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   wrapInCard = false,
   onPlansLoaded,
   showAllUsers = false,
-  disableActions = false
+  disableActions = false,
+  refreshTrigger
 }) => {
   // Use appropriate data source based on showAllUsers prop
   const userPlans = useDCAPlansUpdates();
@@ -46,6 +48,14 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
       onPlansLoaded(dcaPlans.plans.length > 0);
     }
   }, [dcaPlans, onPlansLoaded]);
+
+  // Handle refresh trigger changes
+  React.useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      console.log('🔄 Refreshing DCA plans due to trigger:', refreshTrigger);
+      fetchDCAPlans();
+    }
+  }, [refreshTrigger, fetchDCAPlans]);
 
   const formatTimeUntilNext = (nextExecutionAt: string): string => {
     const now = new Date();

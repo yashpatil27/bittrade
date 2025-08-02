@@ -177,6 +177,8 @@ const DepositBitcoinModal: React.FC<DepositBitcoinModalProps> = ({
         sectionDetail={`${isWithdrawMode ? 'Remove Bitcoin from' : 'Add Bitcoin to'} ${user.name}'s wallet`}
         onSectionClick={handleModeToggle}
         initialValue={inputValue}
+        maxValue={isWithdrawMode ? user.btcBalance / 100000000 : undefined}
+        maxButtonText={isWithdrawMode ? `Max ${formatBitcoinForDisplay(user.btcBalance)}` : undefined}
       />
 
       {/* Confirmation Modal - Opens on top of SingleInputModal */}

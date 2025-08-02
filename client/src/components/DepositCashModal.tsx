@@ -178,6 +178,8 @@ const DepositCashModal: React.FC<DepositCashModalProps> = ({
         sectionDetail={isWithdrawMode ? `Remove cash from ${user.name}'s balance` : `Add cash to ${user.name}'s balance`}
         initialValue={inputValue}
         onSectionClick={handleModeToggle}
+        maxValue={isWithdrawMode ? user.inrBalance : undefined}
+        maxButtonText={isWithdrawMode ? `Max ${formatRupeesForDisplay(user.inrBalance)}` : undefined}
       />
 
       {/* Confirmation Modal - Opens on top of SingleInputModal */}
