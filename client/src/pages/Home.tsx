@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import PendingOrdersList from '../components/PendingOrdersList';
@@ -22,6 +23,7 @@ interface HomeProps {
 }
 
 const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
   const [buyRate, setBuyRate] = React.useState<number>(0);
@@ -96,7 +98,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
             maxItems={5}
             excludePending={true}
             onTransactionClick={(txn) => console.log('Clicked transaction:', txn)}
-            onViewAllClick={() => console.log('View all clicked')}
+onViewAllClick={() => navigate('/history')}
           />
         </Card>
 
