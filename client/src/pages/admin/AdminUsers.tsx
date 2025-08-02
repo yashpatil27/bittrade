@@ -6,6 +6,7 @@ import DepositBitcoinModal from '../../components/DepositBitcoinModal';
 import DepositCashModal from '../../components/DepositCashModal';
 import AdminChangePasswordModal from '../../components/AdminChangePasswordModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../../utils/formatters';
+import { getApiUrl } from '../../utils/api';
 import { Bitcoin, DollarSign, Key, Trash2 } from 'lucide-react';
 
 interface UserWithBalance {
@@ -14,6 +15,7 @@ interface UserWithBalance {
   email: string;
   btcBalance: number;
   inrBalance: number;
+  is_admin?: boolean;
 }
 
 const AdminUsers: React.FC = () => {
@@ -70,10 +72,36 @@ const AdminUsers: React.FC = () => {
     setSelectedUser(null);
   };
   
-  const handleDeleteUser = () => {
-    console.log('Delete user:', selectedUser?.name);
-    // TODO: Implement delete user functionality
-    handleCloseModal();
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    
+    try {
+      const token = localStorage.getItem('bittrade_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await fetch(`${getApiUrl()}/api/admin/users/${selectedUser.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user');
+      }
+
+      console.log('User deleted successfully:', selectedUser.name);
+      // Refresh users list
+      fetchUsers();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      // TODO: Show error message to user
+    }
   };
 
   if (isLoading) {
@@ -258,22 +286,24 @@ const AdminUsers: React.FC = () => {
             </div>
           </div>
           
-          {/* Delete User Option */}
-          <div 
-            className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg p-4 cursor-pointer transition-colors"
-            onClick={handleDeleteUser}
-            data-clickable="true"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <Trash2 className="w-5 h-5 text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-red-400 text-sm font-medium">Delete User</h3>
-                <p className="text-gray-400 text-xs mt-1">Permanently remove user account</p>
+          {/* Delete User Option - Only show for non-admin users */}
+          {selectedUser && !selectedUser.is_admin && (
+            <div 
+              className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg p-4 cursor-pointer transition-colors"
+              onClick={handleDeleteUser}
+              data-clickable="true"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-red-500/10 rounded-lg">
+                  <Trash2 className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-red-400 text-sm font-medium">Delete User</h3>
+                  <p className="text-gray-400 text-xs mt-1">Permanently remove user account</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </OptionsModal>
       

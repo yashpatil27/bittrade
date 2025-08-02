@@ -37,9 +37,11 @@ router.get('/transactions', authenticateToken, async (req, res) => {
     }
 
     const [transactions] = await db.execute(
-      `SELECT id, user_id, type, status, btc_amount, inr_amount, execution_price, created_at, executed_at 
-       FROM transactions 
-       ORDER BY created_at DESC 
+      `SELECT t.id, t.user_id, t.type, t.status, t.btc_amount, t.inr_amount, t.execution_price, t.created_at, t.executed_at 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE (u.is_admin = false OR u.is_admin IS NULL)
+       ORDER BY t.created_at DESC 
        LIMIT 1000`
     );
 
@@ -68,11 +70,13 @@ router.get('/dca-plans', authenticateToken, async (req, res) => {
     }
 
     const [plans] = await db.execute(
-      `SELECT id, user_id, plan_type, status, frequency, amount_per_execution_inr, amount_per_execution_btc, 
-              next_execution_at, total_executions, remaining_executions, max_price, min_price, 
-              created_at, completed_at
-       FROM active_plans 
-       ORDER BY created_at DESC`
+      `SELECT ap.id, ap.user_id, ap.plan_type, ap.status, ap.frequency, ap.amount_per_execution_inr, ap.amount_per_execution_btc, 
+              ap.next_execution_at, ap.total_executions, ap.remaining_executions, ap.max_price, ap.min_price, 
+              ap.created_at, ap.completed_at
+       FROM active_plans ap
+       JOIN users u ON ap.user_id = u.id
+       WHERE (u.is_admin = false OR u.is_admin IS NULL)
+       ORDER BY ap.created_at DESC`
     );
 
     // Get execution history and performance for each plan
@@ -192,6 +196,7 @@ router.get('/users', authenticateToken, async (req, res) => {
       `SELECT id, name, email, 
               available_btc as btcBalance,
               available_inr as inrBalance,
+              is_admin,
               created_at
        FROM users 
        ORDER BY created_at DESC`
@@ -202,6 +207,86 @@ router.get('/users', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching all users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Delete user
+router.delete('/users/:userId', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { userId: targetUserId } = req.params;
+
+    // Check if user is admin from database
+    const [userRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (userRows.length === 0 || !userRows[0].is_admin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Check if target user is an admin
+    const [targetUserRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [targetUserId]
+    );
+
+    if (targetUserRows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (targetUserRows[0].is_admin) {
+      return res.status(403).json({ error: 'Cannot delete admin user.' });
+    }
+
+    // Start transaction to ensure all deletions are atomic
+    await db.beginTransaction();
+
+    try {
+      // First, delete all user's DCA plans
+      const [deletedPlansResult] = await db.execute(
+        'DELETE FROM active_plans WHERE user_id = ?',
+        [targetUserId]
+      );
+
+      // Then, delete all user's transactions
+      const [deletedTransactionsResult] = await db.execute(
+        'DELETE FROM transactions WHERE user_id = ?',
+        [targetUserId]
+      );
+
+      // Finally, delete the user
+      const [deletedUserResult] = await db.execute(
+        'DELETE FROM users WHERE id = ?',
+        [targetUserId]
+      );
+
+      // Commit the transaction
+      await db.commit();
+
+      console.log(`✅ User ${targetUserId} deleted with cleanup:`, {
+        deletedPlans: deletedPlansResult.affectedRows,
+        deletedTransactions: deletedTransactionsResult.affectedRows,
+        deletedUser: deletedUserResult.affectedRows
+      });
+
+      res.json({
+        success: true,
+        message: 'User and all associated data deleted successfully',
+        deletedData: {
+          plans: deletedPlansResult.affectedRows,
+          transactions: deletedTransactionsResult.affectedRows
+        }
+      });
+    } catch (error) {
+      // Rollback transaction on error
+      await db.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

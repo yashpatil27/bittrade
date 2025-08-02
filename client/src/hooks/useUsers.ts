@@ -7,6 +7,7 @@ interface UserWithBalance {
   email: string;
   btcBalance: number;
   inrBalance: number;
+  is_admin?: boolean;
 }
 
 interface UseUsersReturn {

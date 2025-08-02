@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
 import { formatBitcoinForDisplay } from '../utils/formatters';
+import { getApiUrl } from '../utils/api';
 import { AnimateBTC } from './AnimateNumberFlow';
 
 interface UserWithBalance {
@@ -10,6 +11,7 @@ interface UserWithBalance {
   email: string;
   btcBalance: number;
   inrBalance: number;
+  is_admin?: boolean;
 }
 
 interface DepositBitcoinModalProps {
@@ -82,7 +84,7 @@ const DepositBitcoinModal: React.FC<DepositBitcoinModalProps> = ({
     try {
       // Call API based on mode
       const endpoint = isWithdrawMode ? 'withdraw-bitcoin' : 'deposit-bitcoin';
-      const response = await fetch(`http://localhost:3001/api/admin/users/${user.id}/${endpoint}`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/users/${user.id}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
