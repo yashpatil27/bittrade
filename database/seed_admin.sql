@@ -22,8 +22,8 @@ INSERT INTO users (
     'Admin User',
     '$2a$10$bfEvjOF2B.HzoKjaPGv7OOiBTEFYqiN35WjGPBl5ripmCcmbfG/om',
     true,
-    100000,  -- available_inr (100,000 rupees)
-    10000000, -- available_btc (10,000,000 satoshis = 0.1 BTC)
+    0,      -- available_inr (0 rupees)
+    0,      -- available_btc (0 satoshis)
     0,      -- reserved_inr (0 rupees)
     0,      -- reserved_btc (0 satoshis)
     0,      -- collateral_btc (0 satoshis)
