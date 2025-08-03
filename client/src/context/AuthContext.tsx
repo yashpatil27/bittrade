@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { getApiUrl } from '../utils/api';
 
 interface User {
@@ -31,23 +31,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const API_BASE_URL = getApiUrl();
 
-  // Load user from localStorage on mount
-  useEffect(() => {
-    const savedToken = localStorage.getItem('bittrade_token');
-    const savedUser = localStorage.getItem('bittrade_user');
-    
-    if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-      
-      // Verify token is still valid
-      verifyToken(savedToken);
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const verifyToken = async (token: string) => {
+  const verifyToken = useCallback(async (token: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/verify`, {
         headers: {
@@ -68,7 +52,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [API_BASE_URL]);
+
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const savedToken = localStorage.getItem('bittrade_token');
+    const savedUser = localStorage.getItem('bittrade_user');
+    
+    if (savedToken && savedUser) {
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
+      
+      // Verify token is still valid
+      verifyToken(savedToken);
+    } else {
+      setIsLoading(false);
+    }
+  }, [verifyToken]);
 
   const login = async (email: string, password: string) => {
     try {

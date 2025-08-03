@@ -89,7 +89,7 @@ export const useTransactionUpdates = (): UseTransactionUpdatesReturn => {
   // Initial fetch on mount
   useEffect(() => {
     fetchTransactions(1);
-  }, []); // Remove fetchTransactions dependency to prevent infinite loop
+  }, [fetchTransactions]);
 
   return {
     transactions,

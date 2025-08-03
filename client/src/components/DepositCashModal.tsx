@@ -130,7 +130,7 @@ const DepositCashModal: React.FC<DepositCashModalProps> = ({
     if (!inputValue || !user) return [];
     
     const inrAmount = parseFloat(inputValue);
-    const operation = isWithdrawMode ? 'subtract' : 'add';
+    // const operation = isWithdrawMode ? 'subtract' : 'add'; // Unused but kept for clarity
     const newBalance = isWithdrawMode ? user.inrBalance - inrAmount : user.inrBalance + inrAmount;
     
     return [

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+// Removed unused imports: TrendingUp, TrendingDown
 import { useWebSocket, useWebSocketEvent } from '../context/WebSocketContext';
 import { useAuth } from '../context/AuthContext';
-import { AnimateUSD, AnimateINR } from './AnimateNumberFlow';
+import { AnimateINR } from './AnimateNumberFlow';
 import { getApiUrl } from '../utils/api';
 
 interface BalanceData {
@@ -33,7 +33,7 @@ interface PriceUpdateData {
 const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate, onBalanceUpdate }) => {
   const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
   const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // const [loading, setLoading] = useState(true); // Unused but kept for future loading states
   const { isAuthenticated, token } = useAuth();
   const { socket, isConnected } = useWebSocket();
 
@@ -41,7 +41,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
   useEffect(() => {
     const fetchInitialRates = async () => {
       try {
-        setLoading(true);
+        // setLoading(true); // Commented out since loading state is not used
         const response = await fetch(`${getApiUrl()}/api/market-rates`);
         if (response.ok) {
           const data = await response.json();
@@ -56,7 +56,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
       } catch (error) {
         console.error('Error fetching initial market rates:', error);
       } finally {
-        setLoading(false);
+        // setLoading(false); // Commented out since loading state is not used
       }
     };
 
@@ -124,13 +124,13 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
     console.log('📡 Received btc_price_update:', data);
     setPriceData(data);
-    setLoading(false);
+    // setLoading(false); // Commented out since loading state is not used
   });
 
   // Use WebSocket data only - no fallback to mock data
   const buyRate = priceData ? priceData.buy_rate_inr : 0;
   const sellRate = priceData ? priceData.sell_rate_inr : 0;
-  const currentBtcPrice = priceData ? priceData.btc_usd_price : 0;
+  // const currentBtcPrice = priceData ? priceData.btc_usd_price : 0; // Unused but kept for future BTC price display
 
   // Notify parent component of rate updates
   useEffect(() => {

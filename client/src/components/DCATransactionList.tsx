@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowUpRight, ArrowDownRight, Clock, BarChart3, Bitcoin } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Bitcoin } from 'lucide-react';
 import { getTimeAgo } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { Transaction } from '../types';

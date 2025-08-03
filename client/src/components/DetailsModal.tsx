@@ -44,19 +44,19 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
   const [screenHeight] = useState(window.innerHeight);
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const layoutConfig = {
-    header: 80,
-    padding: 24,
-    confirmButton: 60,
-    safeArea: 20,
-  };
+  // const layoutConfig = {
+  //   header: 80,
+  //   padding: 24,
+  //   confirmButton: 60,
+  //   safeArea: 20,
+  // }; // Commented out - unused but kept for future layout calculations
 
-  const totalFixedHeight = layoutConfig.header + 
-                          layoutConfig.confirmButton + 
-                          layoutConfig.safeArea;
+  // const totalFixedHeight = layoutConfig.header + 
+  //                         layoutConfig.confirmButton + 
+  //                         layoutConfig.safeArea; // Unused but kept for future layout calculations
 
-  const availableContentHeight = screenHeight - totalFixedHeight;
-  const contentHeight = Math.max(availableContentHeight, 200);
+  // const availableContentHeight = screenHeight - totalFixedHeight; // Unused but kept for future layout calculations
+  // const contentHeight = Math.max(availableContentHeight, 200); // Unused but kept for future layout calculations
 
   useEffect(() => {
     if (isOpen) {

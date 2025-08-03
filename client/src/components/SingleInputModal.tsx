@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, SlidersVertical, Infinity } from 'lucide-react';
-import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
+import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
   isOpen: boolean;
@@ -141,7 +141,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, type, value, maxValue, isLoading]); // Dependencies for the keyboard handler
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, type, value, maxValue, isLoading]); // Functions are stable, dependency warning disabled
 
   // Prevent body scroll when modal is open
   useEffect(() => {

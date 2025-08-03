@@ -58,21 +58,21 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Layout calculations to match SingleInputModal button position
-  const layoutConfig = {
-    header: 80,
-    padding: 24,
-    keypadSpace: 200, // Same keypad space as SingleInputModal to maintain button position
-    confirmButton: 60,
-    safeArea: 20,
-  };
+  // const layoutConfig = {
+  //   header: 80,
+  //   padding: 24,
+  //   keypadSpace: 200, // Same keypad space as SingleInputModal to maintain button position
+  //   confirmButton: 60,
+  //   safeArea: 20,
+  // }; // Commented out - unused but kept for future layout calculations
 
-  const totalFixedHeight = layoutConfig.header + 
-                          layoutConfig.keypadSpace + 
-                          layoutConfig.confirmButton + 
-                          layoutConfig.safeArea;
+  // const totalFixedHeight = layoutConfig.header + 
+  //                         layoutConfig.keypadSpace + 
+  //                         layoutConfig.confirmButton + 
+  //                         layoutConfig.safeArea; // Unused but kept for future layout calculations
 
-  const availableContentHeight = screenHeight - totalFixedHeight;
-  const contentHeight = Math.max(availableContentHeight, 200);
+  // const availableContentHeight = screenHeight - totalFixedHeight; // Unused but kept for future layout calculations
+  // const contentHeight = Math.max(availableContentHeight, 200); // Unused but kept for future layout calculations
 
   // Animation control
   useEffect(() => {

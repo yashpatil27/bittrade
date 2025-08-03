@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Card from '../components/Card';
 import DCAModal from '../components/DCAModal';
 import DCAPlans from '../components/DCAPlans';

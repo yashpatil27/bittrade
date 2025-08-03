@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Pause, Trash2, Clock, BarChart3, Plus, Bitcoin, DollarSign } from 'lucide-react';
+import { Plus, Bitcoin, DollarSign, Clock, BarChart3 } from 'lucide-react';
 import { updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
 import { DCAPlan } from '../types';
 import Card from './Card';
@@ -162,18 +162,18 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
     return details;
   };
 
-  const handlePauseResume = async (plan: DCAPlan, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      const newStatus = plan.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
-      await updateDCAPlanStatus(plan.id, newStatus);
-      // Refresh plans
-      fetchDCAPlans();
-    } catch (error) {
-      console.error('Failed to update plan status:', error);
-      // TODO: Show error message to user
-    }
-  };
+  // const handlePauseResume = async (plan: DCAPlan, e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   try {
+  //     const newStatus = plan.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+  //     await updateDCAPlanStatus(plan.id, newStatus);
+  //     // Refresh plans
+  //     fetchDCAPlans();
+  //   } catch (error) {
+  //     console.error('Failed to update plan status:', error);
+  //     // TODO: Show error message to user
+  //   }
+  // };
 
   const handlePauseResumeFromModal = async (plan: DCAPlan) => {
     try {
@@ -187,17 +187,17 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
     }
   };
 
-  const handleDelete = async (plan: DCAPlan, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await deleteDCAPlan(plan.id);
-      // Refresh plans
-      fetchDCAPlans();
-    } catch (error) {
-      console.error('Failed to delete plan:', error);
-      // TODO: Show error message to user
-    }
-  };
+  // const handleDelete = async (plan: DCAPlan, e: React.MouseEvent) => {
+  //   e.stopPropagation();
+  //   try {
+  //     await deleteDCAPlan(plan.id);
+  //     // Refresh plans
+  //     fetchDCAPlans();
+  //   } catch (error) {
+  //     console.error('Failed to delete plan:', error);
+  //     // TODO: Show error message to user
+  //   }
+  // };
 
   const getPlanIcon = (planType: string) => {
     return planType === 'DCA_BUY' ? (
