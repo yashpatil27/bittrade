@@ -1,0 +1,129 @@
+---
+- name: Deploy BitTrade Application
+  hosts: bittrade_servers
+  become: yes
+  vars:
+    app_user: ubuntu
+    app_dir: /home/ubuntu/bittrade
+    domain: bittrade.co.in
+    node_version: "18.x"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        upgrade: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - curl
+          - git
+          - nginx
+          - certbot
+          - python3-certbot-nginx
+          - build-essential
+        state: present
+
+    - name: Add NodeSource repository
+      shell: curl -fsSL https://deb.nodesource.com/setup_{{ node_version }} | bash -
+
+    - name: Install Node.js
+      apt:
+        name: nodejs
+        state: present
+
+    - name: Install PM2 globally
+      npm:
+        name: pm2
+        global: yes
+
+    - name: Clone or update BitTrade repository
+      git:
+        repo: https://github.com/yashpatil27/bittrade.git
+        dest: "{{ app_dir }}"
+        force: yes
+      become_user: "{{ app_user }}"
+
+    - name: Install server dependencies
+      npm:
+        path: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+
+    - name: Install client dependencies and build
+      shell: |
+        cd {{ app_dir }}/client
+        npm install
+        npm run build
+      become_user: "{{ app_user }}"
+
+    - name: Create logs directory
+      file:
+        path: "{{ app_dir }}/logs"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+
+    - name: Copy Nginx configuration
+      template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/bittrade
+      notify: reload nginx
+
+    - name: Enable BitTrade site
+      file:
+        src: /etc/nginx/sites-available/bittrade
+        dest: /etc/nginx/sites-enabled/bittrade
+        state: link
+      notify: reload nginx
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: reload nginx
+
+    - name: Create PM2 startup script
+      template:
+        src: start_detached.sh.j2
+        dest: /home/{{ app_user }}/start_detached.sh
+        mode: '0755'
+        owner: "{{ app_user }}"
+
+    - name: Create monitoring script
+      template:
+        src: monitor_simple.sh.j2
+        dest: /home/{{ app_user }}/monitor_simple.sh
+        mode: '0755'
+        owner: "{{ app_user }}"
+
+    - name: Setup cron jobs for auto-start and monitoring
+      cron:
+        name: "{{ item.name }}"
+        job: "{{ item.job }}"
+        user: "{{ app_user }}"
+      loop:
+        - { name: "Start BitTrade on boot", job: "@reboot /home/{{ app_user }}/start_detached.sh" }
+        - { name: "Monitor BitTrade", job: "*/5 * * * * /home/{{ app_user }}/monitor_simple.sh" }
+
+    - name: Enable user lingering
+      systemd:
+        name: user@{{ ansible_user_uid }}.service
+        enabled: yes
+        state: started
+
+    - name: Start BitTrade applications
+      shell: /home/{{ app_user }}/start_detached.sh
+      become_user: "{{ app_user }}"
+
+    - name: Setup SSL certificate (optional)
+      shell: |
+        certbot --nginx -d {{ domain }} -d www.{{ domain }} \
+        --non-interactive --agree-tos --email admin@{{ domain }}
+      when: setup_ssl | default(false)
+
+  handlers:
+    - name: reload nginx
+      systemd:
+        name: nginx
+        state: reloaded
