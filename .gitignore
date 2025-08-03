@@ -60,3 +60,12 @@ Thumbs.db
 server/uploads/
 server/storage/
 notes/
+
+# Production backup files
+*.backup
+
+# Production utility scripts
+check_admin_password.js
+
+# Local server scripts
+client/serve-client.sh
