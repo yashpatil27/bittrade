@@ -39,25 +39,48 @@ client/
 ├── src/
 │   ├── components/            # Reusable React components
 │   │   ├── Layout.tsx         # Main layout wrapper
+│   │   ├── AdminLayout.tsx    # Admin-specific layout
 │   │   ├── Header.tsx         # App header with navigation
 │   │   ├── BottomNav.tsx      # Mobile bottom navigation
+│   │   ├── AdminBottomNav.tsx # Admin navigation
 │   │   ├── Card.tsx           # Reusable card component
 │   │   ├── BitcoinChart.tsx   # Price chart visualization
+│   │   ├── PortfolioChart.tsx # Portfolio value charts
 │   │   ├── MarketRate.tsx     # Real-time price display
 │   │   ├── Balance.tsx        # User balance display
 │   │   ├── TransactionList.tsx # Transaction history
+│   │   ├── DCATransactionList.tsx # DCA-specific transactions
+│   │   ├── PendingOrdersList.tsx # Pending orders display
 │   │   ├── TradingModal.tsx   # Buy/Sell trading interface
+│   │   ├── DCAModal.tsx       # Dollar-Cost Averaging setup
 │   │   ├── SingleInputModal.tsx # Generic input modal
+│   │   ├── ConfirmationModal.tsx # Transaction confirmation
+│   │   ├── DetailsModal.tsx   # Transaction/order details
+│   │   ├── DepositCashModal.tsx # Cash deposit interface
+│   │   ├── DepositBitcoinModal.tsx # Bitcoin deposit interface
+│   │   ├── ProfileModal.tsx   # User profile management
+│   │   ├── ProfileUpdateModal.tsx # Profile update interface
+│   │   ├── AdminChangePasswordModal.tsx # Admin password change
 │   │   ├── OptionsModal.tsx   # Notification/options modal
 │   │   ├── AnimateNumberFlow.tsx # Number animation wrapper
 │   │   ├── WebSocketStatus.tsx # Connection status indicator
 │   │   ├── WebSocketAuthenticator.tsx # WS authentication
+│   │   ├── AdminMetrics.tsx   # Admin dashboard metrics
+│   │   ├── AdminMultiplier.tsx # Trading multiplier management
+│   │   ├── DCAPlans.tsx       # DCA plans management
 │   │   └── ProtectedRoute.tsx # Route authentication guard
 │   ├── pages/                 # Page components
 │   │   ├── Home.tsx          # Main dashboard page
 │   │   ├── Login.tsx         # User login page
 │   │   ├── Register.tsx      # User registration page
-│   │   └── History.tsx       # Transaction history page
+│   │   ├── History.tsx       # Transaction history page
+│   │   ├── DCA.tsx           # Dollar-Cost Averaging page
+│   │   ├── Loans.tsx         # Lending/borrowing page
+│   │   └── admin/            # Admin-specific pages
+│   │       ├── AdminHome.tsx # Admin dashboard
+│   │       ├── AdminHistory.tsx # Admin transaction history
+│   │       ├── AdminSettings.tsx # System settings
+│   │       └── AdminUsers.tsx # User management
 │   ├── context/              # React Context providers
 │   │   ├── AuthContext.tsx   # Authentication state management
 │   │   └── WebSocketContext.tsx # WebSocket connection management
@@ -98,6 +121,9 @@ client/
 - **Balance Validation**: Real-time balance checking
 - **Price Display**: Live buy/sell rate display
 - **Transaction Confirmation**: Multi-step transaction flow
+- **DCA Trading**: Automated Dollar-Cost Averaging with flexible scheduling
+- **Pending Orders**: Limit order management with real-time status updates
+- **Lending System**: Bitcoin-collateralized lending with LTV monitoring
 
 ### 4. User Interface
 - **Mobile-First Design**: Optimized for mobile devices
@@ -111,6 +137,13 @@ client/
 - **Multiple Timeframes**: 1d, 7d, 30d, 90d, 365d chart views
 - **Real-Time Updates**: Live price data integration
 - **Performance Metrics**: Price change indicators and statistics
+- **Portfolio Charts**: Value tracking and performance visualization
+
+### 6. Administrative Features
+- **Admin Dashboard**: Comprehensive interface for system management
+- **User Management**: Admin tools for modifying user profiles and permissions
+- **Metrics Tracking**: Visualization of key performance indicators
+- **System Settings**: Configuration management for trading parameters
 
 ## Core Components
 
@@ -578,13 +611,43 @@ localStorage.setItem('debug', 'bittrade:*');
 - Lighthouse for web vitals assessment
 - Network tab for API monitoring
 
+## Code Quality
+
+### ESLint Configuration
+The project maintains zero ESLint warnings through comprehensive linting rules:
+
+```javascript
+// Recent fixes implemented:
+// ✅ Removed unused variables and imports
+// ✅ Fixed React Hook dependency warnings
+// ✅ Properly managed useCallback dependencies
+// ✅ Commented out unused but potentially useful code
+// ✅ Fixed missing imports and circular dependencies
+```
+
+### Code Quality Improvements
+- **Zero ESLint Warnings**: All components pass ESLint validation
+- **TypeScript Strict Mode**: Full type safety enforcement
+- **Consistent Code Style**: Unified formatting and patterns
+- **Proper Dependency Management**: React hooks with correct dependencies
+- **Clean Imports**: No unused imports or circular dependencies
+- **Performance Optimizations**: useCallback for stable function references
+
+### Recent Code Quality Fixes
+1. **Modal Components**: Fixed unused variables in ConfirmationModal and DetailsModal
+2. **Trading Components**: Resolved dependency issues in SingleInputModal
+3. **Chart Components**: Fixed missing imports in DCAPlans component
+4. **Context Providers**: Resolved circular dependency in AuthContext
+5. **Hook Dependencies**: Added proper dependencies to useEffect hooks
+
 ## Contributing
 
 ### Code Standards
 - TypeScript strict mode enabled
-- ESLint with React rules
+- ESLint with React rules (zero warnings policy)
 - Prettier for code formatting
 - Conventional commit messages
+- Clean code principles
 
 ### Component Guidelines
 - Functional components with hooks
@@ -592,9 +655,12 @@ localStorage.setItem('debug', 'bittrade:*');
 - Error boundaries for error handling
 - Loading states for async operations
 - Accessible markup and ARIA labels
+- Proper cleanup in useEffect hooks
+- Stable function references with useCallback
 
 ### Testing Requirements
 - Unit tests for utility functions
 - Component tests for UI components
 - Integration tests for user flows
 - E2E tests for critical paths
+- Code coverage monitoring

@@ -24,6 +24,11 @@ BitTrade is a full-stack cryptocurrency trading platform designed for seamless B
 - 💾 **Redis Caching** - High-performance data caching for instant responses
 - 🌐 **WebSocket Integration** - Real-time bidirectional communication
 - 📈 **Trading Analytics** - Comprehensive transaction history and statistics
+- 🔄 **DCA Trading** - Dollar-Cost Averaging with automated scheduling
+- 💰 **Lending System** - Bitcoin-collateralized lending functionality
+- 👨‍💼 **Admin Dashboard** - Complete administrative interface
+- 🏦 **Multi-Balance System** - Available, reserved, and collateral balances
+- ✅ **Code Quality** - ESLint-compliant codebase with zero warnings
 
 ## 🏗️ Architecture
 
@@ -136,9 +141,13 @@ npm start
 ### 💹 Trading Features
 - **Market Orders** - Instant buy/sell execution
 - **Real-Time Pricing** - Live Bitcoin USD/INR rates
-- **Balance Management** - Multi-currency balance tracking
-- **Transaction History** - Complete trading activity log
-- **Price Charts** - Interactive charts with multiple timeframes
+- **Balance Management** - Multi-currency balance tracking (available, reserved, collateral)
+- **Transaction History** - Complete trading activity log with real-time updates
+- **Price Charts** - Interactive charts with multiple timeframes (1d, 7d, 30d, 90d, 365d)
+- **DCA Trading** - Automated Dollar-Cost Averaging with flexible scheduling
+- **Pending Orders** - Limit order management with real-time status updates
+- **Lending System** - Bitcoin-collateralized lending with LTV monitoring
+- **Portfolio Tracking** - Comprehensive portfolio value and performance metrics
 
 ### 📊 Data & Analytics
 - **Market Data Integration** - CoinGecko API for Bitcoin data
@@ -208,8 +217,15 @@ bittrade/
 ├── client/                 # React frontend application
 │   ├── src/
 │   │   ├── components/     # Reusable React components
+│   │   │   ├── modals/     # Modal components (Trading, DCA, Confirmation, etc.)
+│   │   │   ├── charts/     # Chart components (Bitcoin, Portfolio)
+│   │   │   ├── admin/      # Admin-specific components
+│   │   │   └── ui/         # UI components (Layout, Navigation, etc.)
 │   │   ├── pages/         # Page components
+│   │   │   ├── admin/     # Admin dashboard pages
+│   │   │   └── user/      # User-facing pages
 │   │   ├── context/       # React Context providers
+│   │   ├── hooks/         # Custom React hooks
 │   │   ├── utils/         # Utility functions
 │   │   └── types/         # TypeScript definitions
 │   ├── public/            # Static assets
@@ -219,6 +235,7 @@ bittrade/
 │   ├── middleware/       # Express middleware
 │   ├── routes/           # API route handlers
 │   ├── services/         # Business logic services
+│   │   └── data-service.js # Real-time data management
 │   └── package.json      # Backend dependencies
 ├── database/             # Database schema and migrations
 │   ├── schema.sql        # Main database schema
