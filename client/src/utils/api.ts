@@ -39,7 +39,7 @@ export const getApiUrl = () => {
     
     // If we're on mobile (not localhost), use the IP from the server logs
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `http://${hostname}:3001`;
+      return `https://${hostname}`;
     }
   }
   
@@ -53,7 +53,7 @@ export const getWebSocketUrl = () => {
     
     // If we're on mobile (not localhost), use the IP from the server logs
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `http://${hostname}:3001`;
+      return `https://${hostname}`;
     }
   }
   
