@@ -54,7 +54,16 @@ sudo apt install nginx -y
 print_status "Step 5/10: Installing Certbot..."
 sudo apt install certbot python3-certbot-nginx -y
 
-print_status "Step 6/10: Cloning BitTrade repository..."
+print_status "Step 6/10: Setting up databases..."
+# Run database setup if not already done
+if ! systemctl is-active --quiet mysql; then
+    print_status "Running database setup script..."
+    bash <(curl -sSL https://raw.githubusercontent.com/yashpatil27/bittrade/main/setup-database.sh)
+else
+    print_status "MySQL already running, skipping database setup"
+fi
+
+print_status "Step 7/10: Cloning BitTrade repository..."
 if [ -d "$APP_DIR" ]; then
     print_warning "Directory exists, pulling latest changes..."
     cd $APP_DIR
@@ -144,9 +153,8 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 print_status "Step 9/10: Setting up SSL with Certbot..."
-if [[ "$1" == "--ssl" ]]; then
-    sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN
-fi
+print_status "Configuring SSL certificate (mandatory for production)..."
+sudo certbot --nginx -d $DOMAIN -d www.$DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN
 
 print_status "Step 10/10: Setting up PM2 and automation..."
 
@@ -201,12 +209,18 @@ mkdir -p $APP_DIR/logs
 print_status "✅ Deployment completed successfully!"
 echo ""
 echo "🌐 Your BitTrade app is now running at:"
-echo "   http://$DOMAIN (if SSL was skipped)"
-echo "   https://$DOMAIN (if SSL was configured)"
+echo "   🔒 https://$DOMAIN (SSL enabled)"
+echo "   🔒 https://www.$DOMAIN (SSL enabled)"
+echo ""
+echo "🔐 Default Admin Credentials:"
+echo "   Username: admin"
+echo "   Password: admin123"
+echo "   Email: admin@$DOMAIN"
 echo ""
 echo "📊 Management commands:"
 echo "   pm2 status          - Check application status"
 echo "   pm2 logs            - View application logs"
 echo "   pm2 restart all     - Restart applications"
+echo "   mysql -u bittrade -pbittrade123 bittrade - Access database"
 echo ""
 echo "🔄 To redeploy: curl -sSL https://raw.githubusercontent.com/yashpatil27/bittrade/main/deploy.sh | bash"
