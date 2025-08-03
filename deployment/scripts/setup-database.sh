@@ -78,8 +78,10 @@ sudo systemctl start redis-server
 sudo systemctl enable redis-server
 
 print_status "Step 6/8: Creating BitTrade database and user..."
+print_warning "Dropping existing database if it exists..."
 sudo mysql -u root -p$DB_ROOT_PASSWORD <<EOF
-CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS $DB_NAME;
+CREATE DATABASE $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';
 GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';
 FLUSH PRIVILEGES;
@@ -139,11 +141,11 @@ else
     # Create default admin user if seed file doesn't exist
     mysql -u $DB_USER -p$DB_PASSWORD $DB_NAME <<EOF
 -- Insert default admin user (password: admin123)
-INSERT IGNORE INTO users (username, email, password_hash, role, balance) VALUES 
+INSERT INTO users (username, email, password_hash, role, balance) VALUES 
 ('admin', 'admin@bittrade.co.in', '\$2b\$10\$8K1p/a0dUrynzTbN/F4b7e.QAL8oNNXO8P7k1I6YHH.r9UhN1AGC.', 'admin', 10000.00);
 
 -- Insert default settings
-INSERT IGNORE INTO settings (key_name, key_value) VALUES 
+INSERT INTO settings (key_name, key_value) VALUES 
 ('site_name', 'BitTrade'),
 ('maintenance_mode', 'false'),
 ('trading_enabled', 'true'),

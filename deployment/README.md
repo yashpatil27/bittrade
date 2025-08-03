@@ -10,6 +10,7 @@ deployment/
 ├── docker-compose.yml          # Docker composition for containerized deployment
 ├── scripts/                    # Deployment and setup scripts
 │   ├── deploy.sh              # Main deployment script
+│   ├── update.sh              # Update script (pull changes, run migrations, restart PM2)
 │   ├── deploy-playbook.yml    # Ansible deployment playbook
 │   └── setup-database.sh      # Database initialization script
 └── docs/                      # Documentation
@@ -32,7 +33,12 @@ deployment/
    ./scripts/deploy.sh
    ```
 
-3. **For database setup:**
+3. **For updating production (pull changes, run migrations, restart PM2):**
+   ```bash
+   ./scripts/update.sh
+   ```
+
+4. **For database setup:**
    ```bash
    ./scripts/setup-database.sh
    ```
