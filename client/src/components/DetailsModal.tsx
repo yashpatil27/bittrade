@@ -193,7 +193,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                 </div>
               )}
 
-              {subDetail && (
+{(subDetail || transactionDetails.length > 0) && (
                 <div className="flex items-center justify-center gap-2 mb-8">
                   <span className="text-white text-sm font-normal">
                     {subDetail}
