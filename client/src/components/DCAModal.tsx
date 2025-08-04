@@ -46,11 +46,11 @@ const DCAModal: React.FC<DCAModalProps> = ({
   initialAmount = '',
   initialPlanType = 'DCA_BUY',
 }) => {
-const [currentStep, setCurrentStep] = useState<DCAStep>('frequency');
+  const [currentStep, setCurrentStep] = useState<DCAStep>('frequency');
   const [dcaPlan, setDcaPlan] = useState<Partial<DCAPlanData>>({
     plan_type: initialPlanType,
   });
-const [amountInput, setAmountInput] = useState(''); // This will be set via props
+  const [amountInput, setAmountInput] = useState(''); // This will be set via props
   const [executionsInput, setExecutionsInput] = useState('');
   const [maxPriceInput, setMaxPriceInput] = useState('');
   const [minPriceInput, setMinPriceInput] = useState('');
@@ -60,6 +60,7 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
   const [showExecutionsModal, setShowExecutionsModal] = useState(false);
   const [showMaxPriceModal, setShowMaxPriceModal] = useState(false);
   const [showMinPriceModal, setShowMinPriceModal] = useState(false);
+  const [inputCurrency, setInputCurrency] = useState<'inr' | 'btc'>(initialPlanType === 'DCA_BUY' ? 'inr' : 'btc');
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -77,6 +78,8 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
       setShowExecutionsModal(false);
       setShowMaxPriceModal(false);
       setShowMinPriceModal(false);
+      // Reset input currency based on plan type
+      setInputCurrency(initialPlanType === 'DCA_BUY' ? 'inr' : 'btc');
     }
   }, [isOpen, initialAmount, initialPlanType]);
 
@@ -136,15 +139,19 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
   // Handle amount input confirmation
   const handleAmountConfirm = (value: string) => {
     const numValue = parseFloat(value);
-    const maxValue = getMaxValue();
-    
-    if (numValue < 0 || (maxValue !== undefined && numValue > maxValue)) {
-      alert('Please enter a valid amount that is within your available balance and not negative.');
+
+    if (numValue < 0) {
+      alert('Please enter a valid amount that is not negative.');
       return;
     }
 
     setAmountInput(value);
     goToNextStep();
+  };
+
+  // Handle currency change from SingleInputModal
+  const handleCurrencyChange = (currency: 'inr' | 'btc') => {
+    setInputCurrency(currency);
   };
 
   // Handle optional settings handlers
@@ -222,14 +229,14 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
       const finalPlan: DCAPlanData = {
         plan_type: dcaPlan.plan_type!,
         frequency: dcaPlan.frequency!,
-        amount_per_execution_inr: dcaPlan.plan_type === 'DCA_BUY' ? parseFloat(amountInput) : undefined,
-        amount_per_execution_btc: dcaPlan.plan_type === 'DCA_SELL' ? Math.round(parseFloat(amountInput) * 100000000) : undefined, // Convert BTC to satoshis
+        amount_per_execution_inr: inputCurrency === 'inr' ? parseFloat(amountInput) : undefined,
+        amount_per_execution_btc: inputCurrency === 'btc' ? Math.round(parseFloat(amountInput) * 100000000) : undefined, // Convert BTC to satoshis
         remaining_executions: executionsInput ? parseInt(executionsInput) : undefined,
         max_price: maxPriceInput ? parseFloat(maxPriceInput) : undefined,
         min_price: minPriceInput ? parseFloat(minPriceInput) : undefined,
       };
 
-// Call API to create DCA plan
+      // Call API to create DCA plan
       const result = await createDCAPlan(finalPlan);
       console.log('✅ DCA plan created successfully, ID:', result.planId);
       
@@ -292,7 +299,6 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
     }
   };
 
-
   // Get confirmation details
   const getConfirmationDetails = () => {
     if (!amountInput) return [];
@@ -314,7 +320,7 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
       },
       {
         label: 'Amount per execution',
-        value: dcaPlan.plan_type === 'DCA_BUY' ? (
+        value: inputCurrency === 'inr' ? (
           <AnimateINR value={parseFloat(amountInput)} className="text-sm font-normal text-white" />
         ) : (
           <AnimateBTC value={parseFloat(amountInput) * 100000000} className="text-sm font-normal text-white" />
@@ -328,7 +334,6 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
       }
     ];
 
-    
     details.push({
       label: 'Executions',
       value: executionsInput || 'Unlimited',
@@ -352,8 +357,8 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
     }
     
     details.push({
-      label: dcaPlan.plan_type === 'DCA_BUY' ? 'Avg. daily investment' : 'Avg. daily sale',
-      value: dcaPlan.plan_type === 'DCA_BUY' ? (
+      label: inputCurrency === 'inr' ? 'Avg. daily investment' : 'Avg. daily sale',
+      value: inputCurrency === 'inr' ? (
         <AnimateINR value={totalPerDay} className="text-sm font-normal text-brand" />
       ) : (
         <AnimateBTC value={totalPerDay * 100000000} className="text-sm font-normal text-brand" />
@@ -422,15 +427,14 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
         isOpen={isOpen}
         onClose={goToPreviousStep}
         title={getStepTitle()}
-        type={dcaPlan.plan_type === 'DCA_BUY' ? 'inr' : 'btc'}
+        type={inputCurrency}
         confirmText="Next"
         onConfirm={handleAmountConfirm}
         sectionTitle={`${dcaPlan.plan_type === 'DCA_BUY' ? 'Buy' : 'Sell'} Amount`}
         sectionDetail={`Amount to ${dcaPlan.plan_type === 'DCA_BUY' ? 'invest' : 'sell'} each time the plan executes`}
-        maxValue={getMaxValue()}
-        maxButtonText={getMaxButtonText()}
         initialValue={amountInput}
         showOrbitIcon={true}  // Enable orbit icon
+        onCurrencyChange={handleCurrencyChange}
       />
     );
   }
@@ -509,12 +513,12 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
         isOpen={isOpen && !showConfirmation}
         onClose={goToPreviousStep}
         title="Review Your DCA Plan"
-        amount={dcaPlan.plan_type === 'DCA_BUY' ? (
+        amount={inputCurrency === 'inr' ? (
           <AnimateINR value={parseFloat(amountInput)} className="justify-center text-white text-5xl font-normal" />
         ) : (
           <AnimateBTC value={parseFloat(amountInput) * 100000000} className="justify-center text-white text-5xl font-semibold" />
         )}
-        amountType={dcaPlan.plan_type === 'DCA_BUY' ? 'inr' : 'btc'}
+        amountType={inputCurrency}
         subAmount={undefined}
         subAmountType={undefined}
         details={(() => {
@@ -677,4 +681,3 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
 };
 
 export default DCAModal;
-
