@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, SlidersVertical, Infinity } from 'lucide-react';
+import { X, SlidersVertical, Infinity, Orbit } from 'lucide-react';
 import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -8,7 +8,7 @@ interface SingleInputModalProps {
   onClose: () => void;
   title: string;
   confirmText: string;
-  onConfirm: (value: string) => void;
+  onConfirm: (value: string, currency?: 'inr' | 'btc') => void;
   type: 'inr' | 'btc' | 'number';
   sectionTitle?: string;
   sectionAmount?: string | React.ReactNode;
@@ -21,8 +21,11 @@ interface SingleInputModalProps {
   initialValue?: string;
   showSettingsIcon?: boolean;
   onSettingsClick?: () => void;
+  showOrbitIcon?: boolean;
+  onOrbitClick?: () => void;
   showInfinityPlaceholder?: boolean;
-  onValueChange?: (value: string) => void; // Real-time value updates
+  onValueChange?: (value: string, currency?: 'inr' | 'btc') => void; // Real-time value updates
+  onCurrencyChange?: (currency: 'inr' | 'btc') => void; // Currency change callback
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -43,10 +46,14 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   initialValue = '',
   showSettingsIcon = false,
   onSettingsClick,
+  showOrbitIcon = false,
+  onOrbitClick,
   showInfinityPlaceholder = false,
-  onValueChange
+  onValueChange,
+  onCurrencyChange
 }) => {
   const [value, setValue] = useState('');
+  const [currentType, setCurrentType] = useState<'inr' | 'btc' | 'number'>(type);
   const [dragStartY, setDragStartY] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -75,6 +82,35 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 
   const availableContentHeight = screenHeight - totalFixedHeight;
   const contentHeight = Math.max(availableContentHeight, 200);
+
+  // Initialize currentType when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentType(type);
+    }
+  }, [isOpen, type]);
+
+  // Handle orbit icon click - toggle between INR and BTC
+  const handleOrbitIconClick = () => {
+    // Only allow toggling between INR and BTC (not number type)
+    if (currentType === 'number') return;
+    
+    const newType = currentType === 'inr' ? 'btc' : 'inr';
+    setCurrentType(newType);
+
+    // Clear the current input when switching currency
+    setValue('');
+
+    // Notify parent components of currency change
+    if (onCurrencyChange) {
+      onCurrencyChange(newType);
+    }
+    
+    // Call the original onOrbitClick if provided
+    if (onOrbitClick) {
+      onOrbitClick();
+    }
+  };
 
   // Animation control
   useEffect(() => {
@@ -115,7 +151,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           handleKeypadPress(e.key);
           break;
         case '.':
-          if (type === 'btc') {
+          if (currentType === 'btc') {
             handleKeypadPress('.');
           }
           break;
@@ -282,7 +318,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     } else if (keyValue === 'clear') {
       newValue = '';
     } else if (keyValue === '.') {
-      if (type === 'btc' && !value.includes('.')) {
+      if (currentType === 'btc' && !value.includes('.')) {
         newValue = value === '' ? '0.' : value + keyValue;
       } else {
         return; // Don't update if invalid
@@ -363,9 +399,9 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 
   // Format display value
   const formatDisplayValue = (val: string) => {
-    if (type === 'btc') {
+    if (currentType === 'btc') {
       return formatBitcoinForInput(val);
-    } else if (type === 'number') {
+    } else if (currentType === 'number') {
       return val || (showInfinityPlaceholder ? '' : '0');
     } else {
       const numVal = parseFloat(val) || 0;
@@ -374,7 +410,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   };
 
   const isConfirmDisabled = isLoading || (
-    type === 'number' && showInfinityPlaceholder ? false : 
+    currentType === 'number' && showInfinityPlaceholder ? false : 
     (!value || parseFloat(value) <= 0)
   );
 
@@ -404,16 +440,26 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-6 pt-4 pb-4">
-          <div className="flex items-center justify-between">
+        <div className="px-6 pt-4 pb-4 relative">
+          <div className="flex items-center justify-between h-12">
+            {/* Left section */}
             <button
               onClick={animateClose}
               className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
-            <h2 className="text-white text-sm font-medium text-center flex-1">{title}</h2>
-            <div className="w-12 h-12 flex items-center justify-center">
+            
+            {/* Right section */}
+            <div className="flex items-center">
+              {showOrbitIcon && (
+                <button
+                  onClick={handleOrbitIconClick}
+                  className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+                >
+                  <Orbit className="w-5 h-5" />
+                </button>
+              )}
               {showSettingsIcon && onSettingsClick && (
                 <button
                   onClick={onSettingsClick}
@@ -423,6 +469,11 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                 </button>
               )}
             </div>
+          </div>
+          
+          {/* Title - absolutely positioned and centered relative to entire header */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <h2 className="text-white text-sm font-medium">{title}</h2>
           </div>
         </div>
 
@@ -494,7 +545,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           {/* Keypad */}
           <div className="mb-3">
             <div className="grid grid-cols-3 gap-1">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', type === 'btc' ? '.' : (type === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', currentType === 'btc' ? '.' : (currentType === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
                 key === '' ? (
                   <div key={`empty-${index}`} className="h-16" />
                 ) : (

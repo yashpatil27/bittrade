@@ -430,6 +430,7 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}
         initialValue={amountInput}
+        showOrbitIcon={true}  // Enable orbit icon
       />
     );
   }

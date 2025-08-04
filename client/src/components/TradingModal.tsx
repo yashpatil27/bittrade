@@ -37,6 +37,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
   onComplete,
 }) => {
   const [inputValue, setInputValue] = useState('');
+  const [inputCurrency, setInputCurrency] = useState<'inr' | 'btc'>(type === 'buy' ? 'inr' : 'btc'); // Track actual selected currency
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
@@ -52,6 +53,18 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const handleSettingsClick = () => {
     console.log('Settings icon clicked');
     setShowOrderTypeModal(true);
+  };
+  
+  // Handle orbit icon click
+  const handleOrbitClick = () => {
+    console.log('Orbit icon clicked');
+    // Add orbit functionality here
+  };
+  
+  // Handle currency change from SingleInputModal
+  const handleCurrencyChange = (currency: 'inr' | 'btc') => {
+    console.log('Currency changed to:', currency);
+    setInputCurrency(currency);
   };
   
   // Handle order type modal close
@@ -88,6 +101,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
   React.useEffect(() => {
     if (isOpen) {
       setInputValue('');
+      setInputCurrency(type === 'buy' ? 'inr' : 'btc'); // Reset to default currency
       setIsProcessing(false);
       setShowConfirmation(false);
       setOrderType('market');
@@ -95,9 +109,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
       setShowTargetPriceModal(false);
       setTargetPrice('');
     }
-  }, [isOpen]);
+  }, [isOpen, type]);
 
-  // Calculate conversion values
+  // Calculate conversion values based on actual input currency
   const calculateConversion = (amount: string) => {
     const numAmount = parseFloat(amount) || 0;
     
@@ -106,8 +120,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
       ? parseFloat(targetPrice)
       : type === 'buy' ? (buyRate || 0) : (sellRate || 0);
     
-    if (type === 'buy') {
-      // Buy: User inputs INR, gets BTC
+    // Calculate based on actual input currency, not trade type
+    if (inputCurrency === 'inr') {
+      // User input INR, calculate BTC equivalent
       const btcAmount = effectiveRate > 0 ? numAmount / effectiveRate : 0;
       return {
         inrAmount: numAmount,
@@ -116,7 +131,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         formattedInr: formatRupeesForDisplay(numAmount),
       };
     } else {
-      // Sell: User inputs BTC, gets INR
+      // User input BTC, calculate INR equivalent
       const inrAmount = effectiveRate > 0 ? numAmount * effectiveRate : 0;
       return {
         inrAmount: inrAmount,
@@ -177,7 +192,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
           action: type,
           type: orderType as 'market',
           amount: inputValue,
-          currency: (type === 'buy' ? 'inr' : 'btc') as 'inr' | 'btc'
+          currency: inputCurrency // Use the actual selected currency
         };
         
         console.log('🔄 Executing market trade:', tradeRequest);
@@ -291,38 +306,73 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const currentSellRate = sellRate || 0; // Sell rate: WebSocket rate only
   const currentRate = type === 'buy' ? currentBuyRate : currentSellRate;
   
-  // Calculate max values based on balance and type
+  // Calculate max values based on balance and currency type
   const getMaxValue = () => {
     if (!balanceData) return undefined;
     
+    // Use target price for limit orders, otherwise use current market rate
+    const effectiveRate = orderType === 'limit' && targetPrice 
+      ? parseFloat(targetPrice)
+      : type === 'buy' ? (buyRate || 0) : (sellRate || 0);
+    
     if (type === 'buy') {
-      // For buy: max is available INR
-      return balanceData.available_inr;
+      if (inputCurrency === 'inr') {
+        return balanceData.available_inr;
+      } else if (inputCurrency === 'btc' && effectiveRate > 0) {
+        return balanceData.available_inr / effectiveRate;
+      }
     } else {
-      // For sell: max is available BTC in BTC units
-      return balanceData.available_btc / 100000000; // Convert satoshis to BTC
+      if (inputCurrency === 'btc') {
+        return balanceData.available_btc / 100000000; // Convert satoshis to BTC
+      } else if (inputCurrency === 'inr' && effectiveRate > 0) {
+        return (balanceData.available_btc / 100000000) * effectiveRate;
+      }
     }
   };
   
-  // Get max button text with proper formatting
+  // Get max button text with proper formatting based on currency type
   const getMaxButtonText = () => {
-    console.log('🔍 getMaxButtonText called:', { balanceData, type });
+    console.log('🔍 getMaxButtonText called:', { balanceData, type, inputCurrency, orderType, targetPrice });
     if (!balanceData) {
       console.log('⚠️ No balance data available');
       return 'Max';
     }
     
+    // Use target price for limit orders, otherwise use current market rate
+    const effectiveRate = orderType === 'limit' && targetPrice 
+      ? parseFloat(targetPrice)
+      : type === 'buy' ? (buyRate || 0) : (sellRate || 0);
+    
     if (type === 'buy') {
-      // For buy: show available INR
-      const formatted = formatRupeesForDisplay(balanceData.available_inr);
-      console.log('💰 Buy max button:', formatted);
-      return `Max ${formatted}`;
+      if (inputCurrency === 'inr') {
+        // Show available INR
+        const formatted = formatRupeesForDisplay(balanceData.available_inr);
+        console.log('💰 Buy max button (INR):', formatted);
+        return `Max ${formatted}`;
+      } else if (inputCurrency === 'btc' && effectiveRate > 0) {
+        // Show max BTC that can be bought with available INR using effective rate
+        const maxBtc = balanceData.available_inr / effectiveRate;
+        const maxBtcSatoshis = Math.round(maxBtc * 100000000);
+        const formatted = formatBitcoinForDisplay(maxBtcSatoshis);
+        console.log('₿ Buy max button (BTC) with rate:', effectiveRate, 'formatted:', formatted);
+        return `Max ${formatted}`;
+      }
     } else {
-      // For sell: show available BTC
-      const formatted = formatBitcoinForDisplay(balanceData.available_btc);
-      console.log('₿ Sell max button:', formatted);
-      return `Max ${formatted}`;
+      if (inputCurrency === 'btc') {
+        // Show available BTC
+        const formatted = formatBitcoinForDisplay(balanceData.available_btc);
+        console.log('₿ Sell max button (BTC):', formatted);
+        return `Max ${formatted}`;
+      } else if (inputCurrency === 'inr' && effectiveRate > 0) {
+        // Show max INR that can be obtained by selling available BTC using effective rate
+        const maxInr = (balanceData.available_btc / 100000000) * effectiveRate;
+        const formatted = formatRupeesForDisplay(maxInr);
+        console.log('💰 Sell max button (INR) with rate:', effectiveRate, 'formatted:', formatted);
+        return `Max ${formatted}`;
+      }
     }
+    
+    return 'Max';
   };
   
   // Don't allow modal to open if rates are not available
@@ -370,6 +420,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
         initialValue={inputValue}
         showSettingsIcon={true}
         onSettingsClick={handleSettingsClick}
+        showOrbitIcon={true}
+        onOrbitClick={handleOrbitClick}
+        onCurrencyChange={handleCurrencyChange}
       />
 
       {/* Confirmation Modal - Opens on top of SingleInputModal */}
@@ -378,21 +431,21 @@ const TradingModal: React.FC<TradingModalProps> = ({
         onClose={handleConfirmationClose}
         title={getConfirmationTitle()}
         amount={inputValue ? (
-          type === 'buy' ? (
+          inputCurrency === 'inr' ? (
             <AnimateINR value={parseFloat(inputValue)} className="justify-center text-white text-5xl font-normal" />
           ) : (
             <AnimateBTC value={parseFloat(inputValue) * 100000000} className="justify-center text-white text-5xl font-semibold" />
           )
         ) : undefined}
-        amountType={type === 'buy' ? 'inr' : 'btc'}
+        amountType={inputCurrency}
         subAmount={inputValue ? (
-          type === 'buy' ? (
+          inputCurrency === 'inr' ? (
             <AnimateBTC value={calculateConversion(inputValue).btcAmount * 100000000} className="justify-center text-white text-sm font-normal" />
           ) : (
             <AnimateINR value={calculateConversion(inputValue).inrAmount} className="justify-center text-white text-sm font-normal" />
           )
         ) : undefined}
-        subAmountType={type === 'buy' ? 'btc' : 'inr'}
+        subAmountType={inputCurrency === 'inr' ? 'btc' : 'inr'}
         details={getConfirmationDetails()}
         confirmText={getConfirmationButtonText()}
         onConfirm={handleConfirmationConfirm}
