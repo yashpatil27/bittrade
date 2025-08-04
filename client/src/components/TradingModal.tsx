@@ -469,7 +469,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
         isOpen={isOpen && showDCAModal}
         onClose={() => setShowDCAModal(false)}
         balanceData={balanceData}
-        currentBitcoinPrice={buyRate || 0}
         initialAmount={currentInputValue || inputValue}
         initialPlanType={type === 'buy' ? 'DCA_BUY' : 'DCA_SELL'}
         onComplete={(plan) => {

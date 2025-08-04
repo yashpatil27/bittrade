@@ -21,7 +21,6 @@ interface DCAModalProps {
   isOpen: boolean;
   onClose: () => void;
   balanceData?: BalanceData | null;
-  currentBitcoinPrice?: number;
   onComplete?: (dcaPlan: DCAPlanData) => void;
   initialAmount?: string;
   initialPlanType?: 'DCA_BUY' | 'DCA_SELL';
@@ -43,7 +42,6 @@ const DCAModal: React.FC<DCAModalProps> = ({
   isOpen,
   onClose,
   balanceData,
-  currentBitcoinPrice = 0,
   onComplete,
   initialAmount = '',
   initialPlanType = 'DCA_BUY',
