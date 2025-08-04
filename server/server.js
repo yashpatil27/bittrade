@@ -558,13 +558,16 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
     return res.status(400).json({ error: 'Invalid plan type or frequency' });
   }
 
-  // Validate that the correct amount field is provided for each plan type
-  if (plan_type === 'DCA_BUY' && (!amount_per_execution_inr || amount_per_execution_inr <= 0)) {
-    return res.status(400).json({ error: 'DCA_BUY plans require a valid amount_per_execution_inr' });
+  // Validate that exactly one amount field is provided (either INR or BTC, but not both or neither)
+  const hasInrAmount = amount_per_execution_inr && amount_per_execution_inr > 0;
+  const hasBtcAmount = amount_per_execution_btc && amount_per_execution_btc > 0;
+  
+  if (!hasInrAmount && !hasBtcAmount) {
+    return res.status(400).json({ error: 'Either amount_per_execution_inr or amount_per_execution_btc must be provided' });
   }
   
-  if (plan_type === 'DCA_SELL' && (!amount_per_execution_btc || amount_per_execution_btc <= 0)) {
-    return res.status(400).json({ error: 'DCA_SELL plans require a valid amount_per_execution_btc' });
+  if (hasInrAmount && hasBtcAmount) {
+    return res.status(400).json({ error: 'Only one amount field should be provided (either INR or BTC, not both)' });
   }
 
   try {
@@ -572,8 +575,9 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
     const safeRemainingExecutions = remaining_executions !== undefined ? remaining_executions : null;
     const safeMaxPrice = max_price !== undefined ? max_price : null;
     const safeMinPrice = min_price !== undefined ? min_price : null;
-    const safeAmountInr = plan_type === 'DCA_BUY' ? amount_per_execution_inr : null;
-    const safeAmountBtc = plan_type === 'DCA_SELL' ? amount_per_execution_btc : null;
+    // Store both INR and BTC amounts regardless of plan type - let execution service decide
+    const safeAmountInr = amount_per_execution_inr || null;
+    const safeAmountBtc = amount_per_execution_btc || null;
     
     // Calculate next execution time using MySQL's date functions for timezone consistency
     let nextExecutionSQL;

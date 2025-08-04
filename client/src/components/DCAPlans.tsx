@@ -111,10 +111,13 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   };
 
   const getPlanMainDetail = (plan: DCAPlan) => {
-    if (plan.plan_type === 'DCA_BUY') {
-      return formatRupeesForDisplay(plan.amount_per_execution_inr || 0);
+    // Show whichever amount is specified (INR or BTC)
+    if (plan.amount_per_execution_inr) {
+      return formatRupeesForDisplay(plan.amount_per_execution_inr);
+    } else if (plan.amount_per_execution_btc) {
+      return formatBitcoinForDisplay(plan.amount_per_execution_btc);
     } else {
-      return formatBitcoinForDisplay(plan.amount_per_execution_btc || 0);
+      return 'No amount specified';
     }
   };
 
@@ -138,11 +141,27 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
     }
 
     if (plan.performance) {
-      details.push(
-        { label: 'Total Invested', value: formatRupeesForDisplay(plan.performance.total_invested), highlight: true },
-        { label: 'Total BTC', value: formatBitcoinForDisplay(plan.performance.total_btc), highlight: true },
-        { label: 'Average Price', value: formatRupeesForDisplay(plan.performance.avg_price), highlight: false }
-      );
+      // Show performance metrics based on plan configuration
+      if (plan.amount_per_execution_inr) {
+        // INR-based plan: show total invested and BTC acquired
+        details.push(
+          { label: 'Total Invested', value: formatRupeesForDisplay(plan.performance.total_invested), highlight: true },
+          { label: 'Total BTC Acquired', value: formatBitcoinForDisplay(plan.performance.total_btc), highlight: true }
+        );
+      } else if (plan.amount_per_execution_btc) {
+        // BTC-based plan: show total BTC sold/bought and INR received/spent
+        const actionLabel = plan.plan_type === 'DCA_BUY' ? 'Spent' : 'Received';
+        const btcActionLabel = plan.plan_type === 'DCA_BUY' ? 'Acquired' : 'Sold';
+        details.push(
+          { label: `Total BTC ${btcActionLabel}`, value: formatBitcoinForDisplay(plan.performance.total_btc), highlight: true },
+          { label: `Total INR ${actionLabel}`, value: formatRupeesForDisplay(plan.performance.total_invested), highlight: true }
+        );
+      }
+      
+      // Always show average price if available
+      if (plan.performance.avg_price) {
+        details.push({ label: 'Average Price', value: formatRupeesForDisplay(plan.performance.avg_price), highlight: false });
+      }
     }
 
     details.push(
@@ -210,9 +229,15 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   };
 
   const getPlanSubLabel = (plan: DCAPlan) => {
-    const amountStr = plan.plan_type === 'DCA_BUY' 
-      ? `₹${(plan.amount_per_execution_inr || 0).toLocaleString()}`
-      : `${formatBitcoinForDisplay(plan.amount_per_execution_btc || 0)}`;
+    // Show whichever amount is specified (INR or BTC)
+    let amountStr = '';
+    if (plan.amount_per_execution_inr) {
+      amountStr = `₹${plan.amount_per_execution_inr.toLocaleString()}`;
+    } else if (plan.amount_per_execution_btc) {
+      amountStr = formatBitcoinForDisplay(plan.amount_per_execution_btc);
+    } else {
+      amountStr = 'No amount';
+    }
     return `${amountStr} • ${plan.frequency.toLowerCase()}`;
   };
 

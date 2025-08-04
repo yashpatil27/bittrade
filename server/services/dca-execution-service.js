@@ -185,20 +185,41 @@ class DCAExecutionService {
       }
       
       if (plan.plan_type === 'DCA_BUY') {
-        const inrAmount = plan.amount_per_execution_inr || 0;
-
-        // Check if user has sufficient INR balance
-        if (user.available_inr < inrAmount) {
-          await connection.rollback();
-          return { 
-            success: false, 
-            error: `Insufficient INR balance. Available: ₹${user.available_inr}, Required: ₹${inrAmount}` 
-          };
-        }
+        let inrAmount, btcAmountSatoshis;
         
-        // Calculate BTC amount (price is in paise, amount is in paise)
-        // BTC amount in satoshis = (INR amount in paise * 100,000,000) / (price in paise)
-        const btcAmountSatoshis = Math.floor((inrAmount * 100000000) / currentPrice);
+        // Determine amounts based on what's specified in the plan
+        if (plan.amount_per_execution_inr) {
+          // INR amount specified - calculate BTC amount
+          inrAmount = plan.amount_per_execution_inr;
+          btcAmountSatoshis = Math.floor((inrAmount * 100000000) / currentPrice);
+          
+          // Check if user has sufficient INR balance
+          if (user.available_inr < inrAmount) {
+            await connection.rollback();
+            return { 
+              success: false, 
+              error: `Insufficient INR balance. Available: ₹${user.available_inr}, Required: ₹${inrAmount}` 
+            };
+          }
+          
+        } else if (plan.amount_per_execution_btc) {
+          // BTC amount specified - calculate INR amount
+          btcAmountSatoshis = plan.amount_per_execution_btc;
+          inrAmount = Math.floor((btcAmountSatoshis * currentPrice) / 100000000);
+          
+          // Check if user has sufficient INR balance
+          if (user.available_inr < inrAmount) {
+            await connection.rollback();
+            return { 
+              success: false, 
+              error: `Insufficient INR balance. Available: ₹${user.available_inr}, Required: ₹${inrAmount} (for ${btcAmountSatoshis} satoshis)` 
+            };
+          }
+          
+        } else {
+          await connection.rollback();
+          return { success: false, error: 'No amount specified in DCA plan' };
+        }
         
         // Update user balances
         await connection.execute(
@@ -219,22 +240,44 @@ class DCAExecutionService {
         
         console.log(`💰 DCA BUY executed: User ${plan.user_id} bought ${btcAmountSatoshis} satoshis for ₹${inrAmount} at ₹${currentPrice}/BTC`);
         
-        return { success: true, btcAmount: btcAmountSatoshis, price: currentPrice };
+        return { success: true, inrAmount, btcAmount: btcAmountSatoshis, price: currentPrice };
         
       } else if (plan.plan_type === 'DCA_SELL') {
-        const btcAmountSatoshis = plan.amount_per_execution_btc || 0;
+        let inrAmount, btcAmountSatoshis;
         
-        // Check if user has sufficient BTC balance
-        if (user.available_btc < btcAmountSatoshis) {
+        // Determine amounts based on what's specified in the plan
+        if (plan.amount_per_execution_btc) {
+          // BTC amount specified - calculate INR amount
+          btcAmountSatoshis = plan.amount_per_execution_btc;
+          inrAmount = Math.floor((btcAmountSatoshis * currentPrice) / 100000000);
+          
+          // Check if user has sufficient BTC balance
+          if (user.available_btc < btcAmountSatoshis) {
+            await connection.rollback();
+            return { 
+              success: false, 
+              error: `Insufficient BTC balance. Available: ${user.available_btc} satoshis, Required: ${btcAmountSatoshis} satoshis` 
+            };
+          }
+          
+        } else if (plan.amount_per_execution_inr) {
+          // INR amount specified - calculate BTC amount
+          inrAmount = plan.amount_per_execution_inr;
+          btcAmountSatoshis = Math.floor((inrAmount * 100000000) / currentPrice);
+          
+          // Check if user has sufficient BTC balance
+          if (user.available_btc < btcAmountSatoshis) {
+            await connection.rollback();
+            return { 
+              success: false, 
+              error: `Insufficient BTC balance. Available: ${user.available_btc} satoshis, Required: ${btcAmountSatoshis} satoshis (for ₹${inrAmount})` 
+            };
+          }
+          
+        } else {
           await connection.rollback();
-          return { 
-            success: false, 
-            error: `Insufficient BTC balance. Available: ${user.available_btc} satoshis, Required: ${btcAmountSatoshis} satoshis` 
-          };
+          return { success: false, error: 'No amount specified in DCA plan' };
         }
-        
-        // Calculate INR amount from BTC amount at current sell price
-        const inrAmount = Math.floor((btcAmountSatoshis * currentPrice) / 100000000);
         
         // Update user balances
         await connection.execute(
@@ -255,7 +298,7 @@ class DCAExecutionService {
         
         console.log(`💰 DCA SELL executed: User ${plan.user_id} sold ${btcAmountSatoshis} satoshis for ₹${inrAmount} at ₹${currentPrice}/BTC`);
         
-        return { success: true, btcAmount: btcAmountSatoshis, price: currentPrice };
+        return { success: true, inrAmount, btcAmount: btcAmountSatoshis, price: currentPrice };
       }
       
     } catch (error) {
