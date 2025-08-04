@@ -1,150 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { useWebSocketEvent } from '../context/WebSocketContext';
+import { usePrice } from '../context/PriceContext';
 import { AnimateUSD } from './AnimateNumberFlow';
-import { getApiUrl } from '../utils/api';
-
-interface ChartData {
-  timestamp: string;
-  price: number;
-  date: string;
-  time: string;
-}
-
-interface ApiChartData {
-  timeframe: string;
-  price_data: Array<{ timestamp: string; price: number }>;
-  price_change_pct: string | null;
-  data_points_count: number;
-  last_updated: string;
-}
 
 interface BitcoinChartProps {
   className?: string;
 }
 
-interface PriceUpdateData {
-  btc_usd_price: number;
-  buy_rate_inr: number;
-  sell_rate_inr: number;
-  timestamp: string;
-}
-
 const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
-  const [chartData, setChartData] = useState<ChartData[]>([]);
-  const [loading, setLoading] = useState(true);
   const [transitioning, setTransitioning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState('90d');
-  const [priceChangePercent, setPriceChangePercent] = useState<number>(0);
-  const [currentLivePrice, setCurrentLivePrice] = useState<number | null>(null);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  // Fetch initial price from API (Redis cache)
-  useEffect(() => {
-    const fetchInitialPrice = async () => {
-      try {
-        const response = await fetch(`${getApiUrl()}/api/bitcoin/current`);
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentLivePrice(data.btc_usd_price);
-          console.log('🔄 Fetched initial Bitcoin price from API:', data.btc_usd_price);
-        }
-      } catch (error) {
-        console.error('Error fetching initial Bitcoin price:', error);
-      }
-    };
-
-    fetchInitialPrice();
-  }, []);
-
-  // Listen for WebSocket price updates
-  useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
-    console.log('📈 BitcoinChart received btc_price_update:', data);
-    setCurrentLivePrice(data.btc_usd_price);
-  });
+  
+  // Use centralized price context
+  const {
+    btcUsdPrice,
+    chartData,
+    currentChartTimeframe,
+    setCurrentChartTimeframe,
+    fetchChartData
+  } = usePrice();
+  
+  // Get current chart data for selected timeframe
+  const currentChart = chartData[currentChartTimeframe];
+  const loading = currentChart?.loading ?? true;
+  const error = currentChart?.error ?? null;
+  const priceChangePercent = currentChart?.priceChangePercent ?? 0;
+  const formattedChartData = currentChart?.data ?? [];
+  
+  // Check if we have any data to show
+  const hasData = formattedChartData.length > 0;
 
   const tabs = [
-    { id: '1d', label: '1D', apiTimeframe: '1d' },
-    { id: '7d', label: '1W', apiTimeframe: '7d' },
-    { id: '30d', label: '1M', apiTimeframe: '30d' },
-    { id: '90d', label: '3M', apiTimeframe: '90d' },
-    { id: '365d', label: '1Y', apiTimeframe: '365d' }
+    { id: '1d', label: '1D' },
+    { id: '7d', label: '1W' },
+    { id: '30d', label: '1M' },
+    { id: '90d', label: '3M' },
+    { id: '365d', label: '1Y' }
   ];
 
-  useEffect(() => {
-    const loadBitcoinData = async () => {
-      try {
-        // Only show loading on initial load, not on tab switches
-        if (isInitialLoad) {
-          setLoading(true);
-        } else {
-          setTransitioning(true);
-        }
-        setError(null);
-
-        // Fetch data from API
-        const response = await fetch(`${getApiUrl()}/api/bitcoin/chart/${selectedTab}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch chart data: ${response.status}`);
-        }
-
-        const apiData: ApiChartData = await response.json();
-        
-        // Transform the data for the chart
-        const formattedData: ChartData[] = apiData.price_data.map((item) => {
-          const date = new Date(item.timestamp);
-          return {
-            timestamp: item.timestamp,
-            price: item.price,
-            date: date.toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric' 
-            }),
-            time: date.toLocaleTimeString('en-US', { 
-              hour: '2-digit', 
-              minute: '2-digit' 
-            })
-          };
-        });
-
-        // Update chart data immediately
-        setChartData(formattedData);
-        
-        // Mark initial load as complete
-        if (isInitialLoad) {
-          setIsInitialLoad(false);
-        }
-        
-        // Reset transitioning state after a short delay to allow animation
-        setTimeout(() => {
-          setTransitioning(false);
-        }, 50);
-
-        // Use API price change if available, otherwise calculate manually
-        if (apiData.price_change_pct !== null) {
-          const apiChangePercent = parseFloat(apiData.price_change_pct);
-          setPriceChangePercent(apiChangePercent);
-        } else {
-          // Fallback: calculate manually if API doesn't have price change
-          if (formattedData.length > 0) {
-            const firstPrice = formattedData[0].price;
-            const lastPrice = formattedData[formattedData.length - 1].price;
-            const changePercent = ((lastPrice - firstPrice) / firstPrice) * 100;
-            setPriceChangePercent(changePercent);
-          }
-        }
-
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred loading chart data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadBitcoinData();
-  }, [selectedTab, isInitialLoad]);
+  // Handle tab changes
+  const handleTabChange = async (tabId: string) => {
+    if (tabId === currentChartTimeframe) return;
+    
+    // Set timeframe first (this will update the UI immediately)
+    setCurrentChartTimeframe(tabId);
+    
+    // Only fetch data if we don't have it cached
+    if (!chartData[tabId] || chartData[tabId].error) {
+      // Show transitioning state for smooth UX only when fetching new data
+      setTransitioning(true);
+      
+      await fetchChartData(tabId);
+      
+      // Reset transitioning state after animation
+      setTimeout(() => {
+        setTransitioning(false);
+      }, 300);
+    }
+  };
 
   const formatTooltipPrice = (value: number): string => {
     return new Intl.NumberFormat('en-US', {
@@ -168,7 +80,8 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     return null;
   };
 
-  if (loading) {
+  // Only show loading state if we have no data at all
+  if (loading && !hasData) {
     return (
       <div className={`bg-black rounded-lg p-1 ${className}`}>
         {/* Header */}
@@ -217,14 +130,14 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   }
 
   // Use live price from WebSocket if available, otherwise use chart data
-  const currentPrice = currentLivePrice || (chartData.length > 0 ? chartData[chartData.length - 1].price : 0);
+  const currentPrice = btcUsdPrice || (formattedChartData.length > 0 ? formattedChartData[formattedChartData.length - 1].price : 0);
   
   // Calculate real-time price change if we have live price
-  const realTimePriceChange = currentLivePrice && chartData.length > 0 
-    ? ((currentLivePrice - chartData[0].price) / chartData[0].price) * 100
+  const realTimePriceChange = btcUsdPrice && formattedChartData.length > 0 
+    ? ((btcUsdPrice - formattedChartData[0].price) / formattedChartData[0].price) * 100
     : priceChangePercent;
   
-  const displayPriceChange = currentLivePrice ? realTimePriceChange : priceChangePercent;
+  const displayPriceChange = btcUsdPrice ? realTimePriceChange : priceChangePercent;
   const isRealTimePositive = displayPriceChange >= 0;
 
   return (
@@ -253,11 +166,11 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
 
       {/* Chart */}
       <div className="h-48 relative">
-        <div className={`absolute inset-0 transition-opacity duration-300 ${
-          transitioning ? 'opacity-50' : 'opacity-100'
+        <div className={`absolute inset-0 transition-opacity duration-200 ${
+          transitioning ? 'opacity-70' : 'opacity-100'
         }`}>
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData}>
+            <AreaChart data={formattedChartData}>
               <defs>
                 <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--brand-color)" stopOpacity={0.3} />
@@ -283,7 +196,7 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
                   stroke: '#1f2937',
                   strokeWidth: 2
                 }}
-                animationDuration={isInitialLoad ? 0 : 800}
+                animationDuration={transitioning ? 200 : 600}
                 animationEasing="ease-in-out"
               />
             </AreaChart>
@@ -298,9 +211,9 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setSelectedTab(tab.id)}
+              onClick={() => handleTabChange(tab.id)}
               className={`flex-1 py-1 text-xs font-light rounded-md transition-colors ${
-                selectedTab === tab.id
+                currentChartTimeframe === tab.id
                   ? 'text-brand'
                   : 'text-gray-400 hover:text-white'
               }`}

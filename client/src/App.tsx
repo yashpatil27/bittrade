@@ -17,6 +17,7 @@ import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider } from './context/AuthContext';
 import { BalanceProvider } from './context/BalanceContext';
 import { TransactionProvider } from './context/TransactionContext';
+import { PriceProvider } from './context/PriceContext';
 import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
 
@@ -26,10 +27,11 @@ function App() {
   return (
     <AuthProvider>
       <WebSocketProvider>
-        <BalanceProvider>
-          <TransactionProvider>
-            <WebSocketAuthenticator />
-            <Router>
+        <PriceProvider>
+          <BalanceProvider>
+            <TransactionProvider>
+              <WebSocketAuthenticator />
+              <Router>
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
@@ -116,9 +118,10 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
-            </Router>
-          </TransactionProvider>
-        </BalanceProvider>
+              </Router>
+            </TransactionProvider>
+          </BalanceProvider>
+        </PriceProvider>
       </WebSocketProvider>
     </AuthProvider>
   );
