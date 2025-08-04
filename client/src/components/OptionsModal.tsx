@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, X } from 'lucide-react';
 
 interface NotificationItem {
   id: string;
@@ -19,6 +19,7 @@ interface OptionsModalProps {
   type?: 'notifications' | 'custom';
   notifications?: NotificationItem[];
   children?: React.ReactNode;
+  showXIcon?: boolean; // Show X icon instead of ChevronLeft (default: false)
 }
 
 const OptionsModal: React.FC<OptionsModalProps> = ({
@@ -27,7 +28,8 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   title,
   type = 'custom',
   notifications = [],
-  children
+  children,
+  showXIcon = false
 }) => {
   const [dragStartY, setDragStartY] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
@@ -221,7 +223,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
               onClick={animateClose}
               className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
-              <ChevronLeft className="w-5 h-5" />
+              {showXIcon ? <X className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
             </button>
             <h2 className="text-white text-sm font-medium text-center flex-1">{title}</h2>
             <div className="w-10"></div> {/* Spacer for centering */}

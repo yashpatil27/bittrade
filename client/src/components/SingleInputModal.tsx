@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronLeft, SlidersVertical, Infinity, Orbit } from 'lucide-react';
+import { ChevronLeft, X, SlidersVertical, Infinity, Orbit } from 'lucide-react';
 import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -27,6 +27,7 @@ interface SingleInputModalProps {
   onValueChange?: (value: string, currency?: 'inr' | 'btc') => void; // Real-time value updates
   onCurrencyChange?: (currency: 'inr' | 'btc') => void; // Currency change callback
   skipMaxValidation?: boolean; // Skip max value validation but still show max button
+  showXIcon?: boolean; // Show X icon instead of ChevronLeft (default: false)
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -52,7 +53,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   showInfinityPlaceholder = false,
   onValueChange,
   onCurrencyChange,
-  skipMaxValidation = false
+  skipMaxValidation = false,
+  showXIcon = false
 }) => {
   const [value, setValue] = useState('');
   const [currentType, setCurrentType] = useState<'inr' | 'btc' | 'number'>(type);
@@ -449,7 +451,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
               onClick={animateClose}
               className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
-              <ChevronLeft className="w-5 h-5" />
+              {showXIcon ? <X className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
             </button>
             
             {/* Right section */}

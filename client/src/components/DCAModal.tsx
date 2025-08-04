@@ -377,6 +377,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
         onClose={onClose}
         title="Choose Plan Type"
         type="custom"
+        showXIcon={true}
       >
         <div className="space-y-3">
           <div 

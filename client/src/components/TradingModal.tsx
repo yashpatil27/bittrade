@@ -406,6 +406,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         showOrbitIcon={true}
         onOrbitClick={handleOrbitClick}
         onCurrencyChange={handleCurrencyChange}
+        showXIcon={true}
       />
 
       {/* Confirmation Modal - Opens on top of SingleInputModal */}
