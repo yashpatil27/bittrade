@@ -9,25 +9,25 @@ const Loans: React.FC = () => {
       icon: Banknote,
       title: 'Bitcoin-Backed Loans',
       description: 'Use your Bitcoin as collateral to access instant liquidity without selling your crypto assets.',
-      color: 'text-orange-400'
+      color: 'text-brand'
     },
     {
       icon: TrendingUp,
       title: 'Competitive Rates',
       description: 'Get the best rates in the market with flexible repayment terms tailored to your needs.',
-      color: 'text-green-400'
+      color: 'text-brand'
     },
     {
       icon: Shield,
       title: 'Secure & Transparent',
       description: 'Your collateral is safely stored with full transparency on loan terms and conditions.',
-      color: 'text-blue-400'
+      color: 'text-brand'
     },
     {
       icon: Clock,
       title: 'Instant Processing',
       description: 'Get approved and funded within minutes, not days. Lightning-fast loan processing.',
-      color: 'text-purple-400'
+      color: 'text-brand'
     }
   ];
 
