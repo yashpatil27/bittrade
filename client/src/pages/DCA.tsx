@@ -3,21 +3,20 @@ import Card from '../components/Card';
 import DCAModal from '../components/DCAModal';
 import DCAPlans from '../components/DCAPlans';
 import DCATransactionList from '../components/DCATransactionList';
-import MarketRate from '../components/MarketRate';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
 import { DCAPlan, Transaction } from '../types';
 import { useBalance } from '../context/BalanceContext';
+import { usePrice } from '../context/PriceContext';
 
 
 const DCA: React.FC = () => {
   const [isDCAModalOpen, setIsDCAModalOpen] = useState(false);
-  const [buyRate, setBuyRate] = useState<number>(0);
-  const [sellRate, setSellRate] = useState<number>(0);
   const [hasPlans, setHasPlans] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
-  // Use centralized balance context
+  // Use centralized contexts
   const { balanceData } = useBalance();
+  const { btcUsdPrice, buyRateInr, sellRateInr } = usePrice();
 
   const handleStartDCA = () => {
     setIsDCAModalOpen(true);
@@ -34,10 +33,6 @@ const DCA: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleRatesUpdate = (newBuyRate: number, newSellRate: number) => {
-    setBuyRate(newBuyRate);
-    setSellRate(newSellRate);
-  };
 
   const handlePlanClick = (plan: DCAPlan) => {
     console.log('DCA Plan clicked:', plan);
@@ -75,11 +70,6 @@ const DCA: React.FC = () => {
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
-      {/* Hidden MarketRate component to get rates */}
-      <MarketRate 
-        className="hidden"
-        onRatesUpdate={handleRatesUpdate}
-      />
       {/* Main Content */}
         {hasPlans ? (
           <div className="px-4 py-3 space-y-3">
@@ -215,9 +205,9 @@ const DCA: React.FC = () => {
         isOpen={isDCAModalOpen} 
         onClose={handleCloseDCAModal}
         balanceData={balanceData}
-        currentBitcoinPrice={0}
-        buyRate={buyRate}
-        sellRate={sellRate}
+        currentBitcoinPrice={btcUsdPrice || 0}
+        buyRate={buyRateInr || 0}
+        sellRate={sellRateInr || 0}
         onComplete={handleDCAComplete}
       />
       </div>

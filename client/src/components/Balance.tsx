@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useBalance } from '../context/BalanceContext';
-import { useWebSocketEvent } from '../context/WebSocketContext';
+import { usePrice } from '../context/PriceContext';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
-import { getApiUrl } from '../utils/api';
 
 interface BalanceData {
   available_inr: number;
@@ -26,12 +25,6 @@ interface AdminTotalBalanceData {
   total_interest_accrued: number;
 }
 
-interface PriceUpdateData {
-  btc_usd_price: number;
-  buy_rate_inr: number;
-  sell_rate_inr: number;
-  timestamp: string;
-}
 
 interface BalanceProps {
   className?: string;
@@ -39,43 +32,14 @@ interface BalanceProps {
 }
 
 const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false }) => {
-  const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
   const [showBalances, setShowBalances] = useState(true);
   
-  // Use centralized balance context
+  // Use centralized balance and price contexts
   const { balanceData: userBalanceData, adminBalanceData, isLoading: loading, refetchAdminBalance } = useBalance();
+  const { sellRateInr } = usePrice();
   
   // Choose which balance data to use based on showAllUsers prop
   const balanceData = showAllUsers ? adminBalanceData : userBalanceData;
-  
-  // Fetch initial market rates from API (Redis cache)
-  useEffect(() => {
-    const fetchInitialRates = async () => {
-      try {
-        const response = await fetch(`${getApiUrl()}/api/market-rates`);
-        if (response.ok) {
-          const data = await response.json();
-          setPriceData({
-            btc_usd_price: data.btc_usd_price,
-            buy_rate_inr: data.buy_rate_inr,
-            sell_rate_inr: data.sell_rate_inr,
-            timestamp: data.timestamp
-          });
-          console.log('🔄 Balance: Fetched initial market rates from API:', data);
-        }
-      } catch (error) {
-        console.error('Balance: Error fetching initial market rates:', error);
-      }
-    };
-
-    fetchInitialRates();
-  }, []);
-
-  // Listen for WebSocket price updates
-  useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
-    console.log('📡 Balance: Received btc_price_update:', data);
-    setPriceData(data);
-  });
 
   // Calculate asset allocation percentages using real-time data
   // Match MarketRate component pattern - no fallback calculation, just use data or 0
@@ -88,8 +52,8 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
     : balanceData ? Number((balanceData as BalanceData).available_btc || 0) / 100000000 : 0; // Convert satoshis to BTC
   
   // Use sell_rate_inr for BTC value calculation (what user would get if selling)
-  // Same pattern as MarketRate: use priceData or 0, no fallback calculation
-  const sellRate = priceData ? Number(priceData.sell_rate_inr || 0) : 0;
+  // Use PriceContext data
+  const sellRate = sellRateInr || 0;
   const btcValueInINR = sellRate > 0 ? btcAmountInBTC * sellRate : 0;
   
   const totalValue = inrValue + btcValueInINR;

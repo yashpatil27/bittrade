@@ -6,6 +6,7 @@ interface WebSocketStatusProps {
   className?: string;
 }
 
+// Price update data from WebSocket (matches PriceContext interface)
 interface PriceUpdateData {
   btc_usd_price: number;
   buy_rate_inr: number;

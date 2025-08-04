@@ -8,6 +8,7 @@ import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
 import Balance from '../components/Balance';
 import { useBalance } from '../context/BalanceContext';
+import { usePrice } from '../context/PriceContext';
 
 
 interface HomeProps {
@@ -18,11 +19,10 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
-  const [buyRate, setBuyRate] = React.useState<number>(0);
-  const [sellRate, setSellRate] = React.useState<number>(0);
   
-  // Use centralized balance context
+  // Use centralized contexts
   const { balanceData } = useBalance();
+  const { buyRateInr, sellRateInr } = usePrice();
 
   const handleBuyClick = () => {
     setModalType('buy');
@@ -50,10 +50,6 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
     // 4. Update transaction list
   };
 
-  const handleRatesUpdate = (newBuyRate: number, newSellRate: number) => {
-    setBuyRate(newBuyRate);
-    setSellRate(newSellRate);
-  };
 
 
 
@@ -73,7 +69,6 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
         <MarketRate 
           onBuyClick={handleBuyClick}
           onSellClick={handleSellClick}
-          onRatesUpdate={handleRatesUpdate}
         />
         
 {/* Pending Orders - Only shown when there are pending limit orders */}
@@ -97,8 +92,8 @@ onViewAllClick={() => navigate('/history')}
           isOpen={modalOpen}
           onClose={handleModalClose}
           type={modalType}
-          buyRate={buyRate}
-          sellRate={sellRate}
+          buyRate={buyRateInr || 0}
+          sellRate={sellRateInr || 0}
           balanceData={balanceData}
           onComplete={handleTradingComplete}
         />

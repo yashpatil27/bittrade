@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 // Removed unused imports: TrendingUp, TrendingDown
-import { useWebSocketEvent } from '../context/WebSocketContext';
-import { useBalance } from '../context/BalanceContext';
+import { usePrice } from '../context/PriceContext';
 import { AnimateINR } from './AnimateNumberFlow';
-import { getApiUrl } from '../utils/api';
 
 interface MarketRateProps {
   className?: string;
@@ -12,62 +10,14 @@ interface MarketRateProps {
   onRatesUpdate?: (buyRate: number, sellRate: number) => void;
 }
 
-interface PriceUpdateData {
-  btc_usd_price: number;
-  buy_rate_inr: number;
-  sell_rate_inr: number;
-  timestamp: string;
-}
 
 const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate }) => {
-  const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
-  // const [loading, setLoading] = useState(true); // Unused but kept for future loading states
-  
-  // Use centralized balance context
-  const { balanceData } = useBalance();
+  // Use centralized price context
+  const { buyRateInr, sellRateInr, pricesLoading, hasValidPrices } = usePrice();
 
-  // Fetch initial data from API (Redis cache)
-  useEffect(() => {
-    const fetchInitialRates = async () => {
-      try {
-        // setLoading(true); // Commented out since loading state is not used
-        const response = await fetch(`${getApiUrl()}/api/market-rates`);
-        if (response.ok) {
-          const data = await response.json();
-          setPriceData({
-            btc_usd_price: data.btc_usd_price,
-            buy_rate_inr: data.buy_rate_inr,
-            sell_rate_inr: data.sell_rate_inr,
-            timestamp: data.timestamp
-          });
-          console.log('🔄 Fetched initial market rates from API:', data);
-        }
-      } catch (error) {
-        console.error('Error fetching initial market rates:', error);
-      } finally {
-        // setLoading(false); // Commented out since loading state is not used
-      }
-    };
-
-    fetchInitialRates();
-  }, []);
-
-
-
-
-
-
-  // Listen for WebSocket price updates as per notes/state.txt
-  useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
-    console.log('📡 Received btc_price_update:', data);
-    setPriceData(data);
-    // setLoading(false); // Commented out since loading state is not used
-  });
-
-  // Use WebSocket data only - no fallback to mock data
-  const buyRate = priceData ? priceData.buy_rate_inr : 0;
-  const sellRate = priceData ? priceData.sell_rate_inr : 0;
-  // const currentBtcPrice = priceData ? priceData.btc_usd_price : 0; // Unused but kept for future BTC price display
+  // Use rates from PriceContext
+  const buyRate = buyRateInr || 0;
+  const sellRate = sellRateInr || 0;
 
   // Notify parent component of rate updates
   useEffect(() => {
@@ -79,7 +29,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
 
 
   // Show loading state when no data is available
-  if (!priceData) {
+  if (pricesLoading || !hasValidPrices) {
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
         <div className="mb-3 flex items-center justify-between">
