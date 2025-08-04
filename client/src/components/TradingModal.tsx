@@ -5,7 +5,6 @@ import OptionsModal from './OptionsModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { executeTrade, createLimitOrder } from '../utils/tradingApi';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
-import DCAModal from './DCAModal';
 
 interface BalanceData {
   available_inr: number;
@@ -41,8 +40,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showOrderTypeModal, setShowOrderTypeModal] = useState(false);
-  const [orderType, setOrderType] = useState<'market' | 'limit' | 'recurring'>('market');
-  const [showDCAModal, setShowDCAModal] = useState(false);
+  const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [showTargetPriceModal, setShowTargetPriceModal] = useState(false);
   const [targetPrice, setTargetPrice] = useState('');
   
@@ -84,7 +82,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
   };
   
   // Handle order type selection
-  const handleOrderTypeSelect = (selectedOrderType: 'market' | 'limit' | 'recurring') => {
+  const handleOrderTypeSelect = (selectedOrderType: 'market' | 'limit') => {
     console.log('Order type selected:', selectedOrderType);
     setOrderType(selectedOrderType);
     setShowOrderTypeModal(false);
@@ -93,8 +91,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
     if (selectedOrderType === 'limit') {
       setShowTargetPriceModal(true);
     }
-    // If recurring order is selected, just return to SingleInputModal
-    // The DCA flow will be triggered when user clicks Next
   };
 
   // Reset state when modal opens/closes
@@ -105,7 +101,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
       setIsProcessing(false);
       setShowConfirmation(false);
       setOrderType('market');
-      setShowDCAModal(false);
       setShowTargetPriceModal(false);
       setTargetPrice('');
     }
@@ -142,7 +137,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
     }
   };
 
-  // Handle input modal confirmation with validation
+// Handle input modal confirmation with validation
   const handleInputConfirm = (value: string) => {
     const numValue = parseFloat(value);
     const maxValue = getMaxValue();
@@ -154,12 +149,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
 
     setInputValue(value);
     
-    // If recurring order type is selected, show DCA modal instead of confirmation
-    if (orderType === 'recurring') {
-      setShowDCAModal(true);
-    } else {
-      setShowConfirmation(true);
-    }
+    setShowConfirmation(true);
   };
 
   // Handle input modal close
@@ -197,9 +187,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
         
         console.log('🔄 Executing market trade:', tradeRequest);
         tradeResult = await executeTrade(tradeRequest);
-      } else {
-        // Recurring orders not implemented yet
-        throw new Error('Recurring orders are not implemented yet');
       }
       
       console.log('✅ Trade executed successfully:', tradeResult);
@@ -247,7 +234,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
     const details = [
       {
         label: 'Order Type',
-        value: orderType === 'market' ? 'Market Order' : orderType === 'limit' ? 'Limit Order' : 'Recurring Order',
+        value: orderType === 'market' ? 'Market Order' : 'Limit Order',
         highlight: false
       },
       {
@@ -497,39 +484,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
             </div>
           </div>
           
-          {/* Recurring Order (DCA) Option */}
-          <div 
-            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
-            onClick={() => handleOrderTypeSelect('recurring')}
-            data-clickable="true"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-white text-sm font-medium">Recurring Order (DCA)</h3>
-                <p className="text-gray-400 text-xs mt-1">Set up automatic recurring {type === 'buy' ? 'purchases' : 'sales'}</p>
-              </div>
-              {/* Show 'Current' if recurring order is selected */}
-              {orderType === 'recurring' && (
-                <div className="text-brand text-xs">Current</div>
-              )}
-            </div>
-          </div>
         </div>
       </OptionsModal>
       
-{/* DCA Modal for recurring orders */}
-      <DCAModal
-        isOpen={isOpen && showDCAModal}
-        onClose={() => setShowDCAModal(false)}
-        balanceData={balanceData}
-        initialAmount={currentInputValue || inputValue}
-        initialPlanType={type === 'buy' ? 'DCA_BUY' : 'DCA_SELL'}
-        onComplete={(plan) => {
-          console.log('DCA Plan completed:', plan);
-          setShowDCAModal(false);
-          onClose(); // Close the entire trading modal when DCA plan is completed
-        }}
-      />
 
       {/* Target Price Modal - Opens when limit order is selected */}
       <SingleInputModal
