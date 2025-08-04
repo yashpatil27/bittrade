@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import PendingOrdersList from '../components/PendingOrdersList';
 import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
-import TradingModal from '../components/TradingModal';
 import Balance from '../components/Balance';
 import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
+
+// Lazy load TradingModal since it's only shown on user interaction
+const TradingModal = React.lazy(() => import('../components/TradingModal'));
 
 
 interface HomeProps {
@@ -88,15 +90,23 @@ onViewAllClick={() => navigate('/history')}
         </Card>
 
 {/* Trading Modal */}
-        <TradingModal
-          isOpen={modalOpen}
-          onClose={handleModalClose}
-          type={modalType}
-          buyRate={buyRateInr || 0}
-          sellRate={sellRateInr || 0}
-          balanceData={balanceData}
-          onComplete={handleTradingComplete}
-        />
+        {modalOpen && (
+          <Suspense fallback={
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+            </div>
+          }>
+            <TradingModal
+              isOpen={modalOpen}
+              onClose={handleModalClose}
+              type={modalType}
+              buyRate={buyRateInr || 0}
+              sellRate={sellRateInr || 0}
+              balanceData={balanceData}
+              onComplete={handleTradingComplete}
+            />
+          </Suspense>
+        )}
 
         </div>
       </div>

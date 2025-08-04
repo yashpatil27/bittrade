@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Card from '../components/Card';
-import DCAModal from '../components/DCAModal';
 import DCAPlans from '../components/DCAPlans';
 import DCATransactionList from '../components/DCATransactionList';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
@@ -8,6 +7,9 @@ import { DCAPlan, Transaction } from '../types';
 import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
 import { useDCAPlans } from '../context/DCAPlansContext';
+
+// Lazy load DCAModal since it's only shown on user interaction
+const DCAModal = React.lazy(() => import('../components/DCAModal'));
 
 
 const DCA: React.FC = () => {
@@ -197,15 +199,23 @@ const DCA: React.FC = () => {
         )}
       
       {/* DCA Modal */}
-      <DCAModal 
-        isOpen={isDCAModalOpen} 
-        onClose={handleCloseDCAModal}
-        balanceData={balanceData}
-        currentBitcoinPrice={btcUsdPrice || 0}
-        buyRate={buyRateInr || 0}
-        sellRate={sellRateInr || 0}
-        onComplete={handleDCAComplete}
-      />
+      {isDCAModalOpen && (
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+          </div>
+        }>
+          <DCAModal 
+            isOpen={isDCAModalOpen} 
+            onClose={handleCloseDCAModal}
+            balanceData={balanceData}
+            currentBitcoinPrice={btcUsdPrice || 0}
+            buyRate={buyRateInr || 0}
+            sellRate={sellRateInr || 0}
+            onComplete={handleDCAComplete}
+          />
+        </Suspense>
+      )}
       </div>
     </div>
   );
