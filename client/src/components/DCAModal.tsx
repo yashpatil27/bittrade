@@ -435,6 +435,9 @@ const DCAModal: React.FC<DCAModalProps> = ({
         initialValue={amountInput}
         showOrbitIcon={true}  // Enable orbit icon
         onCurrencyChange={handleCurrencyChange}
+        maxValue={getMaxValue()}
+        maxButtonText={getMaxButtonText()}
+        skipMaxValidation={true}  // Skip validation but show max button
       />
     );
   }

@@ -26,6 +26,7 @@ interface SingleInputModalProps {
   showInfinityPlaceholder?: boolean;
   onValueChange?: (value: string, currency?: 'inr' | 'btc') => void; // Real-time value updates
   onCurrencyChange?: (currency: 'inr' | 'btc') => void; // Currency change callback
+  skipMaxValidation?: boolean; // Skip max value validation but still show max button
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -50,7 +51,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   onOrbitClick,
   showInfinityPlaceholder = false,
   onValueChange,
-  onCurrencyChange
+  onCurrencyChange,
+  skipMaxValidation = false
 }) => {
   const [value, setValue] = useState('');
   const [currentType, setCurrentType] = useState<'inr' | 'btc' | 'number'>(type);
@@ -328,13 +330,13 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
       const testValue = value + keyValue;
       const numValue = parseFloat(testValue);
       
-      // Don't allow negative values or values exceeding max
+      // Don't allow negative values or values exceeding max (unless skipMaxValidation is true)
       if (numValue < 0) {
         return; // Don't update if it would create a negative value
       }
       
-      if (maxValue !== undefined && numValue > maxValue) {
-        return; // Don't update if it would exceed max value
+      if (maxValue !== undefined && numValue > maxValue && !skipMaxValidation) {
+        return; // Don't update if it would exceed max value (unless validation is skipped)
       }
       
       newValue = testValue;
