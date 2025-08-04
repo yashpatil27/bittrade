@@ -70,6 +70,10 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   
+  // Load More state - only used when maxItems is not provided
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_LOAD_COUNT = 10;
+  
   // Use centralized filtering functions for better performance
   const filteredTransactions = filterPending 
     ? getPendingOrders(showAllUsers)
@@ -77,7 +81,19 @@ const TransactionList: React.FC<TransactionListProps> = ({
     ? getCompletedTransactions(showAllUsers)
     : transactions;
   
-  const displayTransactions = maxItems ? filteredTransactions.slice(0, maxItems) : filteredTransactions;
+  // Determine how many transactions to display
+  const getDisplayTransactions = () => {
+    if (maxItems) {
+      // If maxItems is provided, use it (for components like Home)
+      return filteredTransactions.slice(0, maxItems);
+    } else {
+      // If no maxItems, implement Load More functionality
+      return showAll ? filteredTransactions : filteredTransactions.slice(0, INITIAL_LOAD_COUNT);
+    }
+  };
+  
+  const displayTransactions = getDisplayTransactions();
+  const hasMoreTransactions = !maxItems && !showAll && filteredTransactions.length > INITIAL_LOAD_COUNT;
 
 
   const getTransactionIcon = (type: string) => {
@@ -358,6 +374,18 @@ const TransactionList: React.FC<TransactionListProps> = ({
           </div>
         ))}
       </div>
+      
+      {/* Load More Button */}
+      {hasMoreTransactions && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => setShowAll(true)}
+            className="text-brand text-sm font-medium hover:text-brand/80 transition-colors"
+          >
+            Load More ({filteredTransactions.length - INITIAL_LOAD_COUNT} more)
+          </button>
+        </div>
+      )}
       
       {/* Details Modal */}
       {selectedTransaction && isDetailsModalOpen && (

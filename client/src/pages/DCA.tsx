@@ -88,7 +88,6 @@ const DCA: React.FC = () => {
               onTransactionClick={(transaction: Transaction) => {
                 console.log('DCA Transaction clicked:', transaction);
               }}
-              maxItems={10}
             />
           </div>
         ) : (

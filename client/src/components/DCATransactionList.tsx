@@ -17,10 +17,27 @@ const DCATransactionList: React.FC<DCATransactionListProps> = ({ onTransactionCl
   const { getDCATransactions, userTransactionsLoading, userTransactionsError } = useTransactions();
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  
+  // Load More state - only used when maxItems is not provided
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_LOAD_COUNT = 10;
 
   // Get DCA transactions using centralized filter
   const dcaTransactions = getDCATransactions(false); // false = user transactions (not admin)
-  const displayTransactions = maxItems ? dcaTransactions.slice(0, maxItems) : dcaTransactions;
+  
+  // Determine how many transactions to display
+  const getDisplayTransactions = () => {
+    if (maxItems) {
+      // If maxItems is provided, use it (for components that set a specific limit)
+      return dcaTransactions.slice(0, maxItems);
+    } else {
+      // If no maxItems, implement Load More functionality
+      return showAll ? dcaTransactions : dcaTransactions.slice(0, INITIAL_LOAD_COUNT);
+    }
+  };
+  
+  const displayTransactions = getDisplayTransactions();
+  const hasMoreTransactions = !maxItems && !showAll && dcaTransactions.length > INITIAL_LOAD_COUNT;
   
   const isLoading = userTransactionsLoading;
   const error = userTransactionsError;
@@ -173,6 +190,18 @@ const DCATransactionList: React.FC<DCATransactionListProps> = ({ onTransactionCl
           </div>
         ))}
       </div>
+      
+      {/* Load More Button */}
+      {hasMoreTransactions && (
+        <div className="mt-4 text-center">
+          <button 
+            onClick={() => setShowAll(true)}
+            className="text-brand text-sm font-medium hover:text-brand/80 transition-colors"
+          >
+            Load More ({dcaTransactions.length - INITIAL_LOAD_COUNT} more)
+          </button>
+        </div>
+      )}
       
       {/* Details Modal */}
       {selectedTransaction && (
