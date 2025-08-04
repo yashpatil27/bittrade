@@ -1,18 +1,8 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import History from './pages/History';
-import Loans from './pages/Loans';
-import DCA from './pages/DCA';
-import AdminHome from './pages/admin/AdminHome';
-import AdminUsers from './pages/admin/AdminUsers';
-import AdminHistory from './pages/admin/AdminHistory';
-import AdminSettings from './pages/admin/AdminSettings';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider } from './context/AuthContext';
 import { BalanceProvider } from './context/BalanceContext';
@@ -21,6 +11,30 @@ import { PriceProvider } from './context/PriceContext';
 import { DCAPlansProvider } from './context/DCAPlansContext';
 import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
+
+// Lazy load page components for code splitting
+const Home = React.lazy(() => import('./pages/Home'));
+const Login = React.lazy(() => import('./pages/Login'));
+const Register = React.lazy(() => import('./pages/Register'));
+const History = React.lazy(() => import('./pages/History'));
+const Loans = React.lazy(() => import('./pages/Loans'));
+const DCA = React.lazy(() => import('./pages/DCA'));
+
+// Lazy load admin pages (only loaded when admin routes are accessed)
+const AdminHome = React.lazy(() => import('./pages/admin/AdminHome'));
+const AdminUsers = React.lazy(() => import('./pages/admin/AdminUsers'));
+const AdminHistory = React.lazy(() => import('./pages/admin/AdminHistory'));
+const AdminSettings = React.lazy(() => import('./pages/admin/AdminSettings'));
+
+// Loading component for Suspense fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-black">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto mb-4"></div>
+      <p className="text-gray-400 text-sm">Loading...</p>
+    </div>
+  </div>
+);
 
 function App() {
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -34,7 +48,8 @@ function App() {
               <DCAPlansProvider>
               <WebSocketAuthenticator />
               <Router>
-          <Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -119,7 +134,8 @@ function App() {
                 </AdminLayout>
               </ProtectedRoute>
             } />
-          </Routes>
+            </Routes>
+          </Suspense>
               </Router>
               </DCAPlansProvider>
             </TransactionProvider>
