@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import BottomNav from './BottomNav';
 import Header from './Header';
-import ProfileModal from './ProfileModal';
+
+// Lazy load ProfileModal
+const ProfileModal = lazy(() => import('./ProfileModal'));
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -53,11 +55,13 @@ const Layout: React.FC<LayoutProps> = ({ children, showBottomNav = true }) => {
       )}
       
       {/* Profile Modal - Available on all non-auth pages */}
-      {!isAuthPage && (
-        <ProfileModal
-          isOpen={profileModalOpen}
-          onClose={() => setProfileModalOpen(false)}
-        />
+      {!isAuthPage && profileModalOpen && (
+        <Suspense fallback={<div />}>
+          <ProfileModal
+            isOpen={profileModalOpen}
+            onClose={() => setProfileModalOpen(false)}
+          />
+        </Suspense>
       )}
     </div>
   );

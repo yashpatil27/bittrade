@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { useUsers } from '../../hooks/useUsers';
 import Card from '../../components/Card';
 import OptionsModal from '../../components/OptionsModal';
-import DepositBitcoinModal from '../../components/DepositBitcoinModal';
-import DepositCashModal from '../../components/DepositCashModal';
 import AdminChangePasswordModal from '../../components/AdminChangePasswordModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../../utils/formatters';
 import { getApiUrl } from '../../utils/api';
 import { Bitcoin, DollarSign, Key, Trash2 } from 'lucide-react';
+
+// Lazy load deposit modals
+const DepositBitcoinModal = lazy(() => import('../../components/DepositBitcoinModal'));
+const DepositCashModal = lazy(() => import('../../components/DepositCashModal'));
 
 interface UserWithBalance {
   id: string;
@@ -308,20 +310,28 @@ const AdminUsers: React.FC = () => {
       </OptionsModal>
       
       {/* Deposit Bitcoin Modal */}
-      <DepositBitcoinModal
-        isOpen={isDepositBitcoinModalOpen}
-        onClose={handleDepositBitcoinClose}
-        user={selectedUser}
-        onComplete={handleDepositComplete}
-      />
+      {isDepositBitcoinModalOpen && (
+        <Suspense fallback={<div />}>
+          <DepositBitcoinModal
+            isOpen={isDepositBitcoinModalOpen}
+            onClose={handleDepositBitcoinClose}
+            user={selectedUser}
+            onComplete={handleDepositComplete}
+          />
+        </Suspense>
+      )}
       
       {/* Deposit Cash Modal */}
-      <DepositCashModal
-        isOpen={isDepositCashModalOpen}
-        onClose={handleDepositCashClose}
-        user={selectedUser}
-        onComplete={handleDepositComplete}
-      />
+      {isDepositCashModalOpen && (
+        <Suspense fallback={<div />}>
+          <DepositCashModal
+            isOpen={isDepositCashModalOpen}
+            onClose={handleDepositCashClose}
+            user={selectedUser}
+            onComplete={handleDepositComplete}
+          />
+        </Suspense>
+      )}
       
       {/* Admin Change Password Modal */}
       <AdminChangePasswordModal

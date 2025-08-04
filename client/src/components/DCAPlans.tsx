@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Plus, Bitcoin, DollarSign, Clock, BarChart3 } from 'lucide-react';
 import { updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
 import { DCAPlan } from '../types';
 import Card from './Card';
-import DetailsModal from './DetailsModal';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { useDCAPlans } from '../context/DCAPlansContext';
+
+// Lazy load DetailsModal
+const DetailsModal = lazy(() => import('./DetailsModal'));
 
 interface DCAPlansProps {
   title?: string;
@@ -310,41 +312,43 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
       </div>
       
       {/* Details Modal */}
-      {selectedPlan && (
-        <DetailsModal
-          isOpen={isDetailsModalOpen}
-          onClose={() => setIsDetailsModalOpen(false)}
-          title={getPlanLabel(selectedPlan)}
-          mainDetail={getPlanMainDetail(selectedPlan)}
-          subDetail={getPlanSubDetail(selectedPlan)}
-          transactionDetails={[]}
-          dcaPlanDetails={getPlanDetails(selectedPlan)}
-          actionButtons={!disableActions && selectedPlan.status !== 'COMPLETED' ? [
-            {
-              label: selectedPlan.status === 'ACTIVE' ? 'Pause Plan' : 'Resume Plan',
-              onClick: () => {
-                handlePauseResumeFromModal(selectedPlan);
-                setIsDetailsModalOpen(false);
-              },
-              variant: selectedPlan.status === 'ACTIVE' ? 'warning' : 'success'
-            },
-            {
-              label: 'Cancel Plan',
-              onClick: async () => {
-                try {
-                  await deleteDCAPlan(selectedPlan.id);
-                  // Refresh plans list
-                  fetchDCAPlans();
+      {selectedPlan && isDetailsModalOpen && (
+        <Suspense fallback={<div />}>
+          <DetailsModal
+            isOpen={isDetailsModalOpen}
+            onClose={() => setIsDetailsModalOpen(false)}
+            title={getPlanLabel(selectedPlan)}
+            mainDetail={getPlanMainDetail(selectedPlan)}
+            subDetail={getPlanSubDetail(selectedPlan)}
+            transactionDetails={[]}
+            dcaPlanDetails={getPlanDetails(selectedPlan)}
+            actionButtons={!disableActions && selectedPlan.status !== 'COMPLETED' ? [
+              {
+                label: selectedPlan.status === 'ACTIVE' ? 'Pause Plan' : 'Resume Plan',
+                onClick: () => {
+                  handlePauseResumeFromModal(selectedPlan);
                   setIsDetailsModalOpen(false);
-                } catch (error) {
-                  console.error('Failed to delete DCA plan:', error);
-                  // TODO: Show error message to user
-                }
+                },
+                variant: selectedPlan.status === 'ACTIVE' ? 'warning' : 'success'
               },
-              variant: 'danger'
-            }
-          ] : undefined}
-        />
+              {
+                label: 'Cancel Plan',
+                onClick: async () => {
+                  try {
+                    await deleteDCAPlan(selectedPlan.id);
+                    // Refresh plans list
+                    fetchDCAPlans();
+                    setIsDetailsModalOpen(false);
+                  } catch (error) {
+                    console.error('Failed to delete DCA plan:', error);
+                    // TODO: Show error message to user
+                  }
+                },
+                variant: 'danger'
+              }
+            ] : undefined}
+          />
+        </Suspense>
       )}
     </div>
   );
