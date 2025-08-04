@@ -210,8 +210,6 @@ const DCA: React.FC = () => {
             onClose={handleCloseDCAModal}
             balanceData={balanceData}
             currentBitcoinPrice={btcUsdPrice || 0}
-            buyRate={buyRateInr || 0}
-            sellRate={sellRateInr || 0}
             onComplete={handleDCAComplete}
           />
         </Suspense>

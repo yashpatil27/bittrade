@@ -22,8 +22,6 @@ interface DCAModalProps {
   onClose: () => void;
   balanceData?: BalanceData | null;
   currentBitcoinPrice?: number;
-  buyRate?: number;
-  sellRate?: number;
   onComplete?: (dcaPlan: DCAPlanData) => void;
   initialAmount?: string;
   initialPlanType?: 'DCA_BUY' | 'DCA_SELL';
@@ -46,8 +44,6 @@ const DCAModal: React.FC<DCAModalProps> = ({
   onClose,
   balanceData,
   currentBitcoinPrice = 0,
-  buyRate = 0,
-  sellRate = 0,
   onComplete,
   initialAmount = '',
   initialPlanType = 'DCA_BUY',
@@ -298,37 +294,10 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
     }
   };
 
-  // Calculate conversion values
-  const calculateConversion = (amount: string) => {
-    const numAmount = parseFloat(amount) || 0;
-
-    if (dcaPlan.plan_type === 'DCA_BUY') {
-      // Buy: User inputs INR, gets BTC
-      const btcAmount = buyRate > 0 ? numAmount / buyRate : 0;
-      return {
-        inrAmount: numAmount,
-        btcAmount: btcAmount,
-        formattedBtc: formatBitcoinForDisplay(btcAmount * 100000000),
-        formattedInr: formatRupeesForDisplay(numAmount),
-      };
-    } else {
-      // Sell: User inputs BTC, gets INR
-      const inrAmount = sellRate > 0 ? numAmount * sellRate : 0;
-      return {
-        inrAmount: inrAmount,
-        btcAmount: numAmount,
-        formattedBtc: formatBitcoinForDisplay(numAmount * 100000000),
-        formattedInr: formatRupeesForDisplay(inrAmount),
-      };
-    }
-  };
 
   // Get confirmation details
   const getConfirmationDetails = () => {
     if (!amountInput) return [];
-    
-    const conversion = calculateConversion(amountInput);
-    const rate = dcaPlan.plan_type === 'DCA_BUY' ? buyRate : sellRate;
     
     // Calculate daily average based on plan type
     // For BUY plans: use INR amount (what user invests)
@@ -361,31 +330,6 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
       }
     ];
 
-    // Add rate information
-    if (rate > 0) {
-      details.push({
-        label: 'Rate',
-        value: <AnimateINR value={rate} className="text-sm font-normal text-white" />,
-        highlight: false
-      });
-    } else {
-      details.push({
-        label: 'Rate',
-        value: 'Rate unavailable',
-        highlight: false
-      });
-    }
-
-    // Add "You will receive/pay" information similar to TradingModal
-    details.push({
-      label: 'You will ' + (dcaPlan.plan_type === 'DCA_BUY' ? 'receive' : 'get'),
-      value: dcaPlan.plan_type === 'DCA_BUY' ? (
-        <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-normal text-white" />
-      ) : (
-        <AnimateINR value={conversion.inrAmount} className="text-sm font-normal text-white" />
-      ),
-      highlight: true
-    });
     
     details.push({
       label: 'Executions',
