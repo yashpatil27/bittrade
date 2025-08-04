@@ -43,9 +43,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [showTargetPriceModal, setShowTargetPriceModal] = useState(false);
   const [targetPrice, setTargetPrice] = useState('');
-  
-  // Track the current input value in real-time
-  const [currentInputValue, setCurrentInputValue] = useState('');
 
   // Handle settings icon click
   const handleSettingsClick = () => {
@@ -392,7 +389,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
         type={inputCurrency}
         confirmText="Next"
         onConfirm={handleInputConfirm}
-        onValueChange={setCurrentInputValue} // Real-time value updates
         sectionTitle={orderType === 'limit' && targetPrice ? 'Target Price' : `${type === 'buy' ? 'Buy' : 'Sell'} Rate`}
         sectionAmount={orderType === 'limit' && targetPrice ? (
           <AnimateINR value={parseFloat(targetPrice)} className="text-sm font-medium text-gray-300" />
