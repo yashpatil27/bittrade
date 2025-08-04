@@ -16,6 +16,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider } from './context/AuthContext';
 import { BalanceProvider } from './context/BalanceContext';
+import { TransactionProvider } from './context/TransactionContext';
 import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
 
@@ -26,8 +27,9 @@ function App() {
     <AuthProvider>
       <WebSocketProvider>
         <BalanceProvider>
-          <WebSocketAuthenticator />
-          <Router>
+          <TransactionProvider>
+            <WebSocketAuthenticator />
+            <Router>
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
@@ -114,7 +116,8 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
-          </Router>
+            </Router>
+          </TransactionProvider>
         </BalanceProvider>
       </WebSocketProvider>
     </AuthProvider>

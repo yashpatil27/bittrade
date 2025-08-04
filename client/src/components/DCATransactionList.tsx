@@ -3,7 +3,7 @@ import { ArrowUpRight, ArrowDownRight, Bitcoin } from 'lucide-react';
 import { getTimeAgo } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { Transaction } from '../types';
-import useTransactionUpdates from '../hooks/useTransactionUpdates';
+import { useTransactions } from '../context/TransactionContext';
 import Card from './Card';
 import DetailsModal from './DetailsModal';
 
@@ -13,16 +13,17 @@ interface DCATransactionListProps {
 }
 
 const DCATransactionList: React.FC<DCATransactionListProps> = ({ onTransactionClick, maxItems }) => {
-  const { transactions, isLoading, error } = useTransactionUpdates();
+  // Use centralized transaction context
+  const { getDCATransactions, userTransactionsLoading, userTransactionsError } = useTransactions();
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  // Filter transactions to only show DCA_BUY and DCA_SELL
-  const dcaTransactions = transactions.filter(
-    txn => txn.type === 'DCA_BUY' || txn.type === 'DCA_SELL'
-  );
-
+  // Get DCA transactions using centralized filter
+  const dcaTransactions = getDCATransactions(false); // false = user transactions (not admin)
   const displayTransactions = maxItems ? dcaTransactions.slice(0, maxItems) : dcaTransactions;
+  
+  const isLoading = userTransactionsLoading;
+  const error = userTransactionsError;
 
   const getTransactionIcon = (type: string) => {
     switch (type) {

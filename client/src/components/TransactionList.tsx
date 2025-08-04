@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Bitcoin } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';
 import { Transaction } from '../types';
-import useTransactionUpdates from '../hooks/useTransactionUpdates';
-import useAllTransactions from '../hooks/useAllTransactions';
+import { useTransactions } from '../context/TransactionContext';
 import Card from './Card';
 import DetailsModal from './DetailsModal';
 
@@ -38,27 +37,42 @@ const TransactionList: React.FC<TransactionListProps> = ({
   showAllUsers = false,
   disableActions = false
 }) => {
-  // Use appropriate data source based on showAllUsers prop
-  const userTransactions = useTransactionUpdates();
-  const adminTransactions = useAllTransactions();
+  // Use centralized transaction context
+  const {
+    userTransactions,
+    adminTransactions,
+    userTransactionsLoading,
+    adminTransactionsLoading,
+    userTransactionsError,
+    adminTransactionsError,
+    refetchUserTransactions,
+    refetchAdminTransactions,
+    getPendingOrders,
+    getCompletedTransactions
+  } = useTransactions();
   
-  const { transactions, isLoading, error, fetchTransactions } = showAllUsers 
-    ? { ...adminTransactions, fetchTransactions: adminTransactions.fetchAllTransactions }
-    : userTransactions;
+  // Get appropriate data based on showAllUsers prop
+  const transactions = showAllUsers ? adminTransactions : userTransactions;
+  const isLoading = showAllUsers ? adminTransactionsLoading : userTransactionsLoading;
+  const error = showAllUsers ? adminTransactionsError : userTransactionsError;
+  const fetchTransactions = showAllUsers ? refetchAdminTransactions : refetchUserTransactions;
+  
+  // Fetch admin transactions if needed
+  useEffect(() => {
+    if (showAllUsers && adminTransactions.length === 0 && !adminTransactionsLoading) {
+      refetchAdminTransactions();
+    }
+  }, [showAllUsers, adminTransactions.length, adminTransactionsLoading, refetchAdminTransactions]);
   
   // DetailsModal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   
-  // Filter transactions based on filterPending and excludePending props
+  // Use centralized filtering functions for better performance
   const filteredTransactions = filterPending 
-    ? transactions.filter(txn => 
-        txn.status === 'PENDING' && (txn.type === 'LIMIT_BUY' || txn.type === 'LIMIT_SELL')
-      )
+    ? getPendingOrders(showAllUsers)
     : excludePending 
-    ? transactions.filter(txn => 
-        !(txn.status === 'PENDING' && (txn.type === 'LIMIT_BUY' || txn.type === 'LIMIT_SELL'))
-      )
+    ? getCompletedTransactions(showAllUsers)
     : transactions;
   
   const displayTransactions = maxItems ? filteredTransactions.slice(0, maxItems) : filteredTransactions;
