@@ -2,25 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 
-interface BalanceData {
-  available_inr: number;
-  available_btc: number;
-  reserved_inr: number;
-  reserved_btc: number;
-  collateral_btc: number;
-  borrowed_inr: number;
-  interest_accrued: number;
-}
-
-interface WebSocketAuthenticatorProps {
-  onBalanceUpdate?: (data: BalanceData) => void;
-}
-
 /**
  * WebSocketAuthenticator component handles WebSocket authentication once per user session.
  * This prevents multiple components from authenticating separately and reduces cache updates.
  */
-const WebSocketAuthenticator: React.FC<WebSocketAuthenticatorProps> = ({ onBalanceUpdate }) => {
+const WebSocketAuthenticator: React.FC = () => {
   const { isAuthenticated, token } = useAuth();
   const { socket, isConnected } = useWebSocket();
   const hasAuthenticatedRef = useRef(false);
@@ -47,17 +33,10 @@ const WebSocketAuthenticator: React.FC<WebSocketAuthenticatorProps> = ({ onBalan
           isAuthenticatingRef.current = false;
         };
         
-        const handleBalanceUpdate = (data: BalanceData) => {
-          console.log('📊 Received balance update:', data);
-          if (onBalanceUpdate) {
-            onBalanceUpdate(data);
-          }
-        };
         
         // Listen for authentication responses
         socket.on('authentication_success', handleAuthSuccess);
         socket.on('authentication_error', handleAuthError);
-        socket.on('user_balance_update', handleBalanceUpdate);
         
         // Authenticate the WebSocket connection
         socket.emit('authenticate', token);
@@ -66,11 +45,10 @@ const WebSocketAuthenticator: React.FC<WebSocketAuthenticatorProps> = ({ onBalan
         return () => {
           socket.off('authentication_success', handleAuthSuccess);
           socket.off('authentication_error', handleAuthError);
-          socket.off('user_balance_update', handleBalanceUpdate);
         };
       }
     }
-  }, [socket, isConnected, isAuthenticated, token, onBalanceUpdate]);
+  }, [socket, isConnected, isAuthenticated, token]);
 
   // Reset authentication state when socket disconnects or user logs out
   useEffect(() => {

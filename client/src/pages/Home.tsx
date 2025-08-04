@@ -7,16 +7,8 @@ import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import TradingModal from '../components/TradingModal';
 import Balance from '../components/Balance';
+import { useBalance } from '../context/BalanceContext';
 
-interface BalanceData {
-  available_inr: number;
-  available_btc: number;
-  reserved_inr: number;
-  reserved_btc: number;
-  collateral_btc: number;
-  borrowed_inr: number;
-  interest_accrued: number;
-}
 
 interface HomeProps {
   setModalOpen: (open: boolean) => void;
@@ -28,7 +20,9 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
   const [buyRate, setBuyRate] = React.useState<number>(0);
   const [sellRate, setSellRate] = React.useState<number>(0);
-  const [balanceData, setBalanceData] = React.useState<BalanceData | null>(null);
+  
+  // Use centralized balance context
+  const { balanceData } = useBalance();
 
   const handleBuyClick = () => {
     setModalType('buy');
@@ -61,9 +55,6 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
     setSellRate(newSellRate);
   };
 
-  const handleBalanceUpdate = (newBalanceData: BalanceData | null) => {
-    setBalanceData(newBalanceData);
-  };
 
 
 
@@ -83,7 +74,6 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
           onBuyClick={handleBuyClick}
           onSellClick={handleSellClick}
           onRatesUpdate={handleRatesUpdate}
-          onBalanceUpdate={handleBalanceUpdate}
         />
         
 {/* Pending Orders - Only shown when there are pending limit orders */}

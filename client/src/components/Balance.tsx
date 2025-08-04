@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useWebSocket, useWebSocketEvent } from '../context/WebSocketContext';
+import { useBalance } from '../context/BalanceContext';
+import { useWebSocketEvent } from '../context/WebSocketContext';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 import { getApiUrl } from '../utils/api';
 
@@ -38,12 +39,14 @@ interface BalanceProps {
 }
 
 const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false }) => {
-  const [balanceData, setBalanceData] = useState<BalanceData | AdminTotalBalanceData | null>(null);
   const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [showBalances, setShowBalances] = useState(true);
-  const { isAuthenticated, token } = useAuth();
-  const { socket, isConnected } = useWebSocket();
+  
+  // Use centralized balance context
+  const { balanceData: userBalanceData, adminBalanceData, isLoading: loading, refetchAdminBalance } = useBalance();
+  
+  // Choose which balance data to use based on showAllUsers prop
+  const balanceData = showAllUsers ? adminBalanceData : userBalanceData;
   
   // Fetch initial market rates from API (Redis cache)
   useEffect(() => {
@@ -108,63 +111,14 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
     });
   }
 
-  // Function to fetch balance from REST API
-  const fetchBalance = useCallback(async () => {
-    if (!isAuthenticated || !token) return;
-    
-    try {
-      const endpoint = showAllUsers ? '/api/admin/total-balance' : '/api/balance';
-      const response = await fetch(`${getApiUrl()}${endpoint}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setBalanceData(data);
-        console.log(`📊 ${showAllUsers ? 'Admin' : 'User'} Balance: Fetched balance:`, data);
-      } else {
-        console.error(`Error fetching ${showAllUsers ? 'admin total' : 'user'} balance:`, response.status, response.statusText);
-      }
-    } catch (error) {
-      console.error(`Error fetching ${showAllUsers ? 'admin total' : 'user'} balance:`, error);
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated, token, showAllUsers]);
-
-  // Handle WebSocket balance updates
-  const handleBalanceUpdate = useCallback((data: BalanceData) => {
-    if (!showAllUsers) {
-      console.log('📊 Received user balance update:', data);
-      setBalanceData(data);
-      setLoading(false);
-    } else {
-      // For admin view, refresh total balance when any user balance changes
-      console.log('📊 User balance changed, refreshing admin total balance');
-      fetchBalance();
-    }
-  }, [showAllUsers, fetchBalance]);
-
-  // Initial balance fetch on component mount
+  // Fetch admin balance data if needed
   useEffect(() => {
-    fetchBalance();
-  }, [fetchBalance]);
-
-  // Listen for WebSocket balance updates (authentication handled centrally)
-  useEffect(() => {
-    if (socket && isConnected) {
-      // Listen for balance updates
-      socket.on('user_balance_update', handleBalanceUpdate);
-      
-      // Cleanup listeners on unmount
-      return () => {
-        socket.off('user_balance_update', handleBalanceUpdate);
-      };
+    if (showAllUsers && !adminBalanceData) {
+      refetchAdminBalance();
     }
-  }, [socket, isConnected, handleBalanceUpdate]);
+  }, [showAllUsers, adminBalanceData, refetchAdminBalance]);
+
+  const { isAuthenticated } = useAuth();
 
 
   if (!isAuthenticated) {

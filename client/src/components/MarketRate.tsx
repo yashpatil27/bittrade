@@ -1,26 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 // Removed unused imports: TrendingUp, TrendingDown
-import { useWebSocket, useWebSocketEvent } from '../context/WebSocketContext';
-import { useAuth } from '../context/AuthContext';
+import { useWebSocketEvent } from '../context/WebSocketContext';
+import { useBalance } from '../context/BalanceContext';
 import { AnimateINR } from './AnimateNumberFlow';
 import { getApiUrl } from '../utils/api';
-
-interface BalanceData {
-  available_inr: number;
-  available_btc: number;
-  reserved_inr: number;
-  reserved_btc: number;
-  collateral_btc: number;
-  borrowed_inr: number;
-  interest_accrued: number;
-}
 
 interface MarketRateProps {
   className?: string;
   onBuyClick?: () => void;
   onSellClick?: () => void;
   onRatesUpdate?: (buyRate: number, sellRate: number) => void;
-  onBalanceUpdate?: (balanceData: BalanceData | null) => void;
 }
 
 interface PriceUpdateData {
@@ -30,12 +19,12 @@ interface PriceUpdateData {
   timestamp: string;
 }
 
-const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate, onBalanceUpdate }) => {
+const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate }) => {
   const [priceData, setPriceData] = useState<PriceUpdateData | null>(null);
-  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   // const [loading, setLoading] = useState(true); // Unused but kept for future loading states
-  const { isAuthenticated, token } = useAuth();
-  const { socket, isConnected } = useWebSocket();
+  
+  // Use centralized balance context
+  const { balanceData } = useBalance();
 
   // Fetch initial data from API (Redis cache)
   useEffect(() => {
@@ -63,62 +52,10 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     fetchInitialRates();
   }, []);
 
-  // Function to fetch balance from REST API
-  const fetchBalance = useCallback(async () => {
-    console.log('🔍 fetchBalance called - Auth status:', { isAuthenticated, hasToken: !!token });
-    if (!isAuthenticated || !token) {
-      console.log('❌ Not authenticated or no token, setting balance to null');
-      setBalanceData(null);
-      return;
-    }
-    
-    try {
-      console.log('📡 Fetching balance from API...');
-      const response = await fetch(`${getApiUrl()}/api/balance`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Balance fetch successful:', data);
-        setBalanceData(data);
-        console.log('💰 Fetched balance data:', data);
-      } else {
-        console.error('❌ Balance fetch failed:', response.status, response.statusText);
-        setBalanceData(null);
-      }
-    } catch (error) {
-      console.error('❌ Balance fetch error:', error);
-      setBalanceData(null);
-    }
-  }, [isAuthenticated, token]);
 
-  // Handle WebSocket balance updates
-  const handleBalanceUpdate = useCallback((data: BalanceData) => {
-    console.log('📊 Received balance update:', data);
-    setBalanceData(data);
-  }, []);
 
-  // Initial balance fetch on component mount
-  useEffect(() => {
-    fetchBalance();
-  }, [fetchBalance]);
 
-  // Listen for WebSocket balance updates (authentication handled centrally)
-  useEffect(() => {
-    if (socket && isConnected) {
-      // Listen for balance updates
-      socket.on('user_balance_update', handleBalanceUpdate);
-      
-      // Cleanup listeners on unmount
-      return () => {
-        socket.off('user_balance_update', handleBalanceUpdate);
-      };
-    }
-  }, [socket, isConnected, handleBalanceUpdate]);
+
 
   // Listen for WebSocket price updates as per notes/state.txt
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {
@@ -139,12 +76,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     }
   }, [buyRate, sellRate, onRatesUpdate]);
 
-  // Notify parent component of balance updates
-  useEffect(() => {
-    if (onBalanceUpdate) {
-      onBalanceUpdate(balanceData);
-    }
-  }, [balanceData, onBalanceUpdate]);
+
 
   // Show loading state when no data is available
   if (!priceData) {

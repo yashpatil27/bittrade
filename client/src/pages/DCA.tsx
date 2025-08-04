@@ -5,36 +5,21 @@ import DCAPlans from '../components/DCAPlans';
 import DCATransactionList from '../components/DCATransactionList';
 import MarketRate from '../components/MarketRate';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
-import { getUserBalance } from '../utils/tradingApi';
 import { DCAPlan, Transaction } from '../types';
-
-interface BalanceData {
-  available_inr: number;
-  available_btc: number;
-  reserved_inr: number;
-  reserved_btc: number;
-  collateral_btc: number;
-  borrowed_inr: number;
-  interest_accrued: number;
-}
+import { useBalance } from '../context/BalanceContext';
 
 
 const DCA: React.FC = () => {
   const [isDCAModalOpen, setIsDCAModalOpen] = useState(false);
-  const [balanceData, setBalanceData] = useState<BalanceData | null>(null);
   const [buyRate, setBuyRate] = useState<number>(0);
   const [sellRate, setSellRate] = useState<number>(0);
   const [hasPlans, setHasPlans] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // Use centralized balance context
+  const { balanceData } = useBalance();
 
-  const handleStartDCA = async () => {
-    // Load balance data when opening DCA modal
-    try {
-      const balance = await getUserBalance();
-      setBalanceData(balance);
-    } catch (error) {
-      console.error('Failed to load balance:', error);
-    }
+  const handleStartDCA = () => {
     setIsDCAModalOpen(true);
   };
 
@@ -52,10 +37,6 @@ const DCA: React.FC = () => {
   const handleRatesUpdate = (newBuyRate: number, newSellRate: number) => {
     setBuyRate(newBuyRate);
     setSellRate(newSellRate);
-  };
-
-  const handleBalanceUpdate = (newBalanceData: BalanceData | null) => {
-    setBalanceData(newBalanceData);
   };
 
   const handlePlanClick = (plan: DCAPlan) => {
@@ -98,7 +79,6 @@ const DCA: React.FC = () => {
       <MarketRate 
         className="hidden"
         onRatesUpdate={handleRatesUpdate}
-        onBalanceUpdate={handleBalanceUpdate}
       />
       {/* Main Content */}
         {hasPlans ? (
