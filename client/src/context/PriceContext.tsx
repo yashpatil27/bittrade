@@ -199,8 +199,12 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   // Initial data fetch on mount
   useEffect(() => {
     fetchMarketRates();
+  }, [fetchMarketRates]);
+  
+  // Separate effect for chart data to avoid refetching market rates
+  useEffect(() => {
     fetchChartData(currentChartTimeframe);
-  }, [fetchMarketRates, fetchChartData, currentChartTimeframe]);
+  }, [fetchChartData, currentChartTimeframe]);
 
   // Handle WebSocket price updates
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {

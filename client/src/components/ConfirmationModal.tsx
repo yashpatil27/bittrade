@@ -254,14 +254,16 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
                 </div>
               )}
               
-              {/* Sub Amount Display */}
-              {subAmount && subAmountType && (
-                <div className="flex items-center justify-center gap-2 mb-8">
+              {/* Sub Amount Display - always maintain space */}
+              <div className="flex items-center justify-center gap-2 mb-8">
+                {subAmount && subAmountType ? (
                   <span className="text-white text-sm font-normal">
                     {subAmount}
                   </span>
-                </div>
-              )}
+                ) : (
+                  <span className="text-transparent text-sm font-normal">placeholder</span>
+                )}
+              </div>
               
               
             </div>

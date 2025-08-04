@@ -568,15 +568,24 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
           <AnimateBTC value={parseFloat(amountInput) * 100000000} className="justify-center text-white text-5xl font-semibold" />
         )}
         amountType={dcaPlan.plan_type === 'DCA_BUY' ? 'inr' : 'btc'}
-        subAmount={amountInput ? (
-          dcaPlan.plan_type === 'DCA_BUY' ? (
-            <AnimateBTC value={calculateConversion(amountInput).btcAmount * 100000000} className="justify-center text-white text-sm font-normal" />
-          ) : (
-            <AnimateINR value={calculateConversion(amountInput).inrAmount} className="justify-center text-white text-sm font-normal" />
-          )
-        ) : undefined}
-        subAmountType={dcaPlan.plan_type === 'DCA_BUY' ? 'btc' : 'inr'}
-        details={getConfirmationDetails()}
+        subAmount={undefined}
+        subAmountType={undefined}
+        details={(() => {
+          const filteredDetails = getConfirmationDetails().filter(detail => !['Rate', 'You will receive', 'You will get', 'Amount per execution'].includes(detail.label));
+          return [
+            {
+              label: 'Plan Type',
+              value: dcaPlan.plan_type === 'DCA_BUY' ? 'Buy Bitcoin' : 'Sell Bitcoin',
+              highlight: false
+            },
+            {
+              label: 'Amount per execution',
+              value: '(will be visible at execution)',
+              highlight: false
+            },
+            ...filteredDetails
+          ];
+        })()}
         confirmText="Create Plan"
         onConfirm={handleCreatePlan}
         isLoading={isLoading}
