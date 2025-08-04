@@ -389,7 +389,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
         isOpen={isOpen}
         onClose={handleInputClose}
         title={getInputTitle()}
-        type={type === 'buy' ? 'inr' : 'btc'}
+        type={inputCurrency}
         confirmText="Next"
         onConfirm={handleInputConfirm}
         onValueChange={setCurrentInputValue} // Real-time value updates
