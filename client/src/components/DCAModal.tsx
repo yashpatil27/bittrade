@@ -332,8 +332,8 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
     
     // Calculate daily average based on plan type
     // For BUY plans: use INR amount (what user invests)
-    // For SELL plans: use INR amount (what user gets from selling)
-    const baseAmount = dcaPlan.plan_type === 'DCA_BUY' ? parseFloat(amountInput) : conversion.inrAmount;
+    // For SELL plans: use BTC amount (what user sells)
+    const baseAmount = dcaPlan.plan_type === 'DCA_BUY' ? parseFloat(amountInput) : parseFloat(amountInput);
     const totalPerDay = dcaPlan.frequency === 'HOURLY' ? baseAmount * 24 :
                        dcaPlan.frequency === 'DAILY' ? baseAmount :
                        dcaPlan.frequency === 'WEEKLY' ? baseAmount / 7 :
@@ -411,7 +411,11 @@ const [amountInput, setAmountInput] = useState(''); // This will be set via prop
     
     details.push({
       label: dcaPlan.plan_type === 'DCA_BUY' ? 'Avg. daily investment' : 'Avg. daily sale',
-      value: <AnimateINR value={totalPerDay} className="text-sm font-normal text-brand" />,
+      value: dcaPlan.plan_type === 'DCA_BUY' ? (
+        <AnimateINR value={totalPerDay} className="text-sm font-normal text-brand" />
+      ) : (
+        <AnimateBTC value={totalPerDay * 100000000} className="text-sm font-normal text-brand" />
+      ),
       highlight: true
     });
     
