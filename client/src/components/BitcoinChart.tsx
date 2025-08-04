@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { AreaChart, Area, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
+import {
+  AreaChart,
+  Area,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip
+} from 'recharts';
 import { usePrice } from '../context/PriceContext';
 import { AnimateUSD } from './AnimateNumberFlow';
 
