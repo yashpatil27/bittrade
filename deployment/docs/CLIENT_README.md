@@ -83,7 +83,11 @@ client/
 │   │       └── AdminUsers.tsx # User management
 │   ├── context/              # React Context providers
 │   │   ├── AuthContext.tsx   # Authentication state management
-│   │   └── WebSocketContext.tsx # WebSocket connection management
+│   │   ├── WebSocketContext.tsx # WebSocket connection management
+│   │   ├── BalanceContext.tsx # Balance data management
+│   │   ├── TransactionContext.tsx # Transaction data management
+│   │   ├── PriceContext.tsx  # Price and market data management
+│   │   └── DCAPlansContext.tsx # DCA plans data management
 │   ├── utils/                # Utility functions
 │   │   ├── api.ts           # HTTP API client
 │   │   ├── tradingApi.ts    # Trading-specific API calls
@@ -100,6 +104,28 @@ client/
 ├── tailwind.config.js     # Tailwind CSS configuration
 └── postcss.config.js      # PostCSS configuration
 ```
+
+## New Contexts
+
+### 1. Balance Context
+- Manages user and admin balance data.
+- Fetches from API and updates via WebSocket.
+- Offers balance refetching functionality.
+
+### 2. Transactions Context
+- Manages user/admin transactions with pagination.
+- Fetches from API, utilizing WebSocket for updates.
+- Includes transaction filtering.
+
+### 3. Price Context
+- Manages Bitcoin price and market rates.
+- Fetches data and updates through WebSocket.
+- Manages chart data for various timeframes.
+
+### 4. DCA Plans Context
+- Manages user and admin DCA plans data.
+- Handles real-time updates via WebSocket.
+- Centralizes DCA plans state across components.
 
 ## Key Features
 
@@ -362,6 +388,105 @@ interface WebSocketContextType {
 - Connection status tracking
 - Event subscription management
 - Authentication integration
+
+### BalanceContext.tsx
+```typescript
+interface BalanceContextType {
+  balanceData: BalanceData | null;
+  adminBalanceData: AdminTotalBalanceData | null;
+  isLoading: boolean;
+  error: string | null;
+  refetchBalance: () => Promise<void>;
+  refetchAdminBalance: () => Promise<void>;
+}
+```
+
+**Features:**
+- User balance data management
+- Admin total balance tracking
+- Real-time balance updates via WebSocket
+- Balance refetching functionality
+- Loading states and error handling
+- Automatic balance sync on authentication changes
+
+### TransactionContext.tsx
+```typescript
+interface TransactionContextType {
+  userTransactions: Transaction[];
+  userTransactionsLoading: boolean;
+  userTransactionsError: string | null;
+  adminTransactions: Transaction[];
+  adminTransactionsLoading: boolean;
+  adminTransactionsError: string | null;
+  hasMoreUserTransactions: boolean;
+  userTransactionsPage: number;
+  refetchUserTransactions: (page?: number, limit?: number) => Promise<void>;
+  refetchAdminTransactions: () => Promise<void>;
+  getPendingOrders: (isAdmin?: boolean) => Transaction[];
+  getDCATransactions: (isAdmin?: boolean) => Transaction[];
+  getCompletedTransactions: (isAdmin?: boolean) => Transaction[];
+  getRecentTransactions: (limit: number, isAdmin?: boolean) => Transaction[];
+}
+```
+
+**Features:**
+- User and admin transaction management
+- Pagination support for transaction loading
+- Real-time transaction updates via WebSocket
+- Transaction filtering by type and status
+- Computed transaction lists (pending orders, DCA, completed)
+- Error handling and loading states
+
+### PriceContext.tsx
+```typescript
+interface PriceContextType {
+  btcUsdPrice: number | null;
+  buyRateInr: number | null;
+  sellRateInr: number | null;
+  lastUpdated: string | null;
+  pricesLoading: boolean;
+  pricesError: string | null;
+  chartData: ChartDataCache;
+  currentChartTimeframe: string;
+  refetchPrices: () => Promise<void>;
+  fetchChartData: (timeframe: string) => Promise<void>;
+  setCurrentChartTimeframe: (timeframe: string) => void;
+  isConnected: boolean;
+  hasValidPrices: boolean;
+}
+```
+
+**Features:**
+- Real-time Bitcoin price and rate management
+- Chart data management for multiple timeframes
+- Price updates via WebSocket integration
+- Market rate calculation and display
+- Loading states and error handling
+- Chart data caching and optimization
+
+### DCAPlansContext.tsx
+```typescript
+interface DCAPlansContextType {
+  userDCAPlans: DCAPlansData | null;
+  userDCAPlansLoading: boolean;
+  userDCAPlansError: string | null;
+  adminDCAPlans: AdminDCAPlansData | null;
+  adminDCAPlansLoading: boolean;
+  adminDCAPlansError: string | null;
+  refetchUserDCAPlans: () => Promise<void>;
+  refetchAdminDCAPlans: () => Promise<void>;
+  hasActivePlans: boolean;
+  totalActivePlans: number;
+}
+```
+
+**Features:**
+- User and admin DCA plans management
+- Real-time DCA plans updates via WebSocket
+- Centralized state for multiple components
+- Computed values for plan statistics
+- Unified data fetching and error handling
+- Automatic data synchronization across views
 
 ## Utility Functions
 

@@ -7,16 +7,16 @@ import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
 import { DCAPlan, Transaction } from '../types';
 import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
+import { useDCAPlans } from '../context/DCAPlansContext';
 
 
 const DCA: React.FC = () => {
   const [isDCAModalOpen, setIsDCAModalOpen] = useState(false);
-  const [hasPlans, setHasPlans] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Use centralized contexts
   const { balanceData } = useBalance();
   const { btcUsdPrice, buyRateInr, sellRateInr } = usePrice();
+  const { hasActivePlans, refetchUserDCAPlans } = useDCAPlans();
 
   const handleStartDCA = () => {
     setIsDCAModalOpen(true);
@@ -29,8 +29,8 @@ const DCA: React.FC = () => {
   const handleDCAComplete = (dcaPlan: any) => {
     console.log('DCA Plan created:', dcaPlan);
     setIsDCAModalOpen(false);
-    // Trigger a refresh of the DCA plans
-    setRefreshTrigger(prev => prev + 1);
+    // Refresh DCA plans through context
+    refetchUserDCAPlans();
   };
 
 
@@ -71,7 +71,7 @@ const DCA: React.FC = () => {
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
       {/* Main Content */}
-        {hasPlans ? (
+        {hasActivePlans ? (
           <div className="px-4 py-3 space-y-3">
             {/* Plan Management Interface */}
             <DCAPlans
@@ -79,8 +79,6 @@ const DCA: React.FC = () => {
               onAddPlan={handleStartDCA}
               onPlanClick={handlePlanClick}
               wrapInCard={true}
-              onPlansLoaded={setHasPlans}
-              refreshTrigger={refreshTrigger}
             />
             
             {/* DCA Transaction History */}
@@ -99,8 +97,6 @@ const DCA: React.FC = () => {
               onAddPlan={handleStartDCA}
               onPlanClick={handlePlanClick}
               wrapInCard={false}
-              onPlansLoaded={setHasPlans}
-              refreshTrigger={refreshTrigger}
             />
             
             {/* Hero Section */}

@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Card from '../../components/Card';
 import TransactionList from '../../components/TransactionList';
 import PendingOrdersList from '../../components/PendingOrdersList';
 import DCAPlans from '../../components/DCAPlans';
 import { Transaction, DCAPlan } from '../../types';
+import { useDCAPlans } from '../../context/DCAPlansContext';
 
 const AdminHistory: React.FC = () => {
+  const { refetchAdminDCAPlans } = useDCAPlans();
+  
   const handleTransactionClick = (transaction: Transaction) => {
     console.log('Admin transaction clicked:', transaction);
   };
@@ -13,6 +16,11 @@ const AdminHistory: React.FC = () => {
   const handlePlanClick = (plan: DCAPlan) => {
     console.log('Admin DCA Plan clicked:', plan);
   };
+  
+  // Load admin DCA plans when component mounts
+  useEffect(() => {
+    refetchAdminDCAPlans();
+  }, [refetchAdminDCAPlans]);
 
   return (
     <div className="min-h-screen bg-black">

@@ -18,6 +18,7 @@ import { AuthProvider } from './context/AuthContext';
 import { BalanceProvider } from './context/BalanceContext';
 import { TransactionProvider } from './context/TransactionContext';
 import { PriceProvider } from './context/PriceContext';
+import { DCAPlansProvider } from './context/DCAPlansContext';
 import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
 
@@ -30,6 +31,7 @@ function App() {
         <PriceProvider>
           <BalanceProvider>
             <TransactionProvider>
+              <DCAPlansProvider>
               <WebSocketAuthenticator />
               <Router>
           <Routes>
@@ -119,6 +121,7 @@ function App() {
             } />
           </Routes>
               </Router>
+              </DCAPlansProvider>
             </TransactionProvider>
           </BalanceProvider>
         </PriceProvider>

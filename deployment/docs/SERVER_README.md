@@ -42,6 +42,26 @@ server/
 └── index.js                   # Server entry point
 ```
 
+## New Contexts
+
+### 1. Balance Context
+- User/admin balance management through API and WebSocket.
+- Allows balance refetching.
+
+### 2. Transactions Context
+- Manages user/admin transactions with real-time updates.
+- Includes filtering and pagination support.
+
+### 3. Price Context
+- Handles Bitcoin price and rate management.
+- Supports real-time data updates via WebSocket.
+- Provides chart data management across timeframes.
+
+### 4. DCA Plans Context
+- Manages user and admin DCA plans data.
+- Handles real-time updates via WebSocket.
+- Centralizes DCA plans state across components.
+
 ## Core Features
 
 ### 1. Real-Time Data Management

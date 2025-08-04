@@ -20,12 +20,13 @@ const History: React.FC = () => {
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
         {/* Main Content */}
-      <div className="px-4 py-3 space-y-3">
+        <div className="px-4 py-3 space-y-3">
           {/* DCA Plans */}
           <DCAPlans
             title="DCA Plans"
             onPlanClick={handlePlanClick}
             wrapInCard={true}
+            showAllUsers={false}
           />
           
           {/* Pending Orders - Only shown when there are pending limit orders */}

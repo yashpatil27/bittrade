@@ -5,18 +5,15 @@ import { DCAPlan } from '../types';
 import Card from './Card';
 import DetailsModal from './DetailsModal';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
-import useDCAPlansUpdates from '../hooks/useDCAPlansUpdates';
-import useAllDCAPlans from '../hooks/useAllDCAPlans';
+import { useDCAPlans } from '../context/DCAPlansContext';
 
 interface DCAPlansProps {
   title?: string;
   onAddPlan?: () => void;
   onPlanClick?: (plan: DCAPlan) => void;
   wrapInCard?: boolean;
-  onPlansLoaded?: (hasPlans: boolean) => void;
   showAllUsers?: boolean; // If true, show DCA plans from all users (admin view)
   disableActions?: boolean; // If true, disable pause/resume/delete functionality
-  refreshTrigger?: number; // Trigger to refresh plans data
 }
 
 
@@ -25,37 +22,32 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   onAddPlan,
   onPlanClick,
   wrapInCard = false,
-  onPlansLoaded,
   showAllUsers = false,
-  disableActions = false,
-  refreshTrigger
+  disableActions = false
 }) => {
-  // Use appropriate data source based on showAllUsers prop
-  const userPlans = useDCAPlansUpdates();
-  const adminPlans = useAllDCAPlans();
+  // Use centralized DCA Plans context
+  const {
+    userDCAPlans,
+    userDCAPlansLoading,
+    userDCAPlansError,
+    adminDCAPlans,
+    adminDCAPlansLoading,
+    adminDCAPlansError,
+    refetchUserDCAPlans,
+    refetchAdminDCAPlans
+  } = useDCAPlans();
   
-  const { dcaPlans, isLoading, error, fetchDCAPlans } = showAllUsers 
-    ? { ...adminPlans, fetchDCAPlans: adminPlans.fetchAllDCAPlans }
-    : userPlans;
+  // Select appropriate data based on showAllUsers prop
+  const dcaPlans = showAllUsers ? adminDCAPlans : userDCAPlans;
+  const isLoading = showAllUsers ? adminDCAPlansLoading : userDCAPlansLoading;
+  const error = showAllUsers ? adminDCAPlansError : userDCAPlansError;
+  const fetchDCAPlans = showAllUsers ? refetchAdminDCAPlans : refetchUserDCAPlans;
   
   // DetailsModal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<DCAPlan | null>(null);
 
-  // Notify parent component about plans status when dcaPlans changes
-  React.useEffect(() => {
-    if (onPlansLoaded && dcaPlans) {
-      onPlansLoaded(dcaPlans.plans.length > 0);
-    }
-  }, [dcaPlans, onPlansLoaded]);
-
-  // Handle refresh trigger changes
-  React.useEffect(() => {
-    if (refreshTrigger !== undefined && refreshTrigger > 0) {
-      console.log('🔄 Refreshing DCA plans due to trigger:', refreshTrigger);
-      fetchDCAPlans();
-    }
-  }, [refreshTrigger, fetchDCAPlans]);
+  // No longer needed - context handles everything automatically
 
   const formatTimeUntilNext = (nextExecutionAt: string, planStatus: string): string => {
     // If plan is completed, there are no more executions
@@ -243,7 +235,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   }
 
   // Don't render anything if no plans exist
-  if (!dcaPlans || dcaPlans.plans.length === 0) {
+  if (!dcaPlans || !dcaPlans.plans || dcaPlans.plans.length === 0) {
     return null;
   }
 
@@ -252,7 +244,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           <h3 className="text-base font-medium text-white">{title}</h3>
-          {dcaPlans.plans.length > 0 && (
+          {dcaPlans.plans && dcaPlans.plans.length > 0 && (
             <span className="bg-brand text-black text-xs px-2 py-0.5 rounded-full font-medium">
               {dcaPlans.plans.length}
             </span>
