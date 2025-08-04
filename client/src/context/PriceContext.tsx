@@ -19,12 +19,6 @@ interface MarketRatesResponse {
   cached?: boolean;
 }
 
-// Bitcoin current price API response
-interface BitcoinCurrentResponse {
-  btc_usd_price: number;
-  timestamp: string;
-  cached?: boolean;
-}
 
 // Chart data structures
 interface ChartDataPoint {
@@ -206,7 +200,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   useEffect(() => {
     fetchMarketRates();
     fetchChartData(currentChartTimeframe);
-  }, [fetchMarketRates, fetchChartData]);
+  }, [fetchMarketRates, fetchChartData, currentChartTimeframe]);
 
   // Handle WebSocket price updates
   useWebSocketEvent<PriceUpdateData>('btc_price_update', (data) => {

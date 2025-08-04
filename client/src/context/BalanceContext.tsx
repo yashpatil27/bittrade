@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { useWebSocket, useWebSocketEvent } from './WebSocketContext';
+import { useWebSocketEvent } from './WebSocketContext';
 import { getApiUrl } from '../utils/api';
 
 interface BalanceData {
@@ -45,7 +45,8 @@ export const BalanceProvider: React.FC<BalanceProviderProps> = ({ children }) =>
   const [error, setError] = useState<string | null>(null);
   
   const { isAuthenticated, token } = useAuth();
-  const { socket, isConnected } = useWebSocket();
+  // Get WebSocket connection (for future use)
+  // const { socket, isConnected } = useWebSocket();
 
   // Function to fetch user balance
   const fetchUserBalance = useCallback(async () => {

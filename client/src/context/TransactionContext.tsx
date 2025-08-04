@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useAuth } from './AuthContext';
 import { useWebSocketEvent } from './WebSocketContext';
 import { getApiUrl } from '../utils/api';
