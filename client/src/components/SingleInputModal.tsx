@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, SlidersVertical, Infinity, Orbit } from 'lucide-react';
+import { ChevronLeft, SlidersVertical, Infinity, Orbit } from 'lucide-react';
 import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -449,7 +449,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
               onClick={animateClose}
               className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
-              <X className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
             
             {/* Right section */}

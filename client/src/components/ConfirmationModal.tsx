@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 
 interface DetailItem {
   label: string;
@@ -231,7 +231,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
               onClick={animateClose}
               className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
-              <X className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5" />
             </button>
             <h2 className="text-white text-sm font-medium text-center flex-1">{title}</h2>
             <div className="w-10">
