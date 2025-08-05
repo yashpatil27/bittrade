@@ -527,19 +527,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
         subAmountType={undefined}
         details={(() => {
           const filteredDetails = getConfirmationDetails().filter(detail => !['Rate', 'You will receive', 'You will get', 'Amount per execution'].includes(detail.label));
-          return [
-            {
-              label: 'Plan Type',
-              value: dcaPlan.plan_type === 'DCA_BUY' ? 'Buy Bitcoin' : 'Sell Bitcoin',
-              highlight: false
-            },
-            {
-              label: 'Amount per execution',
-              value: '(will be visible at execution)',
-              highlight: false
-            },
-            ...filteredDetails
-          ];
+          return filteredDetails;
         })()}
         confirmText="Create Plan"
         onConfirm={handleCreatePlan}

@@ -26,7 +26,6 @@ interface ConfirmationModalProps {
   // Display-only mode props
   icon?: React.ReactNode; // Optional icon for display mode
   statusBadge?: React.ReactNode; // Optional status badge
-  actionButtons?: React.ReactNode; // Optional action buttons (like cancel order)
   mode?: 'confirm' | 'display'; // Mode selector
   showXIcon?: boolean; // Show X icon instead of ChevronLeft (default: false)
 }
@@ -47,7 +46,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   isLoading = false,
   icon,
   statusBadge,
-  actionButtons,
   mode = 'confirm',
   showXIcon = false
 }) => {
@@ -287,12 +285,6 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </div>
           )}
           
-          {/* Action Buttons (for display mode) */}
-          {actionButtons && (
-            <div className="mb-2">
-              {actionButtons}
-            </div>
-          )}
 
           {/* Spacer to maintain button position */}
           <div className="flex-1"></div>
