@@ -167,7 +167,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-6 pt-4 pb-4">
+        <div className="px-6 pt-4 pb-6">
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
@@ -181,18 +181,18 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col h-full px-6">
+        <div className="flex flex-col h-full px-6 ">
           {/* Main Detail Display Area */}
           <div className="flex flex-col justify-start items-center pt-4">
             <div className="text-center w-full">
               {mainDetail && (
-                <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-white text-5xl font-normal">
                     {mainDetail}
                   </span>
                 </div>
               )}
-
+              
 {(subDetail || transactionDetails.length > 0) && (
                 <div className="flex items-center justify-center gap-2 mb-8">
                   <span className="text-white text-sm font-normal">
@@ -202,6 +202,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
               )}
             </div>
           </div>
+
 
           {/* Transaction Details Section */}
           {transactionDetails.length > 0 && (
@@ -289,7 +290,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
           <div className="flex-1"></div>
 
           {/* Close Button */}
-          <div className="mb-4 pb-20 flex justify-center">
+          <div className="mb-6 pb-20 flex justify-center">
             <button
               onClick={animateClose}
               className="px-6 h-12 text-sm font-medium rounded-xl btn-strike-secondary"
