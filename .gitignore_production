@@ -1,0 +1,53 @@
+# Production-specific .gitignore
+# Copy relevant entries to main .gitignore when needed
+
+# Critical production environment files
+server/.env.production
+client/.env.production
+.env.production
+
+# Production configuration
+ecosystem.config.js
+pm2.config.js
+production.config.js
+
+# SSL/TLS certificates
+*.pem
+*.crt
+*.key
+*.csr
+ssl/
+certs/
+letsencrypt/
+
+# Production database
+*.sql
+*.dump
+database_backups/
+db_backups/
+
+# Production logs
+logs/
+*.log
+server/logs/
+client/logs/
+pm2.log
+nginx.log
+
+# Production builds (enable if you want to protect builds)
+# client/build/
+# server/dist/
+
+# Production deployment
+deploy.sh
+production-deploy.sh
+deployment/
+
+# Nginx configuration
+nginx.conf
+sites-available/
+sites-enabled/
+
+# Production runtime
+.pm2/
+pids/

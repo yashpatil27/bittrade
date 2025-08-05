@@ -77,3 +77,42 @@ check_admin_password.js
 
 # Local server scripts
 client/serve-client.sh
+
+# Production-specific files that should never be overwritten
+pm2.config.js
+
+# Production SSL certificates and keys
+*.pem
+*.crt
+*.key
+*.csr
+ssl/
+certs/
+
+# Production database backups
+*.sql
+*.dump
+backups/
+
+# Production logs
+logs/
+*.log
+server/logs/
+client/logs/
+
+# Production build outputs (uncomment to protect)
+# client/build/
+
+# Production deployment scripts
+deploy.sh
+production-deploy.sh
+
+# Nginx configuration (if stored in repo)
+nginx.conf
+*.nginx
+
+# PM2 runtime files
+.pm2/
+ecosystem.config.production.js
+
+ecosystem.config.js
