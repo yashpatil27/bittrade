@@ -37,9 +37,9 @@ export const getApiUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     
-    // If we're on mobile (not localhost), use the IP from the server logs
+    // If we're on mobile (not localhost), use the IP with port 3001
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `https://${hostname}`;
+      return `http://${hostname}:3001`;
     }
   }
   
@@ -51,9 +51,9 @@ export const getWebSocketUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     
-    // If we're on mobile (not localhost), use the IP from the server logs
+    // If we're on mobile (not localhost), use the IP with port 3001
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `https://${hostname}`;
+      return `http://${hostname}:3001`;
     }
   }
   

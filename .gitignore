@@ -15,6 +15,9 @@ yarn-error.log*
 server/.env.development
 server/.env.production
 server/.env.staging
+client/.env.development
+client/.env.production
+client/.env.staging
 
 # Redis files - these should never be committed
 dump.rdb
