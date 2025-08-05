@@ -11,6 +11,11 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Environment-specific configuration files
+server/.env.development
+server/.env.production
+server/.env.staging
+
 # Redis files - these should never be committed
 dump.rdb
 *.rdb
