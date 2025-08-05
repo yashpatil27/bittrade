@@ -225,7 +225,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-6 pt-4 pb-4">
+        <div className="px-6 pt-4 pb-6">
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
@@ -247,7 +247,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             <div className="text-center w-full">
               {/* Main Amount Display */}
               {amount && amountType && (
-                <div className="flex items-center justify-center gap-2 mb-1">
+                <div className="flex items-center justify-center gap-2 mb-4">
                   <span className="text-white text-5xl font-normal">
                     {amount}
                   </span>
@@ -290,7 +290,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <div className="flex-1"></div>
 
           {/* Confirm/Close Button */}
-          <div className="mb-4 pb-20 flex justify-center">
+          <div className="mb-6 pb-20 flex justify-center">
             <button
               onClick={handleConfirm}
               disabled={isLoading}

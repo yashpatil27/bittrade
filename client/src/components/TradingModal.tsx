@@ -409,9 +409,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
         title={getConfirmationTitle()}
         amount={inputValue ? (
           inputCurrency === 'inr' ? (
-            <AnimateINR value={parseFloat(inputValue)} className="justify-center text-white text-5xl font-normal" />
+            formatRupeesForDisplay(parseFloat(inputValue))
           ) : (
-            <AnimateBTC value={parseFloat(inputValue) * 100000000} className="justify-center text-white text-5xl font-normal" />
+            formatBitcoinForDisplay(parseFloat(inputValue) * 100000000)
           )
         ) : undefined}
         amountType={inputCurrency}
