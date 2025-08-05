@@ -24,7 +24,7 @@ interface ConfirmationModalProps {
   onConfirm?: () => void | Promise<void>; // Optional - if not provided, shows Close button
   isLoading?: boolean;
   // Display-only mode props
-  icon?: React.ReactNode; // Optional icon for display mode
+  icon?: React.ReactNode; // Optional icon for display mode.
   statusBadge?: React.ReactNode; // Optional status badge
   mode?: 'confirm' | 'display'; // Mode selector
   showXIcon?: boolean; // Show X icon instead of ChevronLeft (default: false)
