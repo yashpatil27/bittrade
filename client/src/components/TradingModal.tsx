@@ -264,18 +264,11 @@ const TradingModal: React.FC<TradingModalProps> = ({
       }
     }
     
-    details.push(
-      {
-        label: 'You will ' + (type === 'buy' ? 'receive' : 'pay'),
-        value: <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-normal text-white" />,
-        highlight: true
-      },
-      {
-        label: 'Fee',
-        value: <AnimateINR value={0} className="text-sm font-normal text-white" />,
-        highlight: false
-      }
-    );
+    details.push({
+      label: 'You will ' + (type === 'buy' ? 'receive' : 'pay'),
+      value: <AnimateBTC value={conversion.btcAmount * 100000000} className="text-sm font-normal text-white" />,
+      highlight: true
+    });
     
     return details;
   };
@@ -418,7 +411,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
           inputCurrency === 'inr' ? (
             <AnimateINR value={parseFloat(inputValue)} className="justify-center text-white text-5xl font-normal" />
           ) : (
-            <AnimateBTC value={parseFloat(inputValue) * 100000000} className="justify-center text-white text-5xl font-semibold" />
+            <AnimateBTC value={parseFloat(inputValue) * 100000000} className="justify-center text-white text-5xl font-normal" />
           )
         ) : undefined}
         amountType={inputCurrency}
