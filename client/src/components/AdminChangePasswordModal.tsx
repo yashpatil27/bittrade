@@ -39,7 +39,7 @@ const AdminChangePasswordModal: React.FC<AdminChangePasswordModalProps> = ({ isO
         throw new Error("Passwords do not match.");
       }
 
-      const response = await fetch(`${apiUrl}/api/admin/users/${user?.id}/password`, {
+      const response = await fetch(`${apiUrl}/admin/users/${user?.id}/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

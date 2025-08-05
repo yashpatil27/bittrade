@@ -32,7 +32,7 @@ export const useUsers = (): UseUsersReturn => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${getApiUrl()}/api/admin/users`, {
+      const response = await fetch(`${getApiUrl()}/admin/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

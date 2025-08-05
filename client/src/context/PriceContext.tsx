@@ -99,7 +99,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     setPricesError(null);
 
     try {
-      const response = await fetch(`${getApiUrl()}/api/market-rates`);
+      const response = await fetch(`${getApiUrl()}/market-rates`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch market rates: ${response.status}`);
@@ -134,7 +134,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
     }));
 
     try {
-      const response = await fetch(`${getApiUrl()}/api/bitcoin/chart/${timeframe}`);
+      const response = await fetch(`${getApiUrl()}/bitcoin/chart/${timeframe}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch chart data: ${response.status}`);

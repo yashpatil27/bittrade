@@ -106,13 +106,13 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
     try {
       let response;
       if (updateType === 'name') {
-        response = await fetch(`${apiUrl}/api/user/profile/name`, {
+        response = await fetch(`${apiUrl}/user/profile/name`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ name, currentPassword })
         });
       } else if (updateType === 'email') {
-        response = await fetch(`${apiUrl}/api/user/profile/email`, {
+        response = await fetch(`${apiUrl}/user/profile/email`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ email, currentPassword })
@@ -121,7 +121,7 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match.");
         }
-        response = await fetch(`${apiUrl}/api/user/profile/password`, {
+        response = await fetch(`${apiUrl}/user/profile/password`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ password, currentPassword })

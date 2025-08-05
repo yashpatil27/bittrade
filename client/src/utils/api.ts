@@ -37,9 +37,14 @@ export const getApiUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     
+    // If we're on the production domain, use HTTPS
+    if (hostname === 'bittrade.co.in' || hostname === 'www.bittrade.co.in') {
+      return 'https://bittrade.co.in/api';
+    }
+    
     // If we're on mobile (not localhost), use the IP with port 3001
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `http://${hostname}:3001`;
+      return `http://${hostname}:3001/api`;
     }
   }
   
@@ -50,6 +55,11 @@ export const getApiUrl = () => {
 export const getWebSocketUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
+    
+    // If we're on the production domain, use HTTPS
+    if (hostname === 'bittrade.co.in' || hostname === 'www.bittrade.co.in') {
+      return 'https://bittrade.co.in';
+    }
     
     // If we're on mobile (not localhost), use the IP with port 3001
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
@@ -79,7 +89,7 @@ export const createDCAPlan = async (planData: {
 
   const apiUrl = getApiUrl();
   
-  const response = await fetch(`${apiUrl}/api/dca-plans`, {
+  const response = await fetch(`${apiUrl}/dca-plans`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -103,7 +113,7 @@ export const getDCAPlans = async () => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/dca-plans`, {
+  const response = await fetch(`${apiUrl}/dca-plans`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -126,7 +136,7 @@ export const updateDCAPlanStatus = async (planId: number, status: 'ACTIVE' | 'PA
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/dca-plans/${planId}/status`, {
+  const response = await fetch(`${apiUrl}/dca-plans/${planId}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -151,7 +161,7 @@ export const deleteDCAPlan = async (planId: number) => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/dca-plans/${planId}`, {
+  const response = await fetch(`${apiUrl}/dca-plans/${planId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -174,7 +184,7 @@ export const cancelLimitOrder = async (transactionId: string) => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/transactions/${transactionId}/cancel`, {
+  const response = await fetch(`${apiUrl}/transactions/${transactionId}/cancel`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,

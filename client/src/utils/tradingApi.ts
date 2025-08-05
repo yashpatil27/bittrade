@@ -38,7 +38,7 @@ export const executeTrade = async (tradeRequest: TradeRequest): Promise<TradeRes
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/trade`, {
+  const response = await fetch(`${apiUrl}/trade`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ export const getUserBalance = async () => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/balance`, {
+  const response = await fetch(`${apiUrl}/balance`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -95,7 +95,7 @@ export const createLimitOrder = async (orderData: {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/orders`, {
+  const response = await fetch(`${apiUrl}/orders`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ export const getUserTransactions = async (limit: number = 50) => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/api/transactions?limit=${limit}`, {
+  const response = await fetch(`${apiUrl}/transactions?limit=${limit}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,

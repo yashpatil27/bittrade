@@ -32,7 +32,7 @@ const AdminMetrics: React.FC<AdminMetricsProps> = ({ className = '' }) => {
 
     try {
       setLoading(true);
-      const response = await fetch(`${getApiUrl()}/api/admin/metrics`, {
+      const response = await fetch(`${getApiUrl()}/admin/metrics`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
