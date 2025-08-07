@@ -5,16 +5,6 @@ import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 
-interface BalanceData {
-  available_inr: number;
-  available_btc: number;
-  reserved_inr: number;
-  reserved_btc: number;
-  collateral_btc: number;
-  borrowed_inr: number;
-  interest_accrued: number;
-}
-
 interface AdminTotalBalanceData {
   total_available_inr: number;
   total_available_btc: number;
@@ -25,34 +15,26 @@ interface AdminTotalBalanceData {
   total_interest_accrued: number;
 }
 
-
-interface BalanceProps {
+interface AdminBalanceProps {
   className?: string;
-  showAllUsers?: boolean; // If true, show platform balance (admin view)
 }
 
-const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false }) => {
+const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
   const [showBalances, setShowBalances] = useState(true);
   
   // Use centralized balance and price contexts
-  const { balanceData: userBalanceData, adminBalanceData, isLoading: loading, refetchAdminBalance } = useBalance();
+  const { adminBalanceData, isLoading: loading, refetchAdminBalance } = useBalance();
   const { sellRateInr } = usePrice();
   
-  // Choose which balance data to use based on showAllUsers prop
-  const balanceData = showAllUsers ? adminBalanceData : userBalanceData;
+  // Use admin balance data
+  const balanceData = adminBalanceData;
 
   // Calculate asset allocation percentages using real-time data
-  // Match BitcoinPrice component pattern - no fallback calculation, just use data or 0
-  const inrValue = showAllUsers 
-    ? Number((balanceData as AdminTotalBalanceData)?.total_available_inr || 0)
-    : Number((balanceData as BalanceData)?.available_inr || 0);
+  const inrValue = Number((balanceData as AdminTotalBalanceData)?.total_available_inr || 0);
   
-  const btcAmountInBTC = showAllUsers
-    ? balanceData ? Number((balanceData as AdminTotalBalanceData).total_available_btc || 0) / 100000000 : 0
-    : balanceData ? Number((balanceData as BalanceData).available_btc || 0) / 100000000 : 0; // Convert satoshis to BTC
+  const btcAmountInBTC = balanceData ? Number((balanceData as AdminTotalBalanceData).total_available_btc || 0) / 100000000 : 0; // Convert satoshis to BTC
   
   // Use sell_rate_inr for BTC value calculation (what user would get if selling)
-  // Use PriceContext data
   const sellRate = sellRateInr || 0;
   const btcValueInINR = sellRate > 0 ? btcAmountInBTC * sellRate : 0;
   
@@ -62,7 +44,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
   const btcPercentage = totalValue > 0 ? (btcValueInINR / totalValue) * 100 : 0;
 
   // Debug logging for admin view
-  if (showAllUsers && balanceData) {
+  if (balanceData) {
     console.log('🔍 Admin Balance Debug:', {
       inrValue,
       btcAmountInBTC,
@@ -77,13 +59,12 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
 
   // Fetch admin balance data if needed
   useEffect(() => {
-    if (showAllUsers && !adminBalanceData) {
+    if (!adminBalanceData) {
       refetchAdminBalance();
     }
-  }, [showAllUsers, adminBalanceData, refetchAdminBalance]);
+  }, [adminBalanceData, refetchAdminBalance]);
 
   const { isAuthenticated } = useAuth();
-
 
   if (!isAuthenticated) {
     return (
@@ -99,7 +80,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-medium text-white">Balance</h3>
+          <h3 className="text-base font-medium text-white">Platform Balance</h3>
           <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
@@ -125,9 +106,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
   return (
     <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-medium text-white">
-          {showAllUsers ? 'Platform Balance' : 'Balance'}
-        </h3>
+        <h3 className="text-base font-medium text-white">Platform Balance</h3>
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setShowBalances(!showBalances)}
@@ -170,10 +149,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
             <span className="text-sm text-gray-400">₿ BTC</span>
             <span className="text-base font-semibold text-white">
               {showBalances ? (
-                <AnimateBTC value={showAllUsers 
-                  ? (balanceData as AdminTotalBalanceData)?.total_available_btc || 0
-                  : (balanceData as BalanceData)?.available_btc || 0
-                } />
+                <AnimateBTC value={(balanceData as AdminTotalBalanceData)?.total_available_btc || 0} />
               ) : (
                 '••••••••'
               )}
@@ -192,4 +168,4 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
   );
 };
 
-export default Balance;
+export default AdminBalance;

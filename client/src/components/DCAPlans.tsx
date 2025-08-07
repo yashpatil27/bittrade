@@ -316,7 +316,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
             className="btn-strike-primary rounded-xl flex items-center space-x-2 px-4"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Plan</span>
+            <span className="font-medium">Add Plan</span>
           </button>
         )}
       </div>

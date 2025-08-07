@@ -227,7 +227,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
       
       {/* Mock Chart */}
       <div 
-        className="mb-3 h-28 cursor-pointer hover:bg-gray-800/20 transition-colors duration-200 relative overflow-hidden"
+        className="mb-3 h-28 cursor-pointer relative overflow-hidden"
         onClick={onChartClick}
       >
         {/* Mock chart visualization */}

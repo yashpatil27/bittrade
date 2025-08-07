@@ -4,7 +4,6 @@ import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import PendingOrdersList from '../components/PendingOrdersList';
 import BitcoinPrice from '../components/BitcoinPrice';
-import Balance from '../components/Balance';
 import HeroAmount from '../components/HeroAmount';
 import TradingModal from '../components/TradingModal';
 import { useBalance } from '../context/BalanceContext';
@@ -74,8 +73,6 @@ const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
           onChartClick={() => setChartModalOpen(true)}
         />
         
-        {/* Balance */}
-        <Balance />
         
 {/* Pending Orders - Only shown when there are pending limit orders */}
         <PendingOrdersList 

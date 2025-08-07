@@ -1,3 +1,0 @@
-Unknown arguments: no-open, noOpen
-
-Specify --help for available options
