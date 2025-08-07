@@ -94,8 +94,6 @@ export const DCAPlansProvider: React.FC<DCAPlansProviderProps> = ({ children }) 
         active_plans: data.active_plans || 0,
         paused_plans: data.paused_plans || 0
       });
-      
-      console.log('📊 DCAPlansContext: Fetched user DCA plans:', data.plans?.length || 0);
     } catch (err) {
       console.error('❌ DCAPlansContext: User DCA plans fetch error:', err);
       setUserDCAPlansError(err instanceof Error ? err.message : 'Failed to fetch DCA plans');

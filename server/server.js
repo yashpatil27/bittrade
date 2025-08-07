@@ -497,12 +497,26 @@ app.get('/api/dca-plans', authenticateToken, async (req, res) => {
   const userId = req.user.id;
 
   try {
+    // Get ALL plans (including completed) for total count
+    const [allPlansCount] = await db.execute(
+      'SELECT COUNT(*) as total_count FROM active_plans WHERE user_id = ?',
+      [userId]
+    );
+    
+    // Get all plans (active, paused, and completed) for display
     const [plans] = await db.execute(
       `SELECT id, plan_type, status, frequency, amount_per_execution_inr, amount_per_execution_btc, next_execution_at, 
               total_executions, remaining_executions, max_price, min_price, created_at, completed_at
        FROM active_plans 
-       WHERE user_id = ? 
-       ORDER BY created_at DESC`,
+       WHERE user_id = ?
+       ORDER BY 
+         CASE status
+           WHEN 'ACTIVE' THEN 1
+           WHEN 'PAUSED' THEN 2  
+           WHEN 'COMPLETED' THEN 3
+           ELSE 4
+         END,
+         created_at DESC`,
       [userId]
     );
 
@@ -543,7 +557,7 @@ app.get('/api/dca-plans', authenticateToken, async (req, res) => {
 
     res.json({
       plans: plansWithHistory,
-      total_plans: plans.length,
+      total_plans: allPlansCount[0].total_count,
       active_plans: plans.filter(p => p.status === 'ACTIVE').length,
       paused_plans: plans.filter(p => p.status === 'PAUSED').length
     });
@@ -1422,13 +1436,26 @@ async function sendUserDCAPlansUpdate(userId) {
     
     console.log(`🔍 Sending DCA plans update for userId: ${userId}`);
     
-    // Fetch DCA plans from database
+    // Get ALL plans (including completed) for total count
+    const [allPlansCount] = await db.execute(
+      'SELECT COUNT(*) as total_count FROM active_plans WHERE user_id = ?',
+      [userId]
+    );
+    
+    // Fetch all DCA plans from database (including completed)
     const [rows] = await db.execute(
       `SELECT id, plan_type, status, amount_per_execution_inr, amount_per_execution_btc, frequency, max_price, min_price, 
               remaining_executions, next_execution_at, created_at, completed_at
        FROM active_plans 
-       WHERE user_id = ? AND status IN ('ACTIVE', 'PAUSED')
-       ORDER BY created_at DESC`,
+       WHERE user_id = ?
+       ORDER BY 
+         CASE status
+           WHEN 'ACTIVE' THEN 1
+           WHEN 'PAUSED' THEN 2  
+           WHEN 'COMPLETED' THEN 3
+           ELSE 4
+         END,
+         created_at DESC`,
       [userId]
     );
     
@@ -1470,18 +1497,17 @@ async function sendUserDCAPlansUpdate(userId) {
     }));
     
     // Calculate summary statistics
-    const totalPlans = plansWithPerformance.length;
     const activePlans = plansWithPerformance.filter(p => p.status === 'ACTIVE').length;
     const pausedPlans = plansWithPerformance.filter(p => p.status === 'PAUSED').length;
     
     const dcaPlansData = {
       plans: plansWithPerformance,
-      total_plans: totalPlans,
+      total_plans: allPlansCount[0].total_count,
       active_plans: activePlans,
       paused_plans: pausedPlans
     };
     
-    console.log(`📋 Sending ${totalPlans} DCA plans for user ${userId} (${activePlans} active, ${pausedPlans} paused)`);
+    console.log(`📋 Sending ${allPlansCount[0].total_count} DCA plans for user ${userId} (${activePlans} active, ${pausedPlans} paused)`);
 
     // Cache DCA plans data in Redis (if available)
     if (global.dataService && global.dataService.redis) {
