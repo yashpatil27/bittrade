@@ -5,6 +5,7 @@ import TransactionList from '../components/TransactionList';
 import PendingOrdersList from '../components/PendingOrdersList';
 import BitcoinPrice from '../components/BitcoinPrice';
 import Balance from '../components/Balance';
+import HeroAmount from '../components/HeroAmount';
 import TradingModal from '../components/TradingModal';
 import BitcoinChartModal from '../components/BitcoinChartModal';
 import { useBalance } from '../context/BalanceContext';
@@ -60,6 +61,9 @@ const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
       <div className="max-w-md mx-auto bg-black min-h-screen">
         {/* Main Content */}
 <div className="px-4 py-3 space-y-3">
+        
+        {/* Hero Amount */}
+        <HeroAmount />
         
         {/* Balance */}
         <Balance />

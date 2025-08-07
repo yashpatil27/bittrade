@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({
   onTitleClick
 }) => {
   return (
-    <div className="bg-black border-b border-gray-800">
+    <div className="bg-black border-b border-black">
       <div className="flex items-center justify-between px-4 py-2">
         {/* Left side */}
         <div className="flex items-center space-x-3">
