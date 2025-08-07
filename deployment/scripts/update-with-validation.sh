@@ -97,33 +97,37 @@ if command -v mysql >/dev/null 2>&1; then
     fi
 else
     log_info "MySQL client not available, testing with Node.js..."
-    # Simplified Node.js test with timeout
-    timeout 10 node -e "
-    const mysql = require('mysql2/promise');
-    const config = require('./config/config');
-    
-    async function test() {
-      let conn;
-      try {
-        conn = await mysql.createConnection(config.database);
-        console.log('DB_TEST_OK');
-        await conn.end();
-      } catch (err) {
-        console.log('DB_TEST_FAIL');
-        if (conn) try { await conn.end(); } catch(e) {}
-        process.exit(1);
-      }
-    }
-    test();
-    " 2>/dev/null
-    
-    if [ $? -eq 0 ]; then
-        log_success "Database connectivity verified"
-    else
-        log_error "Database connection test failed! Aborting deployment."
-        log_error "Check database service, credentials, and network connectivity"
-        exit 1
-    fi
+fi
+
+# Always test with Node.js as well since that's what the app uses
+log_info "Testing Node.js database connection..."
+NODE_ENV=production timeout 15 node -e "
+const mysql = require('mysql2/promise');
+const config = require('./config/config');
+
+async function test() {
+  let conn;
+  try {
+    conn = await mysql.createConnection(config.database);
+    console.log('NODE_DB_TEST_SUCCESS');
+    await conn.end();
+    process.exit(0);
+  } catch (err) {
+    console.log('NODE_DB_TEST_FAILED: ' + err.message);
+    if (conn) try { await conn.end(); } catch(e) {}
+    process.exit(1);
+  }
+}
+test();
+" 2>/dev/null
+
+if [ $? -eq 0 ]; then
+    log_success "Node.js database connectivity verified"
+else
+    log_error "Node.js database connection test failed! Aborting deployment."
+    log_error "This suggests an issue with the application's database configuration."
+    log_error "Check the server/config/config.js file and environment variables."
+    exit 1
 fi
 cd ..
 

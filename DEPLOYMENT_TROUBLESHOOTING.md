@@ -283,3 +283,80 @@ mysql -h 127.0.0.1 -u bittrade -pbittrade123 -e "SELECT 1;" bittrade
 timeout 10 node quick-db-test.js
 ```
 
+
+---
+
+## Issue #5: Database Connection Working in PM2 but Failing in Deployment Scripts
+
+### Problem Description
+- **Symptom**: Deployment script fails at database connection test with "Access denied" or "using password: NO"
+- **Cause**: Database connection tests not running in production mode (NODE_ENV=production)
+- **Impact**: Deployment scripts fail even when the actual application works fine
+
+### Root Cause Analysis
+1. Database configuration logic depends on NODE_ENV to determine password behavior
+2. Deployment scripts running database tests without setting NODE_ENV=production
+3. Different password handling logic for development vs production environments
+
+### Configuration Pattern That Causes This
+```javascript
+// server/config/config.js - Complex password logic
+const databaseConfig = {
+  host: process.env.DB_HOST || '127.0.0.1',
+  user: process.env.DB_USER || 'bittrade',
+  database: process.env.DB_NAME || 'bittrade',
+  timezone: 'Z'
+};
+
+// Password only added conditionally based on environment
+if (process.env.DB_PASSWORD !== undefined) {
+  databaseConfig.password = process.env.DB_PASSWORD;
+} else if (process.env.NODE_ENV === 'production') {
+  databaseConfig.password = 'bittrade123'; // Hardcoded for production
+}
+// Development assumes no password needed
+```
+
+### Solution Implemented
+```bash
+# BAD: Database test without NODE_ENV
+node -e "const config = require('./config/config'); /* test connection */"
+
+# GOOD: Always set NODE_ENV=production for deployment tests
+NODE_ENV=production node -e "const config = require('./config/config'); /* test connection */"
+```
+
+### Updated Deployment Script Pattern
+```bash
+# In deployment scripts, always test with production environment
+log_info "Testing Node.js database connection..."
+NODE_ENV=production timeout 15 node -e "
+const mysql = require('mysql2/promise');
+const config = require('./config/config');
+// ... rest of connection test
+"
+```
+
+### Prevention Guidelines
+1. **Always set NODE_ENV=production** in deployment scripts when testing database connections
+2. **Simplify database configuration** - avoid complex conditional logic for passwords
+3. **Test deployment scripts independently** before using them in production
+4. **Use consistent environment handling** between application runtime and deployment tests
+5. **Document environment dependencies** clearly in configuration files
+
+### Recommended Configuration Pattern
+```javascript
+// Simpler, more predictable pattern
+module.exports = {
+  database: {
+    host: '127.0.0.1', // Always explicit IP
+    user: process.env.DB_USER || 'bittrade',
+    password: process.env.DB_PASSWORD || 'bittrade123', // Always include password
+    database: process.env.DB_NAME || 'bittrade',
+    timezone: 'Z'
+  }
+};
+```
+
+This approach reduces the chances of environment-dependent configuration issues during deployment.
+
