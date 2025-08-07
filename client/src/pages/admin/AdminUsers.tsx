@@ -1,15 +1,13 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useState } from 'react';
 import { useUsers } from '../../hooks/useUsers';
 import Card from '../../components/Card';
 import OptionsModal from '../../components/OptionsModal';
 import AdminChangePasswordModal from '../../components/AdminChangePasswordModal';
+import DepositBitcoinModal from '../../components/DepositBitcoinModal';
+import DepositCashModal from '../../components/DepositCashModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../../utils/formatters';
 import { getApiUrl } from '../../utils/api';
 import { Bitcoin, DollarSign, Key, Trash2 } from 'lucide-react';
-
-// Lazy load deposit modals
-const DepositBitcoinModal = lazy(() => import('../../components/DepositBitcoinModal'));
-const DepositCashModal = lazy(() => import('../../components/DepositCashModal'));
 
 interface UserWithBalance {
   id: string;
@@ -311,26 +309,22 @@ const AdminUsers: React.FC = () => {
       
       {/* Deposit Bitcoin Modal */}
       {isDepositBitcoinModalOpen && (
-        <Suspense fallback={<div />}>
-          <DepositBitcoinModal
-            isOpen={isDepositBitcoinModalOpen}
-            onClose={handleDepositBitcoinClose}
-            user={selectedUser}
-            onComplete={handleDepositComplete}
-          />
-        </Suspense>
+        <DepositBitcoinModal
+          isOpen={isDepositBitcoinModalOpen}
+          onClose={handleDepositBitcoinClose}
+          user={selectedUser}
+          onComplete={handleDepositComplete}
+        />
       )}
       
       {/* Deposit Cash Modal */}
       {isDepositCashModalOpen && (
-        <Suspense fallback={<div />}>
-          <DepositCashModal
-            isOpen={isDepositCashModalOpen}
-            onClose={handleDepositCashClose}
-            user={selectedUser}
-            onComplete={handleDepositComplete}
-          />
-        </Suspense>
+        <DepositCashModal
+          isOpen={isDepositCashModalOpen}
+          onClose={handleDepositCashClose}
+          user={selectedUser}
+          onComplete={handleDepositComplete}
+        />
       )}
       
       {/* Admin Change Password Modal */}

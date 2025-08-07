@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
-import BitcoinChart from './BitcoinChart';
 import { useBalance } from '../context/BalanceContext';
 import { useTransactions } from '../context/TransactionContext';
 import { Transaction } from '../types';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
+
+// Dynamic import that truly separates Recharts from main bundle
+const BitcoinChart = React.lazy(() => 
+  import('./BitcoinChart').then(module => ({ default: module.default }))
+);
 
 interface BitcoinChartModalProps {
   isOpen: boolean;
@@ -234,7 +238,16 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
           <div className="flex-1 min-h-0">
             {/* Bitcoin Chart Container */}
             <div className="h-64 sm:h-80 md:h-96 mb-4 min-h-0">
-              <BitcoinChart className="h-full" />
+              <React.Suspense fallback={
+                <div className="h-full bg-black rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto mb-4"></div>
+                    <p className="text-gray-400 text-sm">Loading chart...</p>
+                  </div>
+                </div>
+              }>
+                <BitcoinChart className="h-full" />
+              </React.Suspense>
             </div>
 
             {/* Buy/Sell Buttons */}

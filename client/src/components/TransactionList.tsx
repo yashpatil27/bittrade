@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Bitcoin } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
@@ -8,7 +8,7 @@ import { useTransactions } from '../context/TransactionContext';
 import Card from './Card';
 
 // Lazy load DetailsModal
-const DetailsModal = lazy(() => import('./DetailsModal'));
+import DetailsModal from './DetailsModal';
 
 interface TransactionListProps {
   title?: string;
@@ -389,37 +389,35 @@ const TransactionList: React.FC<TransactionListProps> = ({
       
       {/* Details Modal */}
       {selectedTransaction && isDetailsModalOpen && (
-        <Suspense fallback={<div />}>
-          <DetailsModal
-            isOpen={isDetailsModalOpen}
-            onClose={() => setIsDetailsModalOpen(false)}
-            title={getTransactionLabel(selectedTransaction.type, selectedTransaction.status)}
-            mainDetail={getTransactionAmount(selectedTransaction)}
-            subDetail={getTransactionSubAmount(selectedTransaction)}
-            transactionDetails={getTransactionDetails(selectedTransaction)}
-            dcaPlanDetails={[]}
-            actionButtons={
-              !disableActions && selectedTransaction.status === 'PENDING' && 
-              (selectedTransaction.type === 'LIMIT_BUY' || selectedTransaction.type === 'LIMIT_SELL') 
-                ? [{
-                    label: 'Cancel Order',
-                    onClick: async () => {
-                      try {
-                        await cancelLimitOrder(selectedTransaction.id);
-                        // Refresh transactions list
-                        fetchTransactions();
-                        setIsDetailsModalOpen(false);
-                      } catch (error) {
-                        console.error('Failed to cancel limit order:', error);
-                        // TODO: Show error message to user
-                      }
-                    },
-                    variant: 'danger' as const
-                  }]
-                : undefined
-            }
-          />
-        </Suspense>
+        <DetailsModal
+          isOpen={isDetailsModalOpen}
+          onClose={() => setIsDetailsModalOpen(false)}
+          title={getTransactionLabel(selectedTransaction.type, selectedTransaction.status)}
+          mainDetail={getTransactionAmount(selectedTransaction)}
+          subDetail={getTransactionSubAmount(selectedTransaction)}
+          transactionDetails={getTransactionDetails(selectedTransaction)}
+          dcaPlanDetails={[]}
+          actionButtons={
+            !disableActions && selectedTransaction.status === 'PENDING' && 
+            (selectedTransaction.type === 'LIMIT_BUY' || selectedTransaction.type === 'LIMIT_SELL') 
+              ? [{
+                  label: 'Cancel Order',
+                  onClick: async () => {
+                    try {
+                      await cancelLimitOrder(selectedTransaction.id);
+                      // Refresh transactions list
+                      fetchTransactions();
+                      setIsDetailsModalOpen(false);
+                    } catch (error) {
+                      console.error('Failed to cancel limit order:', error);
+                      // TODO: Show error message to user
+                    }
+                  },
+                  variant: 'danger' as const
+                }]
+              : undefined
+          }
+        />
       )}
     </div>
   );

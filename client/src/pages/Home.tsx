@@ -7,9 +7,11 @@ import BitcoinPrice from '../components/BitcoinPrice';
 import Balance from '../components/Balance';
 import HeroAmount from '../components/HeroAmount';
 import TradingModal from '../components/TradingModal';
-import BitcoinChartModal from '../components/BitcoinChartModal';
 import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
+
+// Lazy load BitcoinChartModal since it's only shown on user interaction
+const BitcoinChartModal = React.lazy(() => import('../components/BitcoinChartModal'));
 
 
 interface HomeProps {
@@ -92,12 +94,16 @@ onViewAllClick={() => navigate('/history')}
         </Card>
 
 {/* Trading Modal */}
-<BitcoinChartModal 
-          isOpen={chartModalOpen} 
-          onClose={() => setChartModalOpen(false)}
-          onBuyClick={handleBuyClick}
-          onSellClick={handleSellClick}
-        />
+{chartModalOpen && (
+          <React.Suspense fallback={<div />}>
+            <BitcoinChartModal 
+              isOpen={chartModalOpen} 
+              onClose={() => setChartModalOpen(false)}
+              onBuyClick={handleBuyClick}
+              onSellClick={handleSellClick}
+            />
+          </React.Suspense>
+        )}
 
         {/* Trading Modal */}
         <TradingModal
