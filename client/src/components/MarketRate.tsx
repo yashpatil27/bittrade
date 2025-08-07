@@ -220,7 +220,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
       
       {/* Mock Chart */}
       <div 
-        className="mb-4 h-32 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750 transition-colors relative overflow-hidden"
+        className="mb-4 h-32 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750 transition-colors duration-200 relative overflow-hidden"
         onClick={onChartClick}
       >
         {/* Mock chart visualization */}

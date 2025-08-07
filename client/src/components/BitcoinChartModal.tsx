@@ -2,19 +2,28 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
 import BitcoinChart from './BitcoinChart';
+import { useBalance } from '../context/BalanceContext';
+import { usePrice } from '../context/PriceContext';
+import { useTransactions } from '../context/TransactionContext';
+import { Transaction } from '../types';
+import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 
 interface BitcoinChartModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
   showXIcon?: boolean; // Show X icon instead of ChevronLeft (default: false)
+  onBuyClick?: () => void;
+  onSellClick?: () => void;
 }
 
 const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
   isOpen,
   onClose,
   title = "Bitcoin Chart",
-  showXIcon = false
+  showXIcon = true,
+  onBuyClick,
+  onSellClick
 }) => {
   const [dragStartY, setDragStartY] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
@@ -23,6 +32,44 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
   const [isClosing, setIsClosing] = useState(false);
   const [screenHeight] = useState(window.innerHeight);
   const modalRef = useRef<HTMLDivElement>(null);
+  
+  // Use contexts for balance, price, and transaction data
+  const { balanceData } = useBalance();
+  // const { buyRateInr, sellRateInr } = usePrice(); // Future use for display
+  const { userTransactions, userTransactionsLoading: portfolioLoading } = useTransactions();
+  
+  // Calculate portfolio metrics from balance data
+  const totalBitcoinSatoshis = balanceData?.available_btc || 0;
+  const totalBitcoin = totalBitcoinSatoshis / 100000000; // Convert satoshis to BTC
+  
+  // Calculate real portfolio metrics from transaction history
+  const portfolioMetrics = React.useMemo(() => {
+    // Filter buy transactions (MARKET_BUY, LIMIT_BUY, DCA_BUY)
+    const buyTransactions = userTransactions.filter((tx: Transaction) => 
+      ['MARKET_BUY', 'LIMIT_BUY', 'DCA_BUY'].includes(tx.type) && 
+      tx.status === 'EXECUTED'
+    );
+    
+    if (buyTransactions.length === 0) {
+      return {
+        averageBuyPriceINR: 0
+      };
+    }
+    
+    // Calculate totals
+    const totalInvestmentINR = buyTransactions.reduce((sum: number, tx: Transaction) => sum + (tx.inr_amount || 0), 0);
+    const totalBoughtSatoshis = buyTransactions.reduce((sum: number, tx: Transaction) => sum + (tx.btc_amount || 0), 0);
+    const totalBoughtBTC = totalBoughtSatoshis / 100000000;
+    
+    // Calculate average buy price in INR
+    const averageBuyPriceINR = totalBoughtBTC > 0 ? totalInvestmentINR / totalBoughtBTC : 0;
+    
+    return {
+      averageBuyPriceINR
+    };
+  }, [userTransactions]);
+  
+  const { averageBuyPriceINR } = portfolioMetrics;
 
   // Animation control
   useEffect(() => {
@@ -170,13 +217,61 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
 
         {/* Content */}
         <div className="flex flex-col h-full px-6">
-          {/* Bitcoin Chart Container */}
-          <div className="flex-1 overflow-hidden">
-            <BitcoinChart className="h-full" />
-          </div>
+          <div className="flex-1">
+            {/* Bitcoin Chart Container */}
+            <div className="h-96 mb-4">
+              <BitcoinChart className="h-full" />
+            </div>
 
-          {/* Bottom spacing for safe area */}
-          <div className="pb-8"></div>
+            {/* Buy/Sell Buttons */}
+            {(onBuyClick || onSellClick) && (
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {onBuyClick && (
+                  <button 
+                    onClick={onBuyClick}
+                    className="w-full btn-strike-primary rounded-xl flex items-center justify-center space-x-1"
+                  >
+                    <span className="font-medium">Buy</span>
+                  </button>
+                )}
+                {onSellClick && (
+                  <button 
+                    onClick={onSellClick}
+                    className="w-full btn-strike-primary rounded-xl flex items-center justify-center space-x-1"
+                  >
+                    <span className="font-medium">Sell</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Portfolio Details */}
+            {totalBitcoin > 0 && (
+              <div className="mb-4 bg-black border border-brand/30 rounded-2xl p-4">
+                <div className="divide-y divide-brand/30">
+                  <div className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
+                    <span className="text-zinc-400 text-sm">Total Bitcoin</span>
+                    <span className="text-sm font-normal text-white">
+                      {formatBitcoinForDisplay(totalBitcoinSatoshis)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
+                    <span className="text-zinc-400 text-sm">Average Buy Price</span>
+                    <span className="text-sm font-normal text-white">
+                      {portfolioLoading ? (
+                        <div className="w-16 h-4 bg-gray-700 rounded animate-pulse"></div>
+                      ) : (
+                        formatRupeesForDisplay(averageBuyPriceINR)
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom spacing for safe area */}
+            <div className="pb-8"></div>
+          </div>
         </div>
       </div>
     </div>

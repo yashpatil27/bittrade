@@ -88,7 +88,12 @@ onViewAllClick={() => navigate('/history')}
         </Card>
 
 {/* Trading Modal */}
-<BitcoinChartModal isOpen={chartModalOpen} onClose={() => setChartModalOpen(false)} />
+<BitcoinChartModal 
+          isOpen={chartModalOpen} 
+          onClose={() => setChartModalOpen(false)}
+          onBuyClick={handleBuyClick}
+          onSellClick={handleSellClick}
+        />
 
         {/* Trading Modal */}
         <TradingModal

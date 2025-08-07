@@ -92,13 +92,15 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
       <div className={`bg-black rounded-lg p-1 ${className}`}>
         {/* Header */}
         <div className="mb-3">
-          <div>
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Bitcoin Price</h3>
+          <div className="text-center">
+            {/* Main Price Display Skeleton */}
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="w-40 h-12 bg-gray-700 rounded animate-pulse"></div>
             </div>
-            <div className="flex items-center space-x-2 mt-1">
-              <div className="w-20 h-6 bg-gray-700 rounded animate-pulse"></div>
-              <div className="w-16 h-4 bg-gray-700 rounded animate-pulse"></div>
+            
+            {/* Sub Amount Display Skeleton */}
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-20 h-4 bg-gray-700 rounded animate-pulse"></div>
             </div>
           </div>
         </div>
@@ -127,7 +129,6 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
     return (
       <div className={`bg-black rounded-lg p-6 ${className}`}>
         <div className="text-center">
-          <h3 className="text-xl font-semibold text-white mb-2">Bitcoin Price</h3>
           <p className="text-red-400 text-sm">{error}</p>
           <p className="text-gray-400 text-xs mt-1">Please check your internet connection</p>
         </div>
@@ -147,31 +148,33 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   const isRealTimePositive = displayPriceChange >= 0;
 
   return (
-    <div className={`bg-black rounded-lg p-1 ${className}`}>
+    <div className={`bg-black rounded-lg p-1 flex flex-col h-full ${className}`}>
       {/* Header */}
-      <div className="mb-3">
-        <div>
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Bitcoin Price</h3>
-          </div>
-          <div className="flex items-center space-x-2 mt-1">
-            <span className="text-xl font-semibold text-white">
+      <div className="flex-shrink-0 mb-3">
+        <div className="text-center">
+          {/* Main Price Display */}
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <span className="text-white text-4xl font-normal">
               <AnimateUSD 
                 value={currentPrice}
-                className="justify-center text-xl font-semibold text-white"
+                className="justify-center text-white text-4xl font-normal"
               />
             </span>
-            <div className={`${isRealTimePositive ? 'text-green-400' : 'text-red-400'}`}>
-              <span className="text-xs font-light">
-                {isRealTimePositive ? '+' : ''}{displayPriceChange.toFixed(2)}%
-              </span>
-            </div>
+          </div>
+          
+          {/* Sub Amount Display - Price Change % */}
+          <div className="flex items-center justify-center gap-2">
+            <span className={`text-sm font-normal ${
+              isRealTimePositive ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {isRealTimePositive ? '+' : ''}{displayPriceChange.toFixed(2)}%
+            </span>
           </div>
         </div>
       </div>
 
       {/* Chart */}
-      <div className="h-48 relative">
+      <div className="flex-grow relative min-h-0">
         <div className={`absolute inset-0 transition-opacity duration-200 ${
           transitioning ? 'opacity-70' : 'opacity-100'
         }`}>
@@ -208,11 +211,10 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-        
       </div>
 
       {/* Tab Navigation */}
-      <div className="mt-2 flex justify-center">
+      <div className="flex-shrink-0 mt-2 flex justify-center">
         <div className="flex bg-gray-800 rounded-lg p-1 w-full max-w-md">
           {tabs.map((tab) => (
             <button
