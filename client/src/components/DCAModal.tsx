@@ -5,7 +5,7 @@ import OptionsModal from './OptionsModal';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 import { createDCAPlan } from '../utils/api';
-import { Bitcoin, DollarSign, Calendar, Repeat, Target, Clock } from 'lucide-react';
+import { Calendar, Repeat, Target, Clock } from 'lucide-react';
 
 interface BalanceData {
   available_inr: number;
@@ -23,7 +23,7 @@ interface DCAModalProps {
   balanceData?: BalanceData | null;
   onComplete?: (dcaPlan: DCAPlanData) => void;
   initialAmount?: string;
-  initialPlanType?: 'DCA_BUY' | 'DCA_SELL';
+  planType: 'DCA_BUY' | 'DCA_SELL'; // Required - no longer optional
 }
 
 interface DCAPlanData {
@@ -36,7 +36,6 @@ interface DCAPlanData {
   min_price?: number; // Optional min price per BTC
 }
 
-type DCAStep = 'type' | 'amount' | 'frequency' | 'optionalSettings' | 'executions' | 'maxPrice' | 'minPrice' | 'review' | 'priceControls';
 
 const DCAModal: React.FC<DCAModalProps> = ({
   isOpen,
@@ -44,96 +43,64 @@ const DCAModal: React.FC<DCAModalProps> = ({
   balanceData,
   onComplete,
   initialAmount = '',
-  initialPlanType = 'DCA_BUY',
+  planType,
 }) => {
-  const [currentStep, setCurrentStep] = useState<DCAStep>('frequency');
-  const [dcaPlan, setDcaPlan] = useState<Partial<DCAPlanData>>({
-    plan_type: initialPlanType,
+  // Modal state management - following TradingModal pattern (no type selection needed)
+  const [dcaPlan, setDcaPlan] = useState<DCAPlanData>({
+    plan_type: planType,
+    frequency: 'DAILY', // Default frequency
   });
-  const [amountInput, setAmountInput] = useState(''); // This will be set via props
+  const [amountInput, setAmountInput] = useState('');
   const [executionsInput, setExecutionsInput] = useState('');
   const [maxPriceInput, setMaxPriceInput] = useState('');
   const [minPriceInput, setMinPriceInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [inputCurrency, setInputCurrency] = useState<'inr' | 'btc'>(planType === 'DCA_BUY' ? 'inr' : 'btc');
+  
+  // Modal visibility states - like TradingModal's overlay system
+  const [showFrequencyModal, setShowFrequencyModal] = useState(false);
   const [showOptionalSettingsModal, setShowOptionalSettingsModal] = useState(false);
   const [showExecutionsModal, setShowExecutionsModal] = useState(false);
   const [showMaxPriceModal, setShowMaxPriceModal] = useState(false);
   const [showMinPriceModal, setShowMinPriceModal] = useState(false);
-  const [inputCurrency, setInputCurrency] = useState<'inr' | 'btc'>(initialPlanType === 'DCA_BUY' ? 'inr' : 'btc');
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
-  // Reset state when modal opens/closes
+  // Reset state when modal opens/closes - TradingModal style
   useEffect(() => {
     if (isOpen) {
-      // If we have initial values, skip to frequency step, otherwise start from type step
-      setCurrentStep(initialAmount ? 'frequency' : 'type');
-      setDcaPlan({ plan_type: initialPlanType });
+      // Initialize with provided initial values
+      setDcaPlan({ plan_type: planType, frequency: 'DAILY' });
       setAmountInput(initialAmount);
       setExecutionsInput('');
       setMaxPriceInput('');
       setMinPriceInput('');
       setIsLoading(false);
-      setShowConfirmation(false);
+      setInputCurrency(planType === 'DCA_BUY' ? 'inr' : 'btc');
+      
+      // Reset all modal visibility states
+      setShowFrequencyModal(false);
       setShowOptionalSettingsModal(false);
       setShowExecutionsModal(false);
       setShowMaxPriceModal(false);
       setShowMinPriceModal(false);
-      // Reset input currency based on plan type
-      setInputCurrency(initialPlanType === 'DCA_BUY' ? 'inr' : 'btc');
+      setShowReviewModal(false);
     }
-  }, [isOpen, initialAmount, initialPlanType]);
+  }, [isOpen, initialAmount, planType]);
 
-  // Handle optional settings step - show the options modal
-  useEffect(() => {
-    if (currentStep === 'optionalSettings') {
-      setShowOptionalSettingsModal(true);
-    }
-  }, [currentStep]);
-
-  // Handle step navigation
-  const goToNextStep = () => {
-    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'optionalSettings', 'review'];
-    const currentIndex = stepOrder.indexOf(currentStep);
-    if (currentIndex < stepOrder.length - 1) {
-      setCurrentStep(stepOrder[currentIndex + 1]);
-    }
+  // Modal navigation handlers - TradingModal style
+  const handleAmountModalClose = () => {
+    onClose();
   };
 
-  const goToPreviousStep = () => {
-    // If we started with initial values (integrated with trading modal),
-    // and we're at the frequency step, close the modal instead of going to previous steps
-    if (initialAmount && currentStep === 'frequency') {
-      onClose();
-      return;
-    }
-    
-    const stepOrder: DCAStep[] = ['type', 'amount', 'frequency', 'optionalSettings', 'review'];
-    const currentIndex = stepOrder.indexOf(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(stepOrder[currentIndex - 1]);
-    } else {
-      onClose();
-    }
+  const handleFrequencySelect = (frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY') => {
+    setDcaPlan({ ...dcaPlan, frequency });
+    setShowFrequencyModal(false);
+    setShowOptionalSettingsModal(true);
   };
 
-  // Step validation
-  const isStepValid = () => {
-    switch (currentStep) {
-      case 'type':
-        return dcaPlan.plan_type !== undefined;
-      case 'amount':
-        return amountInput && parseFloat(amountInput) > 0;
-      case 'frequency':
-        return dcaPlan.frequency !== undefined;
-      case 'executions':
-        return true; // Optional step
-      case 'priceControls':
-        return true; // Optional step
-      case 'review':
-        return true;
-      default:
-        return false;
-    }
+  const handleFrequencyModalClose = () => {
+    // Just close the frequency overlay, base modal stays open
+    setShowFrequencyModal(false);
   };
 
   // Handle amount input confirmation
@@ -144,9 +111,10 @@ const DCAModal: React.FC<DCAModalProps> = ({
       alert('Please enter a valid amount that is not negative.');
       return;
     }
-
+    
     setAmountInput(value);
-    goToNextStep();
+    // Don't hide the base modal - just show frequency overlay
+    setShowFrequencyModal(true);
   };
 
   // Handle currency change from SingleInputModal
@@ -157,10 +125,8 @@ const DCAModal: React.FC<DCAModalProps> = ({
   // Handle optional settings handlers
   const handleOptionalSettingsClose = () => {
     setShowOptionalSettingsModal(false);
-    // Go back to frequency step with a small delay to allow modal transition
-    setTimeout(() => {
-      setCurrentStep('frequency');
-    }, 100);
+    // Go back to frequency step to preserve state
+    setShowFrequencyModal(true);
   };
 
   const handleSetDuration = () => {
@@ -180,7 +146,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
 
   const handleReviewPlan = () => {
     setShowOptionalSettingsModal(false);
-    setCurrentStep('review');
+    setShowReviewModal(true);
   };
 
   // Handle executions input confirmation
@@ -219,16 +185,25 @@ const DCAModal: React.FC<DCAModalProps> = ({
     setShowOptionalSettingsModal(true);
   };
 
+  // Handle review modal close
+  const handleReviewModalClose = () => {
+    setShowReviewModal(false);
+    setShowOptionalSettingsModal(true);
+  };
+
   // Handle final submission
   const handleCreatePlan = async () => {
-    if (!isStepValid()) return;
+    if (!dcaPlan.plan_type || !dcaPlan.frequency || !amountInput) {
+      alert('Please complete all required fields.');
+      return;
+    }
     
     setIsLoading(true);
     
     try {
       const finalPlan: DCAPlanData = {
-        plan_type: dcaPlan.plan_type!,
-        frequency: dcaPlan.frequency!,
+        plan_type: dcaPlan.plan_type,
+        frequency: dcaPlan.frequency,
         amount_per_execution_inr: inputCurrency === 'inr' ? parseFloat(amountInput) : undefined,
         amount_per_execution_btc: inputCurrency === 'btc' ? Math.round(parseFloat(amountInput) * 100000000) : undefined, // Convert BTC to satoshis
         remaining_executions: executionsInput ? parseInt(executionsInput) : undefined,
@@ -272,19 +247,6 @@ const DCAModal: React.FC<DCAModalProps> = ({
       return `Max ${formatRupeesForDisplay(balanceData.available_inr)}`;
     } else {
       return `Max ${formatBitcoinForDisplay(balanceData.available_btc)}`;
-    }
-  };
-
-  // Get step titles
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 'type': return 'Create DCA Plan';
-      case 'amount': return 'Set Amount';
-      case 'frequency': return 'Set Frequency';
-      case 'executions': return 'Set Duration';
-      case 'priceControls': return 'Price Controls';
-      case 'review': return 'Review Plan';
-      default: return 'Create DCA Plan';
     }
   };
 
@@ -369,106 +331,49 @@ const DCAModal: React.FC<DCAModalProps> = ({
     return details;
   };
 
-  // Render different step modals
-  if (currentStep === 'type') {
-    return (
-      <OptionsModal
-        isOpen={isOpen}
-        onClose={onClose}
-        title="Choose Plan Type"
-        type="custom"
-        showXIcon={true}
-      >
-        <div className="space-y-3">
-          <div 
-            className={`bg-gray-900 hover:bg-gray-800 border ${dcaPlan.plan_type === 'DCA_BUY' ? 'border-brand' : 'border-gray-700'} rounded-lg p-4 cursor-pointer transition-colors`}
-            onClick={() => {
-              setDcaPlan({ ...dcaPlan, plan_type: 'DCA_BUY' });
-              goToNextStep();
-            }}
-            data-clickable="true"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <Bitcoin className="w-5 h-5 text-green-400" />
-              </div>
-              <div>
-                <h3 className="text-white text-sm font-medium">Buy Bitcoin Regularly</h3>
-                <p className="text-gray-400 text-xs mt-1">Dollar-cost average into Bitcoin</p>
-              </div>
-            </div>
-          </div>
-          
-          <div 
-            className={`bg-gray-900 hover:bg-gray-800 border ${dcaPlan.plan_type === 'DCA_SELL' ? 'border-brand' : 'border-gray-700'} rounded-lg p-4 cursor-pointer transition-colors`}
-            onClick={() => {
-              setDcaPlan({ ...dcaPlan, plan_type: 'DCA_SELL' });
-              goToNextStep();
-            }}
-            data-clickable="true"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="p-2 bg-orange-500/10 rounded-lg">
-                <DollarSign className="w-5 h-5 text-orange-400" />
-              </div>
-              <div>
-                <h3 className="text-white text-sm font-medium">Sell Bitcoin Regularly</h3>
-                <p className="text-gray-400 text-xs mt-1">Take profits systematically</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </OptionsModal>
-    );
-  }
-
-  if (currentStep === 'amount') {
-    return (
+  // TradingModal-style layered rendering system - base modal ALWAYS rendered, overlays on top
+  return (
+    <>
+      {/* Base Modal - ALWAYS rendered like TradingModal's SingleInputModal */}
       <SingleInputModal
+        key="dca-amount-modal"
         isOpen={isOpen}
-        onClose={goToPreviousStep}
-        title={getStepTitle()}
+        onClose={handleAmountModalClose}
+        title={dcaPlan.plan_type === 'DCA_BUY' ? 'Buy Bitcoin Regularly' : 'Sell Bitcoin Regularly'}
         type={inputCurrency}
         confirmText="Next"
         onConfirm={handleAmountConfirm}
         sectionTitle={`${dcaPlan.plan_type === 'DCA_BUY' ? 'Buy' : 'Sell'} Amount`}
         sectionDetail={`Amount to ${dcaPlan.plan_type === 'DCA_BUY' ? 'invest' : 'sell'} each time the plan executes`}
-        initialValue={amountInput}
-        showOrbitIcon={true}  // Enable orbit icon
+        initialValue={initialAmount}
+        showOrbitIcon={true}
         onCurrencyChange={handleCurrencyChange}
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}
-        skipMaxValidation={true}  // Skip validation but show max button
+        skipMaxValidation={true}
+        showXIcon={true}
       />
-    );
-  }
-
-  if (currentStep === 'frequency') {
-    const frequencies = [
-      { value: 'HOURLY', label: 'Every Hour', icon: Clock, description: 'High frequency, small amounts' },
-      { value: 'DAILY', label: 'Daily', icon: Calendar, description: 'Once per day' },
-      { value: 'WEEKLY', label: 'Weekly', icon: Repeat, description: 'Once per week' },
-      { value: 'MONTHLY', label: 'Monthly', icon: Target, description: 'Once per month' },
-    ] as const;
-
-    return (
+      
+      {/* Frequency Selection Modal - Overlay on top of base modal */}
       <OptionsModal
-        isOpen={isOpen}
-        onClose={goToPreviousStep}
+        isOpen={isOpen && showFrequencyModal}
+        onClose={handleFrequencyModalClose}
         title="Execution Frequency"
         type="custom"
       >
         <div className="space-y-3">
-          {frequencies.map((freq) => {
+          {[
+            { value: 'HOURLY', label: 'Every Hour', icon: Clock, description: 'High frequency, small amounts' },
+            { value: 'DAILY', label: 'Daily', icon: Calendar, description: 'Once per day' },
+            { value: 'WEEKLY', label: 'Weekly', icon: Repeat, description: 'Once per week' },
+            { value: 'MONTHLY', label: 'Monthly', icon: Target, description: 'Once per month' },
+          ].map((freq) => {
             const IconComponent = freq.icon;
             return (
               <div 
                 key={freq.value}
                 className={`bg-gray-900 hover:bg-gray-800 border ${dcaPlan.frequency === freq.value ? 'border-brand' : 'border-gray-700'} rounded-lg p-4 cursor-pointer transition-colors`}
-                onClick={() => {
-                  setDcaPlan({ ...dcaPlan, frequency: freq.value });
-                  goToNextStep();
-                }}
+                onClick={() => handleFrequencySelect(freq.value as 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY')}
                 data-clickable="true"
               >
                 <div className="flex items-center space-x-3">
@@ -485,37 +390,83 @@ const DCAModal: React.FC<DCAModalProps> = ({
           })}
         </div>
       </OptionsModal>
-    );
-  }
-
-  if (currentStep === 'executions') {
-    return (
-      <SingleInputModal
-        isOpen={isOpen}
-        onClose={goToPreviousStep}
-        title={getStepTitle()}
-        type="number"
-        confirmText="Next"
-        onConfirm={handleExecutionsConfirm}
-        sectionTitle="Number of Executions"
-        sectionDetail="How many times should we execute this plan? Leave blank for unlimited executions."
-        initialValue={executionsInput}
-        showInfinityPlaceholder={true}
-      />
-    );
-  }
-
-  if (currentStep === 'priceControls') {
-    // This would be a custom modal for price controls - for now, skip to review
-    // The useEffect above handles auto-skipping this step
-    return null;
-  }
-
-  if (currentStep === 'review') {
-    return (
+      
+      {/* Optional Settings Modal - Overlay on top of base modal */}
+      <OptionsModal
+        isOpen={isOpen && showOptionalSettingsModal}
+        onClose={handleOptionalSettingsClose}
+        title="Optional Settings"
+        type="custom"
+      >
+        <div className="space-y-3">
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleSetDuration}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Set Duration</h3>
+                <p className="text-gray-400 text-xs mt-1">Limit the number of executions</p>
+              </div>
+              {executionsInput && (
+                <div className="text-brand text-xs">{executionsInput} times</div>
+              )}
+            </div>
+          </div>
+          
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleSetMaxPrice}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Set Max Price</h3>
+                <p className="text-gray-400 text-xs mt-1">Stop buying when BTC price exceeds this limit</p>
+              </div>
+              {maxPriceInput && (
+                <div className="text-brand text-xs">₹{parseFloat(maxPriceInput).toLocaleString('en-IN')}</div>
+              )}
+            </div>
+          </div>
+          
+          <div 
+            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleSetMinPrice}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-white text-sm font-medium">Set Min Price</h3>
+                <p className="text-gray-400 text-xs mt-1">Stop selling when BTC price falls below this limit</p>
+              </div>
+              {minPriceInput && (
+                <div className="text-brand text-xs">₹{parseFloat(minPriceInput).toLocaleString('en-IN')}</div>
+              )}
+            </div>
+          </div>
+          
+          <div 
+            className="bg-brand/10 hover:bg-brand/20 border border-brand rounded-lg p-4 cursor-pointer transition-colors"
+            onClick={handleReviewPlan}
+            data-clickable="true"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-brand text-sm font-medium">Review DCA Plan</h3>
+                <p className="text-gray-400 text-xs mt-1">Proceed to review and create your plan</p>
+              </div>
+              <div className="text-brand text-xs">→</div>
+            </div>
+          </div>
+        </div>
+      </OptionsModal>
+      
+      {/* Review Modal - Overlay on top of base modal */}
       <ConfirmationModal
-        isOpen={isOpen && !showConfirmation}
-        onClose={goToPreviousStep}
+        isOpen={isOpen && showReviewModal}
+        onClose={handleReviewModalClose}
         title="Review Your DCA Plan"
         amount={inputCurrency === 'inr' ? (
           <AnimateINR value={parseFloat(amountInput)} className="justify-center text-white text-5xl font-normal" />
@@ -534,94 +485,12 @@ const DCAModal: React.FC<DCAModalProps> = ({
         isLoading={isLoading}
         mode="confirm"
       />
-    );
-  }
-
-  // Render optional settings modal
-  if (showOptionalSettingsModal) {
-    return (
-      <OptionsModal
-        isOpen={showOptionalSettingsModal}
-        onClose={handleOptionalSettingsClose}
-        title="Optional Settings"
-        type="custom"
-      >
-        <div className="space-y-3">
-          {/* Set Duration Option */}
-          <div 
-            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
-            onClick={handleSetDuration}
-            data-clickable="true"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-white text-sm font-medium">Set Duration</h3>
-                <p className="text-gray-400 text-xs mt-1">Limit the number of executions</p>
-              </div>
-              {executionsInput && (
-                <div className="text-brand text-xs">{executionsInput} times</div>
-              )}
-            </div>
-          </div>
-          
-          {/* Set Max Price Option */}
-          <div 
-            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
-            onClick={handleSetMaxPrice}
-            data-clickable="true"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-white text-sm font-medium">Set Max Price</h3>
-                <p className="text-gray-400 text-xs mt-1">Stop buying when BTC price exceeds this limit</p>
-              </div>
-              {maxPriceInput && (
-                <div className="text-brand text-xs">₹{parseFloat(maxPriceInput).toLocaleString('en-IN')}</div>
-              )}
-            </div>
-          </div>
-          
-          {/* Set Min Price Option */}
-          <div 
-            className="bg-gray-900 hover:bg-gray-800 border border-gray-700 rounded-lg p-4 cursor-pointer transition-colors"
-            onClick={handleSetMinPrice}
-            data-clickable="true"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-white text-sm font-medium">Set Min Price</h3>
-                <p className="text-gray-400 text-xs mt-1">Stop selling when BTC price falls below this limit</p>
-              </div>
-              {minPriceInput && (
-                <div className="text-brand text-xs">₹{parseFloat(minPriceInput).toLocaleString('en-IN')}</div>
-              )}
-            </div>
-          </div>
-          
-          {/* Review DCA Plan Option */}
-          <div 
-            className="bg-brand/10 hover:bg-brand/20 border border-brand rounded-lg p-4 cursor-pointer transition-colors"
-            onClick={handleReviewPlan}
-            data-clickable="true"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-brand text-sm font-medium">Review DCA Plan</h3>
-                <p className="text-gray-400 text-xs mt-1">Proceed to review and create your plan</p>
-              </div>
-              <div className="text-brand text-xs">→</div>
-            </div>
-          </div>
-        </div>
-      </OptionsModal>
-    );
-  }
-
-  // Render executions input modal
-  if (showExecutionsModal) {
-    return (
+      
+      {/* Overlay Modals - Only show when specific sub-modal states are active */}
+      
+      {/* Executions Input Modal - Overlay */}
       <SingleInputModal
-        isOpen={showExecutionsModal}
+        isOpen={isOpen && showExecutionsModal}
         onClose={handleExecutionsClose}
         title="Set Duration"
         type="number"
@@ -632,14 +501,10 @@ const DCAModal: React.FC<DCAModalProps> = ({
         initialValue={executionsInput}
         showInfinityPlaceholder={true}
       />
-    );
-  }
-
-  // Render max price input modal
-  if (showMaxPriceModal) {
-    return (
+      
+      {/* Max Price Input Modal - Overlay */}
       <SingleInputModal
-        isOpen={showMaxPriceModal}
+        isOpen={isOpen && showMaxPriceModal}
         onClose={handleMaxPriceClose}
         title="Set Max Price"
         type="inr"
@@ -649,14 +514,10 @@ const DCAModal: React.FC<DCAModalProps> = ({
         sectionDetail="The plan will pause when Bitcoin price exceeds this amount. This helps you avoid buying at high prices."
         initialValue={maxPriceInput}
       />
-    );
-  }
-
-  // Render min price input modal
-  if (showMinPriceModal) {
-    return (
+      
+      {/* Min Price Input Modal - Overlay */}
       <SingleInputModal
-        isOpen={showMinPriceModal}
+        isOpen={isOpen && showMinPriceModal}
         onClose={handleMinPriceClose}
         title="Set Min Price"
         type="inr"
@@ -666,10 +527,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
         sectionDetail="The plan will pause when Bitcoin price falls below this amount. This helps you avoid selling at low prices."
         initialValue={minPriceInput}
       />
-    );
-  }
-
-  return null;
+    </>);
 };
 
 export default DCAModal;

@@ -3,6 +3,7 @@ import Card from '../components/Card';
 import DCAPlans from '../components/DCAPlans';
 import DCATransactionList from '../components/DCATransactionList';
 import DCAModal from '../components/DCAModal';
+import DCATypeSelectionModal from '../components/DCATypeSelectionModal';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
 import { DCAPlan, Transaction } from '../types';
 import { useBalance } from '../context/BalanceContext';
@@ -10,13 +11,27 @@ import { useDCAPlans } from '../context/DCAPlansContext';
 
 
 const DCA: React.FC = () => {
+  const [isTypeSelectionModalOpen, setIsTypeSelectionModalOpen] = useState(false);
   const [isDCAModalOpen, setIsDCAModalOpen] = useState(false);
+  const [selectedPlanType, setSelectedPlanType] = useState<'DCA_BUY' | 'DCA_SELL'>('DCA_BUY');
   
   // Use centralized contexts
   const { balanceData } = useBalance();
   const { hasAnyPlans, refetchUserDCAPlans } = useDCAPlans();
 
   const handleStartDCA = () => {
+    // Open type selection modal first
+    setIsTypeSelectionModalOpen(true);
+  };
+
+  const handleTypeSelectionClose = () => {
+    setIsTypeSelectionModalOpen(false);
+  };
+
+  const handlePlanTypeSelect = (planType: 'DCA_BUY' | 'DCA_SELL') => {
+    setSelectedPlanType(planType);
+    setIsTypeSelectionModalOpen(false);
+    // Open DCA modal with selected plan type
     setIsDCAModalOpen(true);
   };
 
@@ -193,10 +208,19 @@ const DCA: React.FC = () => {
           </div>
         )}
       
+      {/* DCA Type Selection Modal */}
+      <DCATypeSelectionModal
+        isOpen={isTypeSelectionModalOpen}
+        onClose={handleTypeSelectionClose}
+        onSelect={handlePlanTypeSelect}
+        selectedType={selectedPlanType}
+      />
+      
       {/* DCA Modal */}
       <DCAModal 
         isOpen={isDCAModalOpen} 
         onClose={handleCloseDCAModal}
+        planType={selectedPlanType}
         balanceData={balanceData}
         onComplete={handleDCAComplete}
       />
