@@ -190,12 +190,7 @@ export function formatRelativeTime(timestamp: any): string {
     return `${minutes}m ago`;
   } else if (diffInSeconds < 86400) {
     const hours = Math.floor(diffInSeconds / 3600);
-    const remainingMinutes = Math.floor((diffInSeconds % 3600) / 60);
-    if (remainingMinutes > 0) {
-      return `${hours}h ${remainingMinutes}m ago`;
-    } else {
-      return `${hours}h ago`;
-    }
+    return `${hours}h ago`;
   } else if (diffInSeconds < 2592000) { // 30 days
     const days = Math.floor(diffInSeconds / 86400);
     return `${days}d ago`;

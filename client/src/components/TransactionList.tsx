@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, TrendingDown, Bitcoin } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, ArrowDownLeft, ArrowLeftRight, Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';
@@ -18,6 +18,7 @@ interface TransactionListProps {
   maxItems?: number;
   filterPending?: boolean; // If true, only show pending limit orders
   excludePending?: boolean; // If true, exclude pending limit orders from the list
+  filterDCA?: boolean; // If true, only show DCA transactions
   showTargetPrice?: boolean; // If true, show target price for pending orders
   showCount?: boolean; // If true, show count badge next to title
   wrapInCard?: boolean; // If true, wrap content in Card component
@@ -33,6 +34,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   maxItems,
   filterPending = false,
   excludePending = false,
+  filterDCA = false,
   showTargetPrice = false,
   showCount = false,
   wrapInCard = false,
@@ -50,7 +52,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
     refetchUserTransactions,
     refetchAdminTransactions,
     getPendingOrders,
-    getCompletedTransactions
+    getCompletedTransactions,
+    getDCATransactions
   } = useTransactions();
   
   // Get appropriate data based on showAllUsers prop
@@ -79,6 +82,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
     ? getPendingOrders(showAllUsers)
     : excludePending 
     ? getCompletedTransactions(showAllUsers)
+    : filterDCA
+    ? getDCATransactions(showAllUsers)
     : transactions;
   
   // Determine how many transactions to display
@@ -99,28 +104,30 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'MARKET_BUY':
-      case 'LIMIT_BUY':
-      case 'DCA_BUY':
-        return <ArrowUpRight className="w-4 h-4" />;
       case 'MARKET_SELL':
+        return <ArrowLeftRight className="w-4 h-4" />;
+      case 'LIMIT_BUY':
       case 'LIMIT_SELL':
+        return <Target className="w-4 h-4" />;
+      case 'DCA_BUY':
       case 'DCA_SELL':
-        return <ArrowDownRight className="w-4 h-4" />;
+        return <CalendarSync className="w-4 h-4" />;
       case 'DEPOSIT_INR':
       case 'DEPOSIT_BTC':
-      case 'LOAN_CREATE':
-      case 'LOAN_ADD_COLLATERAL':
-        return <TrendingUp className="w-4 h-4" />;
+        return <ArrowDownLeft className="w-4 h-4" />;
       case 'WITHDRAW_INR':
       case 'WITHDRAW_BTC':
+        return <ArrowUpRight className="w-4 h-4" />;
+      case 'LOAN_BORROW':
+        return <ArrowDown className="w-4 h-4" />;
       case 'LOAN_REPAY':
+        return <ArrowUp className="w-4 h-4" />;
       case 'LIQUIDATION':
       case 'PARTIAL_LIQUIDATION':
       case 'FULL_LIQUIDATION':
-        return <TrendingDown className="w-4 h-4" />;
-      case 'LOAN_BORROW':
+        return <Zap className="w-4 h-4" />;
       case 'INTEREST_ACCRUAL':
-        return <ArrowUpRight className="w-4 h-4" />;
+        return <Plus className="w-4 h-4" />;
       default: return <div className="w-4 h-4" />;
     }
   };
@@ -295,6 +302,10 @@ const TransactionList: React.FC<TransactionListProps> = ({
   
   // Show "no transactions" message for regular transaction lists
   if (!filterPending && displayTransactions.length === 0) {
+    const emptyMessage = filterDCA 
+      ? { title: "No DCA transactions yet", subtitle: "Create a DCA plan to start automated investing" }
+      : { title: "No transactions yet", subtitle: "Start trading to see your history" };
+    
     return (
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -304,8 +315,8 @@ const TransactionList: React.FC<TransactionListProps> = ({
           <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3">
             <Bitcoin className="w-6 h-6 text-brand" />
           </div>
-          <h4 className="text-white font-medium mb-1">No transactions yet</h4>
-          <p className="text-gray-400 text-xs">Start trading to see your history</p>
+          <h4 className="text-white font-medium mb-1">{emptyMessage.title}</h4>
+          <p className="text-gray-400 text-xs">{emptyMessage.subtitle}</p>
         </div>
       </div>
     );
