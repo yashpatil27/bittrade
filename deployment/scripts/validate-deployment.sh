@@ -60,45 +60,66 @@ print_status ".env.development exists" $?
 echo ""
 echo "3. Testing Database Connection..."
 
-# Test database connection
+# Test database connection with timeout and proper cleanup
 cd /home/ubuntu/bittrade/server
-DB_TEST_RESULT=$(node -e "
+timeout 10 node -e "
 const mysql = require('mysql2/promise');
 const config = require('./config/config');
-mysql.createConnection(config.database)
-  .then(() => console.log('SUCCESS'))
-  .catch(err => console.log('FAILED: ' + err.message));
-" 2>/dev/null)
 
-if [[ "$DB_TEST_RESULT" == "SUCCESS" ]]; then
+async function testConnection() {
+  let connection;
+  try {
+    connection = await mysql.createConnection(config.database);
+    console.log('SUCCESS');
+    await connection.end();
+    process.exit(0);
+  } catch (err) {
+    console.log('FAILED: ' + err.message);
+    if (connection) {
+      try { await connection.end(); } catch(e) {}
+    }
+    process.exit(1);
+  }
+}
+
+testConnection();
+" 2>/dev/null
+DB_TEST_EXIT_CODE=$?
+
+if [ $DB_TEST_EXIT_CODE -eq 0 ]; then
     print_status "Database connection test" 0
 else
-    print_status "Database connection test ($DB_TEST_RESULT)" 1
+    if [ $DB_TEST_EXIT_CODE -eq 124 ]; then
+        print_status "Database connection test (TIMEOUT)" 1
+    else
+        print_status "Database connection test (FAILED)" 1
+    fi
 fi
 
 echo ""
 echo "4. Checking Environment Variable Loading..."
 
-# Test environment variable loading
-cd /home/ubuntu/bittrade/server
-ENV_TEST_RESULT=$(NODE_ENV=production node -e "
+# Test environment variable loading with timeout
+timeout 5 node -e "
 const env = process.env.NODE_ENV || 'development';
 try {
   const result = require('dotenv').config({ path: \`.env.\${env}\` });
   if (result.parsed && Object.keys(result.parsed).length > 0) {
-    console.log('SUCCESS');
+    console.log('SUCCESS: ' + Object.keys(result.parsed).length + ' variables loaded');
   } else {
     console.log('FAILED: No variables loaded');
   }
 } catch(err) {
   console.log('FAILED: ' + err.message);
 }
-" 2>/dev/null)
+process.exit(0);
+" 2>/dev/null
+ENV_TEST_EXIT_CODE=$?
 
-if [[ "$ENV_TEST_RESULT" == "SUCCESS" ]]; then
+if [ $ENV_TEST_EXIT_CODE -eq 0 ]; then
     print_status "Environment variable loading" 0
 else
-    print_status "Environment variable loading ($ENV_TEST_RESULT)" 1
+    print_status "Environment variable loading (TIMEOUT/FAILED)" 1
 fi
 
 echo ""

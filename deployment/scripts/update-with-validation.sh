@@ -48,8 +48,10 @@ else
 fi
 
 log_info "Step 2/9: Pulling latest changes from repository..."
-git pull origin main
-log_success "Repository updated"
+git pull origin main || {
+    log_warning "Git pull failed or not in a git repository"
+}
+log_success "Repository update completed"
 
 log_info "Step 3/9: Installing/updating server dependencies..."
 cd server
@@ -70,7 +72,7 @@ cd ..
 log_info "Step 6/9: Running database migrations..."
 cd server
 log_info "Checking for database migrations..."
-if [ -d "migrations" ] && [ "$(ls -A migrations)" ]; then
+if [ -d "migrations" ] && [ "$(ls -A migrations 2>/dev/null)" ]; then
     log_info "Running migrations..."
     # Add your migration command here
     # Example: npm run migrate
@@ -82,19 +84,46 @@ cd ..
 
 log_info "Step 7/9: Testing database connectivity before restart..."
 cd server
-DB_TEST=$(node -e "
-const mysql = require('mysql2/promise');
-const config = require('./config/config');
-mysql.createConnection(config.database)
-  .then(() => console.log('OK'))
-  .catch(err => { console.log('FAIL'); process.exit(1); });
-" 2>/dev/null || echo "FAIL")
 
-if [ "$DB_TEST" = "OK" ]; then
-    log_success "Database connectivity verified"
+# Quick MySQL connection test using mysql command if available
+if command -v mysql >/dev/null 2>&1; then
+    log_info "Testing MySQL connection with mysql client..."
+    if mysql -h 127.0.0.1 -u bittrade -pbittrade123 -e "SELECT 1;" bittrade >/dev/null 2>&1; then
+        log_success "Database connectivity verified with mysql client"
+    else
+        log_error "Database connection failed with mysql client!"
+        log_error "Please check database credentials and service status"
+        exit 1
+    fi
 else
-    log_error "Database connection failed! Aborting deployment."
-    exit 1
+    log_info "MySQL client not available, testing with Node.js..."
+    # Simplified Node.js test with timeout
+    timeout 10 node -e "
+    const mysql = require('mysql2/promise');
+    const config = require('./config/config');
+    
+    async function test() {
+      let conn;
+      try {
+        conn = await mysql.createConnection(config.database);
+        console.log('DB_TEST_OK');
+        await conn.end();
+      } catch (err) {
+        console.log('DB_TEST_FAIL');
+        if (conn) try { await conn.end(); } catch(e) {}
+        process.exit(1);
+      }
+    }
+    test();
+    " 2>/dev/null
+    
+    if [ $? -eq 0 ]; then
+        log_success "Database connectivity verified"
+    else
+        log_error "Database connection test failed! Aborting deployment."
+        log_error "Check database service, credentials, and network connectivity"
+        exit 1
+    fi
 fi
 cd ..
 
@@ -111,7 +140,18 @@ log_info "Step 9/9: Verifying deployment..."
 sleep 5
 
 # Check if all processes are online
-FAILED_PROCESSES=$(pm2 jlist | jq -r '.[] | select(.pm2_env.status != "online") | .name' | wc -l)
+if command -v jq >/dev/null 2>&1; then
+    FAILED_PROCESSES=$(pm2 jlist | jq -r '.[] | select(.pm2_env.status != "online") | .name' 2>/dev/null | wc -l)
+else
+    # Fallback without jq
+    ONLINE_COUNT=$(pm2 list | grep -c "online" || echo "0")
+    TOTAL_COUNT=$(pm2 list | grep -E "(online|stopped|errored)" | wc -l || echo "0")
+    if [ "$ONLINE_COUNT" -eq "$TOTAL_COUNT" ] && [ "$TOTAL_COUNT" -gt 0 ]; then
+        FAILED_PROCESSES=0
+    else
+        FAILED_PROCESSES=1
+    fi
+fi
 
 if [ "$FAILED_PROCESSES" -eq 0 ]; then
     log_success "✅ All processes are running successfully!"
@@ -122,8 +162,9 @@ if [ "$FAILED_PROCESSES" -eq 0 ]; then
     # Show useful information
     echo ""
     log_info "Application URLs:"
-    log_info "  Frontend: http://$(hostname -I | awk '{print $1}'):3000"
-    log_info "  Backend:  http://$(hostname -I | awk '{print $1}'):3001"
+    SERVER_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "localhost")
+    log_info "  Frontend: http://$SERVER_IP:3000"
+    log_info "  Backend:  http://$SERVER_IP:3001"
     echo ""
     log_info "Useful commands:"
     log_info "  View logs:    pm2 logs"

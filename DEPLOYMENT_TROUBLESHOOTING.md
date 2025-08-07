@@ -224,3 +224,62 @@ pm2 start ecosystem.config.js
 ---
 
 *This document was created after resolving a critical production deployment issue on August 7, 2025. Keep it updated as new issues are discovered and resolved.*
+
+## Issue #4: Validation Scripts Hanging During Database Tests
+
+### Problem Description
+- **Symptom**: Validation or deployment scripts get stuck at "Testing Database Connection..."
+- **Cause**: Node.js database connection tests not properly closing connections or handling timeouts
+- **Impact**: Deployment process hangs indefinitely
+
+### Root Cause Analysis
+1. MySQL connection objects not being properly closed after testing
+2. No timeout mechanism for database connection attempts
+3. Unhandled promise rejections causing process to hang
+
+### Solution Implemented
+```javascript
+// BAD: Can hang indefinitely
+const connection = await mysql.createConnection(config);
+console.log('Connected');
+
+// GOOD: Proper cleanup and timeout
+async function testConnection() {
+  let connection;
+  try {
+    connection = await mysql.createConnection(config.database);
+    console.log('SUCCESS');
+    await connection.end(); // Always close connection
+    process.exit(0);
+  } catch (err) {
+    console.log('FAILED: ' + err.message);
+    if (connection) {
+      try { await connection.end(); } catch(e) {}
+    }
+    process.exit(1);
+  }
+}
+
+// Add timeout to prevent hanging
+setTimeout(() => {
+  console.log('TIMEOUT');
+  process.exit(1);
+}, 5000);
+```
+
+### Prevention Guidelines
+1. **Always close database connections** in test scripts
+2. **Use timeout mechanisms** for all external service tests
+3. **Handle both success and error cases** explicitly
+4. **Use `process.exit()`** to ensure scripts terminate properly
+5. **Test scripts independently** before including in deployment pipelines
+
+### Alternative Testing Methods
+```bash
+# Using mysql client (faster and more reliable for connection testing)
+mysql -h 127.0.0.1 -u bittrade -pbittrade123 -e "SELECT 1;" bittrade
+
+# Using timeout with Node.js tests
+timeout 10 node quick-db-test.js
+```
+
