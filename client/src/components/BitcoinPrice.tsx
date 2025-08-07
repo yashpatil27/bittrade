@@ -227,7 +227,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
       
       {/* Mock Chart */}
       <div 
-        className="mb-3 h-24 cursor-pointer hover:bg-gray-800/20 transition-colors duration-200 relative overflow-hidden"
+        className="mb-3 h-28 cursor-pointer hover:bg-gray-800/20 transition-colors duration-200 relative overflow-hidden"
         onClick={onChartClick}
       >
         {/* Mock chart visualization */}
@@ -239,15 +239,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
             
             return (
               <>
-                {/* Gradient fill under the line */}
-                <defs>
-                  <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ffd4d4" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#ffd4d4" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
-                
-                
+                {/* Actual line path if available */}               
                 {linePath && (
                   <path
                     fill="none"
