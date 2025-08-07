@@ -54,7 +54,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   const formatTimeUntilNext = (nextExecutionAt: string, planStatus: string): string => {
     // If plan is completed, there are no more executions
     if (planStatus === 'COMPLETED') {
-      return 'No more executions';
+      return 'None';
     }
     
     const now = new Date();
