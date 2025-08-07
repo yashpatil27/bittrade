@@ -14,7 +14,7 @@ const DCA: React.FC = () => {
   
   // Use centralized contexts
   const { balanceData } = useBalance();
-  const { hasActivePlans, refetchUserDCAPlans } = useDCAPlans();
+  const { hasAnyPlans, refetchUserDCAPlans } = useDCAPlans();
 
   const handleStartDCA = () => {
     setIsDCAModalOpen(true);
@@ -69,11 +69,11 @@ const DCA: React.FC = () => {
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
       {/* Main Content */}
-        {hasActivePlans ? (
+        {hasAnyPlans ? (
           <div className="px-4 py-3 space-y-3">
             {/* Plan Management Interface */}
             <DCAPlans
-              title="Active DCA Plans"
+              title="DCA Plans"
               onAddPlan={handleStartDCA}
               onPlanClick={handlePlanClick}
               wrapInCard={true}

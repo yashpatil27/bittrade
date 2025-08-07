@@ -41,6 +41,7 @@ interface DCAPlansContextType {
   
   // Computed values
   hasActivePlans: boolean;
+  hasAnyPlans: boolean;
   totalActivePlans: number;
 }
 
@@ -182,6 +183,7 @@ export const DCAPlansProvider: React.FC<DCAPlansProviderProps> = ({ children }) 
 
   // Computed values
   const hasActivePlans = userDCAPlans ? userDCAPlans.plans.length > 0 : false;
+  const hasAnyPlans = userDCAPlans ? userDCAPlans.total_plans > 0 : false;
   const totalActivePlans = userDCAPlans ? userDCAPlans.active_plans : 0;
 
   const value: DCAPlansContextType = {
@@ -201,6 +203,7 @@ export const DCAPlansProvider: React.FC<DCAPlansProviderProps> = ({ children }) 
     
     // Computed values
     hasActivePlans,
+    hasAnyPlans,
     totalActivePlans,
   };
 
