@@ -154,13 +154,6 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
     return path;
   };
 
-  // Generate fill path for gradient area
-  const generateFillPath = (linePath: string, height: number) => {
-    if (!linePath) return '';
-    return `${linePath} L300,${height} L0,${height} Z`;
-  };
-
-
 
   // Show loading state when no data is available
   if (pricesLoading || !hasValidPrices) {
@@ -243,7 +236,6 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
           {/* Real 1-day chart data with smooth curves */}
           {(() => {
             const linePath = generateSmoothPath(chartPoints, 300, 100);
-            const fillPath = generateFillPath(linePath, 100);
             
             return (
               <>
