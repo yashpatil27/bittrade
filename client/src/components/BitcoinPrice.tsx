@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-// Removed unused imports: TrendingUp, TrendingDown
+import { Bitcoin } from 'lucide-react';
 import { usePrice } from '../context/PriceContext';
 import { AnimateINR } from './AnimateNumberFlow';
 
@@ -47,7 +47,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
     if (points.length < 2) return '';
 
     // Sample points for performance (take every nth point based on data length)
-    const maxPoints = 5;
+    const maxPoints = 24;
     const step = Math.max(1, Math.floor(points.length / maxPoints));
     const sampledPoints = points.filter((_, index) => index % step === 0);
     
@@ -167,7 +167,9 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-medium text-white">Bitcoin Price</h3>
+          <div className="p-2 bg-gray-800 rounded-lg">
+            <Bitcoin className="w-5 h-5 text-white" />
+          </div>
           <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
@@ -177,7 +179,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
         </div>
         
         {/* Mock Chart Loading State */}
-        <div className="mb-4 h-32 bg-gray-800 rounded-lg animate-pulse">
+        <div className="mb-3 h-24 bg-gray-800 rounded-lg animate-pulse">
           <div className="w-full h-full flex items-center justify-center">
             <span className="text-xs text-gray-500">Loading chart...</span>
           </div>
@@ -215,24 +217,28 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
   return (
     <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-medium text-white">Bitcoin Price</h3>
-
+        <div className="p-2 bg-gray-800 rounded-lg">
+          <Bitcoin className="w-5 h-5 text-white" />
+        </div>
+        <div className="text-right">
+          <div className="text-white text-sm font-semibold">
+            ${btcUsdPrice?.toLocaleString() || '---'}
+          </div>
+          <div className={`text-xs font-medium ${
+            isPositive ? 'text-green-400' : 'text-red-400'
+          }`}>
+            {isPositive ? '+' : ''}{dailyChangePercent.toFixed(2)}%
+          </div>
+        </div>
       </div>
       
       {/* Mock Chart */}
       <div 
-        className="mb-4 h-32 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750 transition-colors duration-200 relative overflow-hidden"
+        className="mb-3 h-24 cursor-pointer hover:bg-gray-800/20 transition-colors duration-200 relative overflow-hidden"
         onClick={onChartClick}
       >
         {/* Mock chart visualization */}
         <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
-          {/* Grid lines */}
-          <defs>
-            <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#374151" strokeWidth="0.5" opacity="0.3"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#grid)" />
           
           {/* Real 1-day chart data with smooth curves */}
           {(() => {
@@ -249,12 +255,6 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
                   </linearGradient>
                 </defs>
                 
-                {fillPath && (
-                  <path
-                    fill="url(#chartGradient)"
-                    d={fillPath}
-                  />
-                )}
                 
                 {linePath && (
                   <path
@@ -267,40 +267,17 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
                 
                 {/* Fallback to mock data if no real data */}
                 {!linePath && (
-                  <>
-                    <path
-                      fill="none"
-                      stroke="#ffd4d4"
-                      strokeWidth="2"
-                      d="M0,65 C8,63 15,58 25,55 C35,52 42,68 52,72 C62,76 68,45 78,42 C88,39 95,75 105,78 C115,81 122,35 132,32 C142,29 148,85 158,88 C168,91 175,25 185,22 C195,19 202,80 212,83 C222,86 228,40 238,37 C248,34 255,70 265,73 C275,76 285,28 300,25"
-                    />
-                    <path
-                      fill="url(#chartGradient)"
-                      d="M0,100 L0,65 C8,63 15,58 25,55 C35,52 42,68 52,72 C62,76 68,45 78,42 C88,39 95,75 105,78 C115,81 122,35 132,32 C142,29 148,85 158,88 C168,91 175,25 185,22 C195,19 202,80 212,83 C222,86 228,40 238,37 C248,34 255,70 265,73 C275,76 285,28 300,25 L300,100 Z"
-                    />
-                  </>
+                  <path
+                    fill="none"
+                    stroke="#ffd4d4"
+                    strokeWidth="2"
+                    d="M0,65 C8,63 15,58 25,55 C35,52 42,68 52,72 C62,76 68,45 78,42 C88,39 95,75 105,78 C115,81 122,35 132,32 C142,29 148,85 158,88 C168,91 175,25 185,22 C195,19 202,80 212,83 C222,86 228,40 238,37 C248,34 255,70 265,73 C275,76 285,28 300,25"
+                  />
                 )}
               </>
             );
           })()}
         </svg>
-        
-        {/* BTC Price and Change Overlay */}
-        <div className="absolute top-2 left-2 text-left">
-          <div className="text-white text-sm font-semibold">
-            ${btcUsdPrice?.toLocaleString() || '---'}
-          </div>
-          <div className={`text-xs font-medium ${
-            isPositive ? 'text-green-400' : 'text-red-400'
-          }`}>
-            {isPositive ? '+' : ''}{dailyChangePercent.toFixed(2)}%
-          </div>
-        </div>
-        
-        {/* Chart overlay with click indication */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-black/20">
-          <span className="text-white text-xs bg-gray-900/80 px-2 py-1 rounded">Click to view full chart</span>
-        </div>
       </div>
       
       <div className="grid grid-cols-2 gap-4">

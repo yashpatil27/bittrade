@@ -65,15 +65,15 @@ const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
         {/* Hero Amount */}
         <HeroAmount />
         
-        {/* Balance */}
-        <Balance />
-        
         {/* Bitcoin Price */}
         <BitcoinPrice 
           onBuyClick={handleBuyClick}
           onSellClick={handleSellClick}
           onChartClick={() => setChartModalOpen(true)}
         />
+        
+        {/* Balance */}
+        <Balance />
         
 {/* Pending Orders - Only shown when there are pending limit orders */}
         <PendingOrdersList 
