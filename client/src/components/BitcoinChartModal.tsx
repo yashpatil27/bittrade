@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
 import BitcoinChart from './BitcoinChart';
 import { useBalance } from '../context/BalanceContext';
-import { usePrice } from '../context/PriceContext';
 import { useTransactions } from '../context/TransactionContext';
 import { Transaction } from '../types';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
@@ -30,12 +29,11 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const [screenHeight] = useState(window.innerHeight);
+  const [screenHeight, setScreenHeight] = useState(window.innerHeight);
   const modalRef = useRef<HTMLDivElement>(null);
   
-  // Use contexts for balance, price, and transaction data
+  // Use contexts for balance and transaction data
   const { balanceData } = useBalance();
-  // const { buyRateInr, sellRateInr } = usePrice(); // Future use for display
   const { userTransactions, userTransactionsLoading: portfolioLoading } = useTransactions();
   
   // Calculate portfolio metrics from balance data
@@ -83,6 +81,21 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
       setIsAnimating(false);
     }
   }, [isOpen]);
+
+  // Update screen height on resize and orientation change
+  useEffect(() => {
+    const updateScreenHeight = () => {
+      setScreenHeight(window.innerHeight);
+    };
+
+    window.addEventListener('resize', updateScreenHeight);
+    window.addEventListener('orientationchange', updateScreenHeight);
+    
+    return () => {
+      window.removeEventListener('resize', updateScreenHeight);
+      window.removeEventListener('orientationchange', updateScreenHeight);
+    };
+  }, []);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -189,8 +202,9 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="absolute inset-x-0 bottom-0 top-0 bg-black max-w-md mx-auto"
+        className="absolute inset-x-0 bottom-0 top-0 bg-black w-full max-w-md mx-auto safe-area-inset"
         style={{
+          paddingTop: 'max(20px, env(safe-area-inset-top, 20px))',
           transform: `translateY(${isClosing ? '100%' : isAnimating ? `${dragOffset}px` : '100%'})`,
           transition: isDragging ? 'none' : (isAnimating || isClosing) ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none',
           touchAction: 'none'
@@ -200,7 +214,7 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-6 pt-4 pb-6">
+        <div className="px-4 sm:px-6 pb-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
@@ -216,10 +230,10 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col h-full px-6">
-          <div className="flex-1">
+        <div className="flex flex-col flex-1 px-4 sm:px-6 overflow-y-auto" style={{ minHeight: 0 }}>
+          <div className="flex-1 min-h-0">
             {/* Bitcoin Chart Container */}
-            <div className="h-96 mb-4">
+            <div className="h-64 sm:h-80 md:h-96 mb-4 min-h-0">
               <BitcoinChart className="h-full" />
             </div>
 
@@ -270,7 +284,7 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
             )}
 
             {/* Bottom spacing for safe area */}
-            <div className="pb-8"></div>
+            <div className="pb-safe pb-8"></div>
           </div>
         </div>
       </div>

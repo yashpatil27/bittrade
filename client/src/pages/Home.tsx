@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import PendingOrdersList from '../components/PendingOrdersList';
-import MarketRate from '../components/MarketRate';
+import BitcoinPrice from '../components/BitcoinPrice';
 import Balance from '../components/Balance';
 import TradingModal from '../components/TradingModal';
 import BitcoinChartModal from '../components/BitcoinChartModal';
@@ -64,8 +64,8 @@ const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
         {/* Balance */}
         <Balance />
         
-        {/* Market Rate */}
-        <MarketRate 
+        {/* Bitcoin Price */}
+        <BitcoinPrice 
           onBuyClick={handleBuyClick}
           onSellClick={handleSellClick}
           onChartClick={() => setChartModalOpen(true)}

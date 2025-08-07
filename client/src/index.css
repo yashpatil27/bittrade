@@ -56,6 +56,30 @@ html, body {
   width: 100%;
 }
 
+/* Safe area support for notched devices */
+@supports(padding: max(0px)) {
+  .safe-area-inset {
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+  
+  .pt-safe {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+  
+  .pb-safe {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+  
+  .pl-safe {
+    padding-left: max(0px, env(safe-area-inset-left));
+  }
+  
+  .pr-safe {
+    padding-right: max(0px, env(safe-area-inset-right));
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 0px;

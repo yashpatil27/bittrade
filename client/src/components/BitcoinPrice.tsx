@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { usePrice } from '../context/PriceContext';
 import { AnimateINR } from './AnimateNumberFlow';
 
-interface MarketRateProps {
+interface BitcoinPriceProps {
   className?: string;
   onBuyClick?: () => void;
   onSellClick?: () => void;
@@ -12,7 +12,7 @@ interface MarketRateProps {
 }
 
 
-const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate, onChartClick }) => {
+const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate, onChartClick }) => {
   // Use centralized price context
   const { buyRateInr, sellRateInr, pricesLoading, hasValidPrices, chartData, fetchChartData, btcUsdPrice } = usePrice();
 
@@ -167,7 +167,7 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-base font-medium text-white">Market Rates</h3>
+          <h3 className="text-base font-medium text-white">Bitcoin Price</h3>
           <div className="flex items-center space-x-2">
             <div className="flex items-center space-x-1">
               <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
@@ -215,7 +215,8 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
   return (
     <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-medium text-white">Market Rates</h3>
+        <h3 className="text-base font-medium text-white">Bitcoin Price</h3>
+
       </div>
       
       {/* Mock Chart */}
@@ -343,4 +344,4 @@ const MarketRate: React.FC<MarketRateProps> = ({ className = "", onBuyClick, onS
   );
 };
 
-export default MarketRate;
+export default BitcoinPrice;

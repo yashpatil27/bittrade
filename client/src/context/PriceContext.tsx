@@ -10,7 +10,7 @@ interface PriceUpdateData {
   timestamp: string;
 }
 
-// Market rates API response
+// Bitcoin price API response
 interface MarketRatesResponse {
   btc_usd_price: number;
   buy_rate_inr: number;
@@ -93,7 +93,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   const [chartData, setChartData] = useState<ChartDataCache>({});
   const [currentChartTimeframe, setCurrentChartTimeframe] = useState('90d');
 
-  // Fetch market rates from API
+  // Fetch bitcoin prices from API
   const fetchMarketRates = useCallback(async () => {
     setPricesLoading(true);
     setPricesError(null);
@@ -112,9 +112,9 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
       setSellRateInr(data.sell_rate_inr);
       setLastUpdated(data.timestamp);
       
-      console.log('📊 PriceContext: Fetched market rates:', data);
+      console.log('📊 PriceContext: Fetched bitcoin prices:', data);
     } catch (err) {
-      console.error('❌ PriceContext: Failed to fetch market rates:', err);
+      console.error('❌ PriceContext: Failed to fetch bitcoin prices:', err);
       setPricesError(err instanceof Error ? err.message : 'Failed to fetch prices');
     } finally {
       setPricesLoading(false);

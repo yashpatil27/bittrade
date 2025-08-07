@@ -1,6 +1,6 @@
 import React from 'react';
 import Balance from '../../components/Balance';
-import MarketRate from '../../components/MarketRate';
+import BitcoinPrice from '../../components/BitcoinPrice';
 import BitcoinChart from '../../components/BitcoinChart';
 import AdminMetrics from '../../components/AdminMetrics';
 
@@ -15,8 +15,8 @@ const AdminHome: React.FC = () => {
           {/* Total Platform Balance */}
           <Balance showAllUsers={true} />
 
-          {/* Market Rates - Public data, no buy/sell functionality */}
-          <MarketRate />
+          {/* Bitcoin Price - Public data, no buy/sell functionality */}
+          <BitcoinPrice />
 
           {/* Platform Metrics */}
           <AdminMetrics />

@@ -42,7 +42,7 @@ const Balance: React.FC<BalanceProps> = ({ className = '', showAllUsers = false 
   const balanceData = showAllUsers ? adminBalanceData : userBalanceData;
 
   // Calculate asset allocation percentages using real-time data
-  // Match MarketRate component pattern - no fallback calculation, just use data or 0
+  // Match BitcoinPrice component pattern - no fallback calculation, just use data or 0
   const inrValue = showAllUsers 
     ? Number((balanceData as AdminTotalBalanceData)?.total_available_inr || 0)
     : Number((balanceData as BalanceData)?.available_inr || 0);
