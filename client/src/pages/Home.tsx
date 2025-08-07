@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import PendingOrdersList from '../components/PendingOrdersList';
-import BitcoinChart from '../components/BitcoinChart';
 import MarketRate from '../components/MarketRate';
 import Balance from '../components/Balance';
 import TradingModal from '../components/TradingModal';
+import BitcoinChartModal from '../components/BitcoinChartModal';
 import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
 
@@ -18,7 +18,8 @@ interface HomeProps {
 const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   const navigate = useNavigate();
   const [modalOpen, setModalOpen] = React.useState(false);
-  const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
+const [modalType, setModalType] = React.useState<'buy' | 'sell'>('buy');
+  const [chartModalOpen, setChartModalOpen] = React.useState(false);
   
   // Use centralized contexts
   const { balanceData } = useBalance();
@@ -58,9 +59,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
         {/* Main Content */}
-      <div className="px-4 py-3 space-y-3">
-        {/* Bitcoin Price Chart */}
-        <BitcoinChart className="bg-black" />
+<div className="px-4 py-3 space-y-3">
         
         {/* Balance */}
         <Balance />
@@ -69,6 +68,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
         <MarketRate 
           onBuyClick={handleBuyClick}
           onSellClick={handleSellClick}
+          onChartClick={() => setChartModalOpen(true)}
         />
         
 {/* Pending Orders - Only shown when there are pending limit orders */}
@@ -88,6 +88,9 @@ onViewAllClick={() => navigate('/history')}
         </Card>
 
 {/* Trading Modal */}
+<BitcoinChartModal isOpen={chartModalOpen} onClose={() => setChartModalOpen(false)} />
+
+        {/* Trading Modal */}
         <TradingModal
           isOpen={modalOpen}
           onClose={handleModalClose}
