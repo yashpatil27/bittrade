@@ -83,7 +83,7 @@ const DepositCashModal: React.FC<DepositCashModalProps> = ({
     try {
       // Call API based on mode
       const endpoint = isWithdrawMode ? 'withdraw-cash' : 'deposit-cash';
-      const response = await fetch(`${getApiUrl()}/admin/users/${user.id}/${endpoint}`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/users/${user.id}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

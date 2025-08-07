@@ -69,7 +69,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
 
     try {
       const response = await fetch(
-        `${getApiUrl()}/transactions?page=${requestedPage}&limit=${limit}`,
+        `${getApiUrl()}/api/transactions?page=${requestedPage}&limit=${limit}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -117,7 +117,7 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
     setAdminTransactionsError(null);
 
     try {
-      const response = await fetch(`${getApiUrl()}/admin/transactions`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/transactions`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

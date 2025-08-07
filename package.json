@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"bgBlue.bold,bgMagenta.bold\" \"npm run server:dev\" \"npm run client:dev\"",
     "server:dev": "cd server && npm run dev",
-    "client:dev": "cd client && npm start",
+    "client:dev": "cd client && npm run start:host",
+    "dev:local": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"bgBlue.bold,bgMagenta.bold\" \"npm run server:dev\" \"cd client && npm start\"",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install",
     "build": "cd client && npm run build",
     "start": "cd server && npm start",

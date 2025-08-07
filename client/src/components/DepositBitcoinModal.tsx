@@ -84,7 +84,7 @@ const DepositBitcoinModal: React.FC<DepositBitcoinModalProps> = ({
     try {
       // Call API based on mode
       const endpoint = isWithdrawMode ? 'withdraw-bitcoin' : 'deposit-bitcoin';
-      const response = await fetch(`${getApiUrl()}/admin/users/${user.id}/${endpoint}`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/users/${user.id}/${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

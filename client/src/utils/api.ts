@@ -34,25 +34,18 @@ export const API_CONFIG = {
 
 // Helper function to get API URL with environment detection
 export const getApiUrl = () => {
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    
-    // If we're on the production domain, use HTTPS
-    if (hostname === 'bittrade.co.in' || hostname === 'www.bittrade.co.in') {
-      return 'https://bittrade.co.in/api';
+  // In development, check if we're accessing via IP (mobile testing)
+  if (process.env.NODE_ENV === 'development') {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      // If accessing via IP address (mobile), use that IP for API calls
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1' && /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        return `http://${hostname}:3001`;
+      }
     }
-    
-    // If we're on mobile (not localhost), use the IP with port 3001
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `http://${hostname}:3001/api`;
-    }
+    return API_BASE_URL;
   }
   
-  return API_BASE_URL;
-};
-
-// Helper function to get WebSocket URL with environment detection
-export const getWebSocketUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     
@@ -61,7 +54,38 @@ export const getWebSocketUrl = () => {
       return 'https://bittrade.co.in';
     }
     
-    // If we're on mobile (not localhost), use the IP with port 3001
+    // For any other non-localhost hostname in production, use the IP with port 3001
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `http://${hostname}:3001`;
+    }
+  }
+  
+  return API_BASE_URL;
+};
+
+// Helper function to get WebSocket URL with environment detection
+export const getWebSocketUrl = () => {
+  // In development, check if we're accessing via IP (mobile testing)
+  if (process.env.NODE_ENV === 'development') {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      // If accessing via IP address (mobile), use that IP for WebSocket calls
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1' && /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+        return `http://${hostname}:3001`;
+      }
+    }
+    return WS_BASE_URL;
+  }
+  
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // If we're on the production domain, use HTTPS
+    if (hostname === 'bittrade.co.in' || hostname === 'www.bittrade.co.in') {
+      return 'https://bittrade.co.in';
+    }
+    
+    // For any other non-localhost hostname in production, use the IP with port 3001
     if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
       return `http://${hostname}:3001`;
     }
@@ -89,7 +113,7 @@ export const createDCAPlan = async (planData: {
 
   const apiUrl = getApiUrl();
   
-  const response = await fetch(`${apiUrl}/dca-plans`, {
+  const response = await fetch(`${apiUrl}/api/dca-plans`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -113,7 +137,7 @@ export const getDCAPlans = async () => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/dca-plans`, {
+  const response = await fetch(`${apiUrl}/api/dca-plans`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -136,7 +160,7 @@ export const updateDCAPlanStatus = async (planId: number, status: 'ACTIVE' | 'PA
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/dca-plans/${planId}/status`, {
+  const response = await fetch(`${apiUrl}/api/dca-plans/${planId}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -161,7 +185,7 @@ export const deleteDCAPlan = async (planId: number) => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/dca-plans/${planId}`, {
+  const response = await fetch(`${apiUrl}/api/dca-plans/${planId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -184,7 +208,7 @@ export const cancelLimitOrder = async (transactionId: string) => {
   }
 
   const apiUrl = getApiUrl();
-  const response = await fetch(`${apiUrl}/transactions/${transactionId}/cancel`, {
+  const response = await fetch(`${apiUrl}/api/transactions/${transactionId}/cancel`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`,

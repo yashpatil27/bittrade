@@ -39,6 +39,8 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
       setPassword('');
       setConfirmPassword('');
       setCurrentPassword('');
+      setError('');
+      setSuccess(false);
       setIsAnimating(false);
       setTimeout(() => {
         setIsAnimating(true);
@@ -106,13 +108,13 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
     try {
       let response;
       if (updateType === 'name') {
-        response = await fetch(`${apiUrl}/user/profile/name`, {
+        response = await fetch(`${apiUrl}/api/user/profile/name`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ name, currentPassword })
         });
       } else if (updateType === 'email') {
-        response = await fetch(`${apiUrl}/user/profile/email`, {
+        response = await fetch(`${apiUrl}/api/user/profile/email`, {
           method: 'PUT',
           headers,
           body: JSON.stringify({ email, currentPassword })
@@ -121,16 +123,20 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
         if (password !== confirmPassword) {
           throw new Error("Passwords do not match.");
         }
-        response = await fetch(`${apiUrl}/user/profile/password`, {
+        response = await fetch(`${apiUrl}/api/user/profile/password`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify({ password, currentPassword })
+          body: JSON.stringify({ 
+            currentPassword, 
+            newPassword: password, 
+            confirmPassword 
+          })
         });
       }
 
       if (!response?.ok) {
         const errorData = await response?.json();
-        throw new Error(errorData?.message || 'Failed to update profile.');
+        throw new Error(errorData?.error || errorData?.message || 'Failed to update profile.');
       }
 
       setSuccess(true);
@@ -292,6 +298,20 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
             {/* Password Update Form */}
             {updateType === 'password' && (
               <>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
+                    <Lock className="w-4 h-4 text-brand" />
+                    <span>Current Password</span>
+                  </label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                    placeholder="Enter your current password"
+                    required
+                  />
+                </div>
                 <div className="space-y-2">
                   <label className="flex items-center space-x-3 text-white text-sm font-medium">
                     <Lock className="w-4 h-4 text-brand" />

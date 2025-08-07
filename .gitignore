@@ -100,8 +100,8 @@ logs/
 server/logs/
 client/logs/
 
-# Production build outputs (uncomment to protect)
-# client/build/
+# Production build outputs - built automatically by update.sh
+client/build/
 
 # Production deployment scripts
 deploy.sh
@@ -114,5 +114,3 @@ nginx.conf
 # PM2 runtime files
 .pm2/
 ecosystem.config.production.js
-
-ecosystem.config.js

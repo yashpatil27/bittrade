@@ -83,7 +83,7 @@ const AdminUsers: React.FC = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await fetch(`${getApiUrl()}/admin/users/${selectedUser.id}`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/users/${selectedUser.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

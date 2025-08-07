@@ -58,7 +58,7 @@ export const BalanceProvider: React.FC<BalanceProviderProps> = ({ children }) =>
 
     try {
       setError(null);
-      const response = await fetch(`${getApiUrl()}/balance`, {
+      const response = await fetch(`${getApiUrl()}/api/balance`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -90,7 +90,7 @@ export const BalanceProvider: React.FC<BalanceProviderProps> = ({ children }) =>
 
     try {
       setError(null);
-      const response = await fetch(`${getApiUrl()}/admin/total-balance`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/total-balance`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

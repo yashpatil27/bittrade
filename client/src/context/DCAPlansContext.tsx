@@ -75,7 +75,7 @@ export const DCAPlansProvider: React.FC<DCAPlansProviderProps> = ({ children }) 
     setUserDCAPlansError(null);
 
     try {
-      const response = await fetch(`${getApiUrl()}/dca-plans`, {
+      const response = await fetch(`${getApiUrl()}/api/dca-plans`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -115,7 +115,7 @@ export const DCAPlansProvider: React.FC<DCAPlansProviderProps> = ({ children }) 
     setAdminDCAPlansError(null);
 
     try {
-      const response = await fetch(`${getApiUrl()}/admin/dca-plans`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/dca-plans`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

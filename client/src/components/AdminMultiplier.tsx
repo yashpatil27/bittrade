@@ -41,7 +41,7 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
 
     try {
       setLoading(true);
-      const response = await fetch(`${getApiUrl()}/admin/settings`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/settings`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -98,7 +98,7 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
       setSaving(true);
       setError(null);
 
-      const response = await fetch(`${getApiUrl()}/admin/settings`, {
+      const response = await fetch(`${getApiUrl()}/api/admin/settings`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
