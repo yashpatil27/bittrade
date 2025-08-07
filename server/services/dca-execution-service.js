@@ -385,8 +385,38 @@ class DCAExecutionService {
       
       const currentRemainingExecutions = currentPlanRows[0].remaining_executions;
       
-      // If this was the final execution, mark as completed
+      // For unlimited plans (remaining_executions IS NULL), just update next execution time
+      if (currentRemainingExecutions === null) {
+        let nextExecutionSQL;
+        switch (plan.frequency) {
+          case 'HOURLY':
+            nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
+            break;
+          case 'DAILY':
+            nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 DAY)';
+            break;
+          case 'WEEKLY':
+            nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 WEEK)';
+            break;
+          case 'MONTHLY':
+            nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 MONTH)';
+            break;
+          default:
+            nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
+        }
+        
+        await this.db.execute(
+          `UPDATE active_plans SET next_execution_at = ${nextExecutionSQL} WHERE id = ?`,
+          [plan.id]
+        );
+        
+        console.log(`Next execution scheduled for unlimited plan ${plan.id}`);
+        return;
+      }
+      
+      // For limited plans, check if this was the final execution
       if (currentRemainingExecutions === 1) {
+        // This was the final execution, mark as completed
         await this.db.execute(
           `UPDATE active_plans SET 
              status = 'COMPLETED', 
@@ -400,7 +430,7 @@ class DCAExecutionService {
         return;
       }
       
-      // Otherwise, update next execution time
+      // Otherwise, decrement remaining executions and update next execution time
       let nextExecutionSQL;
       switch (plan.frequency) {
         case 'HOURLY':
@@ -419,24 +449,15 @@ class DCAExecutionService {
           nextExecutionSQL = 'DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 HOUR)';
       }
       
-      // For unlimited plans (remaining_executions IS NULL), don't decrement
-      // For limited plans, decrement remaining_executions
-      if (currentRemainingExecutions === null) {
-        await this.db.execute(
-          `UPDATE active_plans SET next_execution_at = ${nextExecutionSQL} WHERE id = ?`,
-          [plan.id]
-        );
-      } else {
-        await this.db.execute(
-          `UPDATE active_plans SET 
-             next_execution_at = ${nextExecutionSQL}, 
-             remaining_executions = remaining_executions - 1 
-           WHERE id = ?`,
-          [plan.id]
-        );
-      }
+      await this.db.execute(
+        `UPDATE active_plans SET 
+           next_execution_at = ${nextExecutionSQL}, 
+           remaining_executions = remaining_executions - 1 
+         WHERE id = ?`,
+        [plan.id]
+      );
       
-      console.log(`Next execution scheduled for plan ${plan.id}. Remaining: ${currentRemainingExecutions === null ? 'unlimited' : currentRemainingExecutions - 1}`);
+      console.log(`Next execution scheduled for plan ${plan.id}. Remaining: ${currentRemainingExecutions - 1}`);
       
     } catch (error) {
       console.error(`Error finalizing execution for plan ${plan.id}:`, error);
