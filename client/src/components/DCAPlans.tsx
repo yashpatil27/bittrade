@@ -261,9 +261,42 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
     );
   }
 
-  // Don't render anything if no plans exist
+  // Handle case where user has no plans to display
   if (!dcaPlans || !dcaPlans.plans || dcaPlans.plans.length === 0) {
-    return null;
+    // If this is the onboarding version (wrapInCard = false), return null to let parent handle it
+    if (!wrapInCard) {
+      return null;
+    }
+    
+    // If this is the management version (wrapInCard = true), show empty state with Add Plan button
+    const emptyContent = (
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center space-x-2">
+            <h3 className="text-base font-medium text-white">{title}</h3>
+          </div>
+          {onAddPlan && !showAllUsers && (
+            <button 
+              onClick={onAddPlan}
+              className="btn-strike-primary rounded-xl flex items-center space-x-2 px-4"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Plan</span>
+            </button>
+          )}
+        </div>
+        
+        <div className="text-center py-8">
+          <div className="w-12 h-12 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-3">
+            <Bitcoin className="w-6 h-6 text-brand" />
+          </div>
+          <h4 className="text-white font-medium mb-1">No active plans</h4>
+          <p className="text-gray-400 text-xs">Your completed plans are in the transaction history below</p>
+        </div>
+      </div>
+    );
+    
+    return wrapInCard ? <Card>{emptyContent}</Card> : emptyContent;
   }
 
   const content = (
