@@ -159,7 +159,9 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
   // Touch handlers for drag-to-close
   const handleTouchStart = (e: React.TouchEvent) => {
     const target = e.target as HTMLElement;
-    if (target.tagName === 'BUTTON' || target.closest('button')) {
+    
+    if (target.tagName === 'BUTTON' || 
+        target.closest('button')) {
       return;
     }
     
@@ -234,10 +236,10 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col flex-1 px-4 sm:px-6 overflow-y-auto" style={{ minHeight: 0 }}>
+        <div className="flex flex-col flex-1 px-4 sm:px-6" style={{ minHeight: 0 }}>
           <div className="flex-1 min-h-0">
             {/* Bitcoin Chart Container */}
-            <div className="h-64 sm:h-80 md:h-96 mb-4 min-h-0">
+            <div className="h-80 sm:h-96 md:h-[28rem] mb-4 min-h-0">
               <React.Suspense fallback={
                 <div className="h-full bg-black rounded-lg flex items-center justify-center">
                   <div className="text-center">

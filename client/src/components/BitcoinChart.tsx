@@ -89,9 +89,9 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
   // Only show loading state if we have no data at all
   if (loading && !hasData) {
     return (
-      <div className={`bg-black rounded-lg p-1 ${className}`}>
+      <div className={`bg-black rounded-lg p-1 flex flex-col h-full ${className}`}>
         {/* Header */}
-        <div className="mb-3">
+        <div className="flex-shrink-0 mb-3">
           <div className="text-center">
             {/* Main Price Display Skeleton */}
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -106,10 +106,12 @@ const BitcoinChart: React.FC<BitcoinChartProps> = ({ className = "" }) => {
         </div>
         
         {/* Chart */}
-        <div className="h-48 bg-gray-800 rounded-lg animate-pulse"></div>
+        <div className="flex-grow relative min-h-0">
+          <div className="absolute inset-0 bg-gray-800 rounded-lg animate-pulse"></div>
+        </div>
         
         {/* Tab Navigation */}
-        <div className="mt-2 flex justify-center">
+        <div className="flex-shrink-0 mt-2 flex justify-center">
           <div className="flex bg-gray-800 rounded-lg p-1 w-full max-w-md">
             {tabs.map((tab) => (
               <button
