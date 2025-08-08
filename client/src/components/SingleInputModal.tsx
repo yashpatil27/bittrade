@@ -28,6 +28,7 @@ interface SingleInputModalProps {
   onCurrencyChange?: (currency: 'inr' | 'btc') => void; // Currency change callback
   skipMaxValidation?: boolean; // Skip max value validation but still show max button
   showXIcon?: boolean; // Show X icon instead of ChevronLeft (default: false)
+  disableKeyboardHandling?: boolean; // Disable keyboard handling when other modals are on top
 }
 
 const SingleInputModal: React.FC<SingleInputModalProps> = ({
@@ -54,7 +55,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   onValueChange,
   onCurrencyChange,
   skipMaxValidation = false,
-  showXIcon = false
+  showXIcon = false,
+  disableKeyboardHandling = false
 }) => {
   const [value, setValue] = useState('');
   const [currentType, setCurrentType] = useState<'inr' | 'btc' | 'number'>(type);
@@ -132,7 +134,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 
   // Physical keyboard handling
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || disableKeyboardHandling) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Prevent default behavior for handled keys
@@ -182,7 +184,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, type, value, maxValue, isLoading]); // Functions are stable, dependency warning disabled
+  }, [isOpen, disableKeyboardHandling, type, value, maxValue, isLoading]); // Functions are stable, dependency warning disabled
 
   // Prevent body scroll when modal is open
   useEffect(() => {

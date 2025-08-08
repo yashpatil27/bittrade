@@ -1098,6 +1098,192 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
   }
 });
 
+// Send Bitcoin or INR to another user by email
+app.post('/api/send-transaction', authenticateToken, async (req, res) => {
+  const userId = req.user.id;
+  const { recipientEmail, amount, currency } = req.body;
+
+  // Validate input
+  if (!recipientEmail || !amount || !currency) {
+    return res.status(400).json({ error: 'Recipient email, amount, and currency are required' });
+  }
+
+  if (!['inr', 'btc'].includes(currency)) {
+    return res.status(400).json({ error: 'Invalid currency. Must be "inr" or "btc"' });
+  }
+
+  if (isNaN(amount) || parseFloat(amount) <= 0) {
+    return res.status(400).json({ error: 'Invalid amount. Must be greater than 0' });
+  }
+
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(recipientEmail)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+
+  try {
+    // Convert amount based on currency
+    const amountFloat = parseFloat(amount);
+    let btcAmount, inrAmount;
+    
+    if (currency === 'inr') {
+      inrAmount = Math.round(amountFloat);
+      btcAmount = 0;
+    } else {
+      // User specified BTC amount (frontend sends as BTC decimal, need to convert to satoshis)
+      btcAmount = Math.round(amountFloat * 100000000); // Convert BTC to satoshis
+      inrAmount = 0;
+    }
+
+    // Start database transaction
+    await db.beginTransaction();
+
+    try {
+      // Get sender user info and balance
+      const [senderRows] = await db.execute(
+        'SELECT id, name, email, available_inr, available_btc FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      if (senderRows.length === 0) {
+        throw new Error('Sender user not found');
+      }
+      
+      const sender = senderRows[0];
+      
+      // Find recipient by email
+      const [recipientRows] = await db.execute(
+        'SELECT id, name, email FROM users WHERE email = ?',
+        [recipientEmail.toLowerCase().trim()]
+      );
+      
+      if (recipientRows.length === 0) {
+        throw new Error('Recipient email not found. The recipient must have an account on BitTrade.');
+      }
+      
+      const recipient = recipientRows[0];
+      
+      // Prevent sending to self
+      if (sender.id === recipient.id) {
+        throw new Error('Cannot send funds to yourself');
+      }
+      
+      // Validate sender balance based on currency
+      if (currency === 'inr') {
+        if (sender.available_inr < inrAmount) {
+          throw new Error(`Insufficient INR balance. Required: ₹${inrAmount}, Available: ₹${sender.available_inr}`);
+        }
+        
+        // Execute INR transfer: deduct from sender, add to recipient
+        await db.execute(
+          'UPDATE users SET available_inr = available_inr - ? WHERE id = ?',
+          [inrAmount, userId]
+        );
+        
+        await db.execute(
+          'UPDATE users SET available_inr = available_inr + ? WHERE id = ?',
+          [inrAmount, recipient.id]
+        );
+        
+      } else { // btc
+        if (sender.available_btc < btcAmount) {
+          throw new Error(`Insufficient BTC balance. Required: ${btcAmount} satoshis, Available: ${sender.available_btc} satoshis`);
+        }
+        
+        // Execute BTC transfer: deduct from sender, add to recipient
+        await db.execute(
+          'UPDATE users SET available_btc = available_btc - ? WHERE id = ?',
+          [btcAmount, userId]
+        );
+        
+        await db.execute(
+          'UPDATE users SET available_btc = available_btc + ? WHERE id = ?',
+          [btcAmount, recipient.id]
+        );
+      }
+      
+      // Create withdrawal transaction for sender
+      const senderTransactionType = currency === 'inr' ? 'WITHDRAW_INR' : 'WITHDRAW_BTC';
+      const [senderTransactionResult] = await db.execute(
+        `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
+         VALUES (?, ?, 'EXECUTED', ?, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
+        [userId, senderTransactionType, btcAmount, inrAmount]
+      );
+      
+      // Create deposit transaction for recipient
+      const recipientTransactionType = currency === 'inr' ? 'DEPOSIT_INR' : 'DEPOSIT_BTC';
+      const [recipientTransactionResult] = await db.execute(
+        `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
+         VALUES (?, ?, 'EXECUTED', ?, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
+        [recipient.id, recipientTransactionType, btcAmount, inrAmount]
+      );
+      
+      // Commit transaction
+      await db.commit();
+      
+      // Clear caches for both users
+      if (global.dataService && global.dataService.redis) {
+        try {
+          await global.dataService.redis.del(`user_transactions_${userId}`);
+          await global.dataService.redis.del(`user_balance_${userId}`);
+          await global.dataService.redis.del(`user_transactions_${recipient.id}`);
+          await global.dataService.redis.del(`user_balance_${recipient.id}`);
+          console.log('💾 Cleared user caches after send transaction');
+        } catch (error) {
+          console.error('Error clearing user caches:', error);
+        }
+      }
+      
+      // Send real-time updates to both users
+      if (global.sendUserBalanceUpdate) {
+        global.sendUserBalanceUpdate(userId);
+        global.sendUserBalanceUpdate(recipient.id);
+      }
+      
+      if (global.sendUserTransactionUpdate) {
+        global.sendUserTransactionUpdate(userId);
+        global.sendUserTransactionUpdate(recipient.id);
+      }
+      
+      console.log(`✅ SEND transaction executed:`, {
+        senderId: userId,
+        senderEmail: sender.email,
+        recipientId: recipient.id,
+        recipientEmail: recipient.email,
+        currency: currency,
+        btc_amount: btcAmount,
+        inr_amount: inrAmount,
+        senderTransactionId: senderTransactionResult.insertId,
+        recipientTransactionId: recipientTransactionResult.insertId
+      });
+      
+      // Return success response
+      res.json({
+        message: 'Transaction sent successfully',
+        recipient: {
+          name: recipient.name,
+          email: recipient.email
+        },
+        amount: currency === 'inr' ? inrAmount : amountFloat,
+        currency: currency,
+        senderTransactionId: senderTransactionResult.insertId,
+        recipientTransactionId: recipientTransactionResult.insertId,
+        timestamp: new Date().toISOString()
+      });
+      
+    } catch (error) {
+      // Rollback transaction on error
+      await db.rollback();
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('Error executing send transaction:', error);
+    res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+});
+
 // Get user balance (real data with Redis caching)
 app.get('/api/balance', authenticateToken, async (req, res) => {
   try {

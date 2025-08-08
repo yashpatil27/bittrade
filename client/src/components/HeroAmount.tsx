@@ -5,9 +5,10 @@ import { AnimateBTC, AnimateINR } from './AnimateNumberFlow';
 
 interface HeroAmountProps {
   className?: string;
+  onMaxClick?: () => void;
 }
 
-const HeroAmount: React.FC<HeroAmountProps> = ({ className = '' }) => {
+const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) => {
   const { balanceData, isLoading } = useBalance();
   const { sellRateInr } = usePrice();
 
@@ -19,7 +20,7 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '' }) => {
 
   if (isLoading) {
     return (
-      <div className={`bg-black pt-8 pb-12 px-6 ${className}`}>
+      <div className={`bg-black pt-8 pb-6 px-4 ${className}`}>
         <div className="text-center">          
           {/* Main value loading skeleton */}
           <div className="flex items-center justify-center mb-1">
@@ -41,7 +42,7 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '' }) => {
   }
 
   return (
-    <div className={`bg-black pt-8 pb-12 px-6 ${className}`}>
+    <div className={`bg-black pt-8 pb-4 px-6 ${className}`}>
       <div className="text-center">       
         {/* Main Bitcoin Amount */}
         <div className="flex items-center justify-center mb-1">
@@ -59,7 +60,10 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '' }) => {
         
         {/* Cash Balance Button */}
         <div className="flex items-center justify-center mb-4">
-          <button className="bg-btn-secondary text-white px-4 py-2 text-xs font-normal inline-flex items-center justify-center min-w-fit rounded-xl hover:bg-btn-secondary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black">
+          <button 
+            onClick={onMaxClick}
+            className="bg-btn-secondary text-white px-4 py-2 text-xs font-normal inline-flex items-center justify-center min-w-fit rounded-xl hover:bg-btn-secondary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black"
+          >
             Cash Balance: <AnimateINR value={balanceData?.available_inr || 0} className="ml-1 text-xs font-normal text-white" />
           </button>
         </div>
