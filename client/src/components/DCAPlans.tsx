@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bitcoin, DollarSign, Clock, BarChart3 } from 'lucide-react';
+import { Plus, Bitcoin, IndianRupee, Clock, BarChart3 } from 'lucide-react';
 import { updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
 import { DCAPlan } from '../types';
 import Card from './Card';
@@ -219,7 +219,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
       </div>
     ) : (
       <div className="p-2 bg-red-500/10 rounded-lg">
-        <DollarSign className="text-red-400 w-5 h-5" />
+        <IndianRupee className="text-red-400 w-5 h-5" />
       </div>
     );
   };
