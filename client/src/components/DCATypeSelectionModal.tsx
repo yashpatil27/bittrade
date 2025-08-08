@@ -1,6 +1,6 @@
 import React from 'react';
 import OptionsModal from './OptionsModal';
-import { Bitcoin, DollarSign } from 'lucide-react';
+import { Bitcoin, IndianRupee } from 'lucide-react';
 
 interface DCATypeSelectionModalProps {
   isOpen: boolean;
@@ -30,8 +30,8 @@ const DCATypeSelectionModal: React.FC<DCATypeSelectionModalProps> = ({
           data-clickable="true"
         >
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-500/10 rounded-lg">
-              <Bitcoin className="w-5 h-5 text-green-400" />
+            <div className="p-2 bg-gray-500/10 rounded-lg">
+              <Bitcoin className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="text-white text-sm font-medium">Buy Bitcoin Regularly</h3>
@@ -46,8 +46,8 @@ const DCATypeSelectionModal: React.FC<DCATypeSelectionModalProps> = ({
           data-clickable="true"
         >
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-orange-500/10 rounded-lg">
-              <DollarSign className="w-5 h-5 text-orange-400" />
+            <div className="p-2 bg-gray-500/10 rounded-lg">
+              <IndianRupee className="w-5 h-5 text-white" />
             </div>
             <div>
               <h3 className="text-white text-sm font-medium">Sell Bitcoin Regularly</h3>

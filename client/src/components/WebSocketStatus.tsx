@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useWebSocket, useWebSocketEvent } from '../context/WebSocketContext';
-import { Wifi, WifiOff, Loader2, Activity } from 'lucide-react';
+import { Wifi, WifiOff, Loader2, Zap } from 'lucide-react';
 
 interface WebSocketStatusProps {
   className?: string;
@@ -46,7 +46,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({ className = '' }) => 
 
   const getStatusIcon = () => {
     if (isReceivingData && connectionStatus === 'connected') {
-      return <Activity className="w-4 h-4 animate-pulse" />;
+      return <Zap className="w-4 h-4 animate-pulse" />;
     }
     
     switch (connectionStatus) {
@@ -62,33 +62,12 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({ className = '' }) => 
     }
   };
 
-  const getStatusText = () => {
-    if (isReceivingData && connectionStatus === 'connected') {
-      return 'Updating';
-    }
-    
-    switch (connectionStatus) {
-      case 'connected':
-        return 'Live';
-      case 'connecting':
-        return 'Connecting';
-      case 'reconnecting':
-        return 'Reconnecting';
-      case 'disconnected':
-        return 'Offline';
-      default:
-        return 'Unknown';
-    }
-  };
 
   return (
-    <div className={`flex items-center space-x-2 text-xs ${className}`}>
+    <div className={`flex items-center ${className}`}>
       <div className={getStatusColor()}>
         {getStatusIcon()}
       </div>
-      <span className={getStatusColor()}>
-        {getStatusText()}
-      </span>
     </div>
   );
 };
