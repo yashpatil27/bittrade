@@ -290,7 +290,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
           <div className="flex-1"></div>
 
           {/* Confirm/Close Button */}
-          <div className="mb-6 pb-20 flex justify-center">
+          <div className="mb-12 pb-20 flex justify-center">
             <button
               onClick={handleConfirm}
               disabled={isLoading}

@@ -290,7 +290,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
           <div className="flex-1"></div>
 
           {/* Close Button */}
-          <div className="mb-6 pb-20 flex justify-center">
+          <div className="mb-10 pb-20 flex justify-center">
             <button
               onClick={animateClose}
               className="px-6 h-12 text-sm font-medium rounded-xl btn-strike-secondary"

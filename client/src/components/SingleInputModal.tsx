@@ -558,7 +558,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           )}
 
           {/* Keypad */}
-          <div className="mb-3">
+          <div className="mb-6">
             <div className="grid grid-cols-3 gap-1">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9', currentType === 'btc' ? '.' : (currentType === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
                 key === '' ? (
@@ -575,7 +575,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           </div>
 
           {/* Confirm Button */}
-          <div className="mb-4 pb-20 flex justify-center">
+          <div className="mb-10 pb-20 flex justify-center">
             <button
               onClick={handleConfirm}
               disabled={isConfirmDisabled}
