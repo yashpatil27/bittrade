@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import SingleInputModal from './SingleInputModal';
 import ConfirmationModal from './ConfirmationModal';
 import OptionsModal from './OptionsModal';
-import { Mail, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Mail, AlertCircle } from 'lucide-react';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 import { useBalance } from '../context/BalanceContext';

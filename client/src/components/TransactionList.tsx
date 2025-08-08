@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownRight, ArrowDownLeft, ArrowLeftRight, Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';

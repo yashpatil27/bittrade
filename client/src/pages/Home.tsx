@@ -11,7 +11,6 @@ import OptionsModal from '../components/OptionsModal';
 import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
 import { Bitcoin, Send, IndianRupee } from 'lucide-react';
-import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { AnimateINR, AnimateBTC } from '../components/AnimateNumberFlow';
 
 // Lazy load BitcoinChartModal since it's only shown on user interaction
