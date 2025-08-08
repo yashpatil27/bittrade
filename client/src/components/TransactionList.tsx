@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin, IndianRupee, Send } from 'lucide-react';
+import { Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin, IndianRupee } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';
@@ -118,7 +118,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
         return <ArrowDown className="w-4 h-4" />;
       case 'WITHDRAW_INR':
       case 'WITHDRAW_BTC':
-        return <Send className="w-4 h-4" />;
+        return <ArrowUp className="w-4 h-4" />;
       case 'LOAN_BORROW':
         return <ArrowDown className="w-4 h-4" />;
       case 'LOAN_REPAY':
