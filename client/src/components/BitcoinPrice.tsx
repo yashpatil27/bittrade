@@ -220,7 +220,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
           <div className={`text-xs font-medium ${
             isPositive ? 'text-green-400' : 'text-red-400'
           }`}>
-            {isPositive ? '+' : ''}{dailyChangePercent.toFixed(2)}%
+            {isPositive ? '+' : ''}{dailyChangePercent.toFixed(2)}% past day
           </div>
         </div>
       </div>
@@ -264,10 +264,13 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
         </svg>
       </div>
       
+      {/* Border separator between chart and rates */}
+      <div className="border-b border-gray-700 mb-2"></div>
+      
       <div className="grid grid-cols-2 gap-4">
         {/* Buy Rate */}
         <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">Buy Rate</p>
+          <p className="text-sm text-white mb-1">Buy Rate</p>
           <p className="text-base font-semibold text-white mb-2">
             <AnimateINR 
               value={buyRate}
@@ -276,7 +279,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
           </p>
           <button 
             onClick={onBuyClick}
-            className="w-full btn-strike-primary rounded-xl flex items-center justify-center space-x-1"
+            className="w-full btn-strike-primary rounded-lg flex items-center justify-center space-x-1"
           >
             
             <span className="font-medium">Buy</span>
@@ -285,7 +288,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
 
         {/* Sell Rate */}
         <div className="text-center">
-          <p className="text-xs text-gray-400 mb-1">Sell Rate</p>
+          <p className="text-sm text-white mb-1">Sell Rate</p>
           <p className="text-base font-semibold text-white mb-2">
             <AnimateINR 
               value={sellRate}
@@ -294,7 +297,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
           </p>
           <button 
             onClick={onSellClick}
-            className="w-full btn-strike-primary rounded-xl flex items-center justify-center space-x-1"
+            className="w-full btn-strike-primary rounded-lg flex items-center justify-center space-x-1"
           >
             
             <span className="font-medium">Sell</span>
