@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin, IndianRupee, Send } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder } from '../utils/api';
@@ -104,8 +104,9 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'MARKET_BUY':
+        return <Bitcoin className="w-4 h-4" />;
       case 'MARKET_SELL':
-        return <ArrowLeftRight className="w-4 h-4" />;
+        return <IndianRupee className="w-4 h-4" />;
       case 'LIMIT_BUY':
       case 'LIMIT_SELL':
         return <Target className="w-4 h-4" />;
@@ -114,10 +115,10 @@ const TransactionList: React.FC<TransactionListProps> = ({
         return <CalendarSync className="w-4 h-4" />;
       case 'DEPOSIT_INR':
       case 'DEPOSIT_BTC':
-        return <ArrowDownLeft className="w-4 h-4" />;
+        return <ArrowDown className="w-4 h-4" />;
       case 'WITHDRAW_INR':
       case 'WITHDRAW_BTC':
-        return <ArrowUpRight className="w-4 h-4" />;
+        return <Send className="w-4 h-4" />;
       case 'LOAN_BORROW':
         return <ArrowDown className="w-4 h-4" />;
       case 'LOAN_REPAY':
