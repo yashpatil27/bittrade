@@ -356,7 +356,16 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 
   const handleMaxAmount = () => {
     if (maxValue !== undefined) {
-      const maxValueStr = maxValue.toString();
+      // For BTC inputs, ensure proper decimal formatting to avoid scientific notation
+      let maxValueStr;
+      if (currentType === 'btc') {
+        // For Bitcoin, format with up to 8 decimal places and remove trailing zeros
+        maxValueStr = maxValue.toFixed(8).replace(/\.?0+$/, '');
+      } else {
+        // For other types, use standard toString
+        maxValueStr = maxValue.toString();
+      }
+      
       setValue(maxValueStr);
       
       // Call the real-time value change callback

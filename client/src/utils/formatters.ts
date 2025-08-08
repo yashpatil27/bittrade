@@ -11,11 +11,12 @@ export function formatBitcoinForDisplay(satoshis: number): string {
   // Convert satoshis to BTC (divide by 100,000,000)
   const btcValue = satoshis / 100000000;
   
-  // Keep only 8 decimal places
+  // Keep only 8 decimal places and ensure proper decimal notation
   const fixedValue = btcValue.toFixed(8);
   
-  // Remove trailing zeros
-  const trimmedValue = parseFloat(fixedValue).toString();
+  // Remove trailing zeros while preserving decimal format
+  // Use regex to remove trailing zeros and unnecessary decimal point
+  const trimmedValue = fixedValue.replace(/\.?0+$/, '');
   
   // Add ₿ symbol
   return `₿${trimmedValue}`;

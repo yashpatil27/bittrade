@@ -208,7 +208,14 @@ class DCAExecutionService {
         } else if (plan.amount_per_execution_btc) {
           // BTC amount specified - calculate INR amount
           btcAmountSatoshis = plan.amount_per_execution_btc;
-          inrAmount = Math.floor((btcAmountSatoshis * currentPrice) / 100000000);
+          const calculatedInrAmount = (btcAmountSatoshis * currentPrice) / 100000000;
+          
+          // For DCA BUY: Always round UP to prevent users getting Bitcoin for free
+          inrAmount = Math.ceil(calculatedInrAmount);
+          // Ensure minimum charge of ₹1 for any BTC purchase to prevent free Bitcoin
+          if (inrAmount === 0) {
+            inrAmount = 1;
+          }
           
           // Check if user has sufficient INR balance
           if (user.available_inr < inrAmount) {

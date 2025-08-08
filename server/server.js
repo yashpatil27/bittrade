@@ -982,7 +982,19 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
     } else {
       // User specified BTC amount (frontend sends as BTC decimal, need to convert to satoshis)
       btcAmount = Math.round(amountFloat * 100000000); // Convert BTC to satoshis
-      inrAmount = Math.round((btcAmount * marketPrice) / 100000000);
+      const calculatedInrAmount = (btcAmount * marketPrice) / 100000000;
+      
+      // For buy orders: Always round UP to prevent users getting Bitcoin for free
+      // For sell orders: Use normal rounding
+      if (action === 'buy') {
+        inrAmount = Math.ceil(calculatedInrAmount);
+        // Ensure minimum charge of ₹1 for any BTC purchase to prevent free Bitcoin
+        if (inrAmount === 0) {
+          inrAmount = 1;
+        }
+      } else {
+        inrAmount = Math.round(calculatedInrAmount);
+      }
     }
 
     // Start database transaction
