@@ -43,7 +43,7 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) =
   }
 
   return (
-    <div className={`bg-black pt-8 pb-10 px-6 ${className}`}>
+    <div className={`bg-black pt-6 pb-10 px-4 ${className}`}>
       <div className="text-center">       
         {/* Main Bitcoin Amount */}
         <div className="flex items-center justify-center mb-0">
@@ -66,7 +66,7 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) =
             className="bg-btn-secondary text-white px-4 py-2 text-xs font-normal inline-flex items-center justify-center min-w-fit rounded-xl hover:bg-btn-secondary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black"
           >
             Cash Balance: <AnimateINR value={balanceData?.available_inr || 0} className="ml-1 text-xs font-normal text-white" />
-            <ChevronDown className="w-3 h-3 ml-1 text-white text-xs" />
+            <ChevronDown className="w-4 h-4 ml-1 text-white" />
           </button>
         </div>
       </div>
