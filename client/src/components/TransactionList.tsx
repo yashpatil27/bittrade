@@ -135,7 +135,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
 
   const getTransactionColor = (type: string, status?: string) => {
     // Use consistent grey for all transaction types
-    return 'bg-gray-600';
+    return 'bg-gray-800';
   };
 
   const handleTransactionClick = (transaction: Transaction) => {
@@ -352,7 +352,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
               onClick={() => handleTransactionClick(txn)}
             >
               <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 ${getTransactionColor(txn.type, txn.status)} rounded-full flex items-center justify-center`}>
+                <div className={`w-8 h-8 ${getTransactionColor(txn.type, txn.status)} rounded-lg flex items-center justify-center`}>
                   {getTransactionIcon(txn.type)}
                 </div>
                 <div>
