@@ -7,7 +7,7 @@ const AdminBottomNav: React.FC = () => {
   const navigate = useNavigate();
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/admin' },
+    { id: 'dashboard', label: 'Home', icon: Home, path: '/admin' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'history', label: 'History', icon: Clock, path: '/admin/history' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings' },
@@ -19,7 +19,7 @@ const AdminBottomNav: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-900 border-t border-gray-800">
+    <div className="bg-black border-t border-black">
       <div className="flex items-center justify-around px-1 py-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -40,7 +40,7 @@ const AdminBottomNav: React.FC = () => {
               }`}>
                 <IconComponent className="w-4 h-4" />
               </div>
-              <span className="text-xs font-light mt-0.5 truncate">{item.label}</span>
+              <span className="text-xs font-normal mt-0.5 truncate">{item.label}</span>
             </button>
           );
         })}

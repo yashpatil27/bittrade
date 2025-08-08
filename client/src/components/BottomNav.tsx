@@ -19,7 +19,7 @@ const BottomNav: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-900 border-t border-gray-800">
+    <div className="bg-black border-t border-black">
       <div className="flex items-center justify-around px-1 py-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -40,7 +40,7 @@ const BottomNav: React.FC = () => {
               }`}>
                 <IconComponent className="w-4 h-4" />
               </div>
-              <span className="text-xs font-light mt-0.5 truncate">{item.label}</span>
+              <span className="text-xs font-normal mt-0.5 truncate">{item.label}</span>
             </button>
           );
         })}

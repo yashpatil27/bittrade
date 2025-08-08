@@ -313,7 +313,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
         {onAddPlan && !showAllUsers && (
           <button 
             onClick={onAddPlan}
-            className="btn-strike-primary rounded-xl flex items-center space-x-2 px-4"
+            className="btn-strike-primary rounded-lg flex items-center space-x-2 px-4"
           >
             <Plus className="w-4 h-4" />
             <span className="font-medium">Add Plan</span>
