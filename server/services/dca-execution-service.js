@@ -84,6 +84,9 @@ class DCAExecutionService {
   }
 
   async executeDuePlans() {
+    // First, clean up old completed plans
+    await this.cleanupCompletedPlans();
+    
     const [plans] = await this.db.execute(
       'SELECT id, user_id, plan_type, frequency, amount_per_execution_inr, amount_per_execution_btc, max_price, min_price, remaining_executions \
        FROM active_plans WHERE next_execution_at <= UTC_TIMESTAMP() AND status = ?',
@@ -497,6 +500,27 @@ class DCAExecutionService {
     }
   }
 
+  // Clean up completed plans that have been sitting in database for more than a week
+  async cleanupCompletedPlans() {
+    try {
+      // Delete completed plans that were completed more than 7 days ago
+      const [result] = await this.db.execute(
+        `DELETE FROM active_plans 
+         WHERE status = 'COMPLETED' 
+           AND completed_at IS NOT NULL 
+           AND completed_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)`,
+        []
+      );
+      
+      if (result.affectedRows > 0) {
+        console.log(`🧹 Cleaned up ${result.affectedRows} completed DCA plan(s) older than 7 days`);
+      }
+      
+    } catch (error) {
+      console.error('Error cleaning up completed DCA plans:', error);
+    }
+  }
+  
   // Calculate buy and sell rates in INR
   // buy_rate_inr = btc_usd_price * settings.buy_multiplier
   // sell_rate_inr = btc_usd_price * settings.sell_multiplier
