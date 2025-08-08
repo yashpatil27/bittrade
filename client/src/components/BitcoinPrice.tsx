@@ -265,7 +265,7 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
       </div>
       
       {/* Border separator between chart and rates */}
-      <div className="border-b border-gray-700 mb-2"></div>
+      {/*<div className="border-b border-gray-700 mb-2"></div>*/}
       
       <div className="grid grid-cols-2 gap-4">
         {/* Buy Rate */}
