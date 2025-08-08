@@ -291,7 +291,7 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
             <Bitcoin className="w-6 h-6 text-brand" />
           </div>
           <h4 className="text-white font-medium mb-1">No active plans</h4>
-          <p className="text-gray-400 text-xs">Your completed plans are in the transaction history below</p>
+          <p className="text-gray-400 text-xs">Add a new plan on the DCA Tab</p>
         </div>
       </div>
     );

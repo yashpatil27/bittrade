@@ -8,6 +8,7 @@ import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
 import { DCAPlan, Transaction } from '../types';
 import { useBalance } from '../context/BalanceContext';
 import { useDCAPlans } from '../context/DCAPlansContext';
+import BitcoinQuote from '../components/BitcoinQuote';
 
 
 const DCA: React.FC = () => {
@@ -207,6 +208,9 @@ const DCA: React.FC = () => {
             </Card>
           </div>
         )}
+        
+        {/* Bitcoin Quote */}
+        <BitcoinQuote />
       
       {/* DCA Type Selection Modal */}
       <DCATypeSelectionModal

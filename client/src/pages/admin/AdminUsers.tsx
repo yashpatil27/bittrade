@@ -5,6 +5,7 @@ import OptionsModal from '../../components/OptionsModal';
 import AdminChangePasswordModal from '../../components/AdminChangePasswordModal';
 import DepositBitcoinModal from '../../components/DepositBitcoinModal';
 import DepositCashModal from '../../components/DepositCashModal';
+import BitcoinQuote from '../../components/BitcoinQuote';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../../utils/formatters';
 import { getApiUrl } from '../../utils/api';
 import { Bitcoin, DollarSign, Key, Trash2 } from 'lucide-react';
@@ -225,6 +226,9 @@ const AdminUsers: React.FC = () => {
             );
           })()}
         </div>
+        
+        {/* Bitcoin Quote - Outside container for proper spacing */}
+        <BitcoinQuote />
       </div>
       
       {/* User Actions Modal */}

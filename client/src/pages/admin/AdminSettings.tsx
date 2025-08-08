@@ -1,5 +1,6 @@
 import React from 'react';
 import AdminMultiplier from '../../components/AdminMultiplier';
+import BitcoinQuote from '../../components/BitcoinQuote';
 
 const AdminSettings: React.FC = () => {
   return (
@@ -9,6 +10,9 @@ const AdminSettings: React.FC = () => {
           {/* Admin Multiplier Component */}
           <AdminMultiplier />
         </div>
+        
+        {/* Bitcoin Quote - Outside container for proper spacing */}
+        <BitcoinQuote />
       </div>
     </div>
   );

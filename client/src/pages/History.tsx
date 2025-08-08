@@ -3,6 +3,7 @@ import Card from '../components/Card';
 import TransactionList from '../components/TransactionList';
 import PendingOrdersList from '../components/PendingOrdersList';
 import DCAPlans from '../components/DCAPlans';
+import BitcoinQuote from '../components/BitcoinQuote';
 import { Transaction, DCAPlan } from '../types';
 
 const History: React.FC = () => {
@@ -44,6 +45,9 @@ const History: React.FC = () => {
             />
           </Card>
         </div>
+        
+        {/* Bitcoin Quote */}
+        <BitcoinQuote />
       </div>
     </div>
   );

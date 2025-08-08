@@ -3,6 +3,7 @@ import Card from '../../components/Card';
 import TransactionList from '../../components/TransactionList';
 import PendingOrdersList from '../../components/PendingOrdersList';
 import DCAPlans from '../../components/DCAPlans';
+import BitcoinQuote from '../../components/BitcoinQuote';
 import { Transaction, DCAPlan } from '../../types';
 import { useDCAPlans } from '../../context/DCAPlansContext';
 
@@ -55,6 +56,9 @@ const AdminHistory: React.FC = () => {
             />
           </Card>
         </div>
+        
+        {/* Bitcoin Quote - Outside space-y container for proper spacing */}
+        <BitcoinQuote />
       </div>
     </div>
   );

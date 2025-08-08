@@ -1,5 +1,6 @@
 import React from 'react';
 import Card from '../components/Card';
+import BitcoinQuote from '../components/BitcoinQuote';
 import { Banknote, TrendingUp, Shield, Clock, ArrowRight } from 'lucide-react';
 
 const Loans: React.FC = () => {
@@ -96,6 +97,9 @@ const Loans: React.FC = () => {
           </div>
 
       </div>
+      
+      {/* Bitcoin Quote - Outside space-y container for proper spacing */}
+      <BitcoinQuote />
     </div>
   );
 };

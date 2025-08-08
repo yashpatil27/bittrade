@@ -2,6 +2,7 @@ import React from 'react';
 import AdminBalance from '../../components/AdminBalance';
 import BitcoinPrice from '../../components/BitcoinPrice';
 import AdminMetrics from '../../components/AdminMetrics';
+import BitcoinQuote from '../../components/BitcoinQuote';
 
 const AdminHome: React.FC = () => {
   return (
@@ -18,6 +19,9 @@ const AdminHome: React.FC = () => {
           <AdminMetrics />
 
         </div>
+        
+        {/* Bitcoin Quote - Outside space-y container for proper spacing */}
+        <BitcoinQuote />
       </div>
     </div>
   );

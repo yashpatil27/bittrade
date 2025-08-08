@@ -12,6 +12,7 @@ import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
 import { Bitcoin, Send, IndianRupee } from 'lucide-react';
 import { AnimateINR, AnimateBTC } from '../components/AnimateNumberFlow';
+import BitcoinQuote from '../components/BitcoinQuote';
 
 // Lazy load BitcoinChartModal since it's only shown on user interaction
 const BitcoinChartModal = React.lazy(() => import('../components/BitcoinChartModal'));
@@ -82,7 +83,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
         {/* Main Content */}
-<div className="px-4 py-3 space-y-3">
+        <div className="px-4 py-3 space-y-3">
         
         {/* Hero Amount */}
         <HeroAmount onMaxClick={handleBalanceOptionsClick} />
@@ -110,8 +111,10 @@ onViewAllClick={() => navigate('/history')}
           />
         </Card>
 
-{/* Trading Modal */}
-{chartModalOpen && (
+        </div>
+        
+        {/* Trading Modal */}
+        {chartModalOpen && (
           <React.Suspense fallback={<div />}>
             <BitcoinChartModal 
               isOpen={chartModalOpen} 
@@ -210,8 +213,9 @@ onViewAllClick={() => navigate('/history')}
             </button>
           </div>
         </OptionsModal>
-
-        </div>
+        
+        {/* Bitcoin Quote - Fixed positioned at bottom */}
+        <BitcoinQuote />
       </div>
     </div>
   );
