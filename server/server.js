@@ -850,9 +850,9 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
         console.log(`₿ Released ${transaction.btc_amount} satoshis from cancelled limit sell order (User ${userId})`);
       }
 
-      // Update transaction status to CANCELLED
+      // Delete the transaction from database
       await db.execute(
-        'UPDATE transactions SET status = "CANCELLED" WHERE id = ?',
+        'DELETE FROM transactions WHERE id = ?',
         [transactionId]
       );
 
