@@ -204,6 +204,7 @@ const AdminUsers: React.FC = () => {
                           <div>
                             <p className="text-sm font-light text-white">{user.name}</p>
                             <p className="text-xs text-gray-400">{user.email}</p>
+                            <p className="text-xs text-gray-500">ID: {user.id}</p>
                           </div>
                         </div>
                         
