@@ -37,7 +37,8 @@ router.get('/transactions', authenticateToken, async (req, res) => {
     }
 
     const [transactions] = await db.execute(
-      `SELECT t.id, t.user_id, t.type, t.status, t.btc_amount, t.inr_amount, t.execution_price, t.created_at, t.executed_at 
+      `SELECT t.id, t.user_id, t.type, t.status, t.btc_amount, t.inr_amount, t.execution_price, t.created_at, t.executed_at,
+              u.name as user_name, u.email as user_email
        FROM transactions t
        JOIN users u ON t.user_id = u.id
        WHERE (u.is_admin = false OR u.is_admin IS NULL)
@@ -885,6 +886,202 @@ router.put('/settings', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating settings:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reverse transaction (admin only)
+router.post('/transactions/:transactionId/reverse', authenticateToken, async (req, res) => {
+  try {
+    const adminUserId = req.user.id;
+    const { transactionId } = req.params;
+    
+    // Check if user is admin from database
+    const [userRows] = await db.execute(
+      'SELECT is_admin FROM users WHERE id = ?',
+      [adminUserId]
+    );
+    
+    if (userRows.length === 0 || !userRows[0].is_admin) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Start database transaction for atomicity
+    await db.beginTransaction();
+
+    try {
+      // Get the transaction details
+      const [transactionRows] = await db.execute(
+        `SELECT t.id, t.user_id, t.type, t.status, t.btc_amount, t.inr_amount, 
+                t.execution_price, t.created_at, t.executed_at, u.name as user_name
+         FROM transactions t
+         JOIN users u ON t.user_id = u.id
+         WHERE t.id = ?`,
+        [transactionId]
+      );
+
+      if (transactionRows.length === 0) {
+        await db.rollback();
+        return res.status(404).json({ error: 'Transaction not found' });
+      }
+
+      const transaction = transactionRows[0];
+
+      // Check if transaction can be reversed (only executed transactions)
+      if (transaction.status !== 'EXECUTED') {
+        await db.rollback();
+        return res.status(400).json({ error: 'Only executed transactions can be reversed' });
+      }
+
+      // Calculate balance adjustments based on transaction type
+      let btcAdjustment = 0;
+      let inrAdjustment = 0;
+
+      switch (transaction.type) {
+        case 'MARKET_BUY':
+        case 'LIMIT_BUY':
+        case 'DCA_BUY':
+          // Reverse buy: remove BTC, add INR back
+          btcAdjustment = -transaction.btc_amount;
+          inrAdjustment = transaction.inr_amount;
+          break;
+          
+        case 'MARKET_SELL':
+        case 'LIMIT_SELL':
+        case 'DCA_SELL':
+          // Reverse sell: add BTC back, remove INR
+          btcAdjustment = transaction.btc_amount;
+          inrAdjustment = -transaction.inr_amount;
+          break;
+          
+        case 'DEPOSIT_INR':
+          // Reverse INR deposit: remove INR
+          inrAdjustment = -transaction.inr_amount;
+          break;
+          
+        case 'DEPOSIT_BTC':
+          // Reverse BTC deposit: remove BTC
+          btcAdjustment = -transaction.btc_amount;
+          break;
+          
+        case 'WITHDRAW_INR':
+          // Reverse INR withdrawal: add INR back
+          inrAdjustment = transaction.inr_amount;
+          break;
+          
+        case 'WITHDRAW_BTC':
+          // Reverse BTC withdrawal: add BTC back
+          btcAdjustment = transaction.btc_amount;
+          break;
+          
+        case 'LOAN_BORROW':
+          // Reverse loan borrow: remove borrowed INR, add collateral BTC back
+          inrAdjustment = -transaction.inr_amount;
+          // Note: This might need more complex logic for collateral handling
+          break;
+          
+        case 'LOAN_REPAY':
+          // Reverse loan repayment: add repaid INR back, remove freed collateral
+          inrAdjustment = transaction.inr_amount;
+          // Note: This might need more complex logic for collateral handling
+          break;
+          
+        case 'INTEREST_ACCRUAL':
+          // Reverse interest: remove accrued interest
+          inrAdjustment = -transaction.inr_amount;
+          break;
+          
+        default:
+          await db.rollback();
+          return res.status(400).json({ error: `Transaction type '${transaction.type}' cannot be reversed` });
+      }
+
+      // Get current user balance to check if reversal is possible
+      const [balanceRows] = await db.execute(
+        'SELECT available_btc, available_inr FROM users WHERE id = ?',
+        [transaction.user_id]
+      );
+
+      if (balanceRows.length === 0) {
+        await db.rollback();
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      const currentBalance = balanceRows[0];
+      const newBtcBalance = currentBalance.available_btc + btcAdjustment;
+      const newInrBalance = currentBalance.available_inr + inrAdjustment;
+
+      // Check if user would have negative balance after reversal
+      if (newBtcBalance < 0 || newInrBalance < 0) {
+        await db.rollback();
+        return res.status(400).json({ 
+          error: 'Cannot reverse transaction: would result in negative balance',
+          details: {
+            currentBtc: currentBalance.available_btc,
+            currentInr: currentBalance.available_inr,
+            btcAdjustment,
+            inrAdjustment,
+            resultingBtc: newBtcBalance,
+            resultingInr: newInrBalance
+          }
+        });
+      }
+
+      // Update user balance
+      await db.execute(
+        'UPDATE users SET available_btc = available_btc + ?, available_inr = available_inr + ? WHERE id = ?',
+        [btcAdjustment, inrAdjustment, transaction.user_id]
+      );
+
+      // Delete the transaction
+      const [deleteResult] = await db.execute(
+        'DELETE FROM transactions WHERE id = ?',
+        [transactionId]
+      );
+
+      if (deleteResult.affectedRows === 0) {
+        await db.rollback();
+        return res.status(500).json({ error: 'Failed to delete transaction' });
+      }
+
+      // Commit the transaction
+      await db.commit();
+
+      console.log(`✅ Admin ${adminUserId} reversed transaction ${transactionId} for user ${transaction.user_id} (${transaction.user_name})`);
+      console.log(`   Transaction type: ${transaction.type}, BTC adj: ${btcAdjustment}, INR adj: ${inrAdjustment}`);
+
+      // Broadcast balance update to user's connected clients
+      if (global.sendUserBalanceUpdate) {
+        await global.sendUserBalanceUpdate(transaction.user_id);
+      }
+
+      // Broadcast transaction update to user's connected clients
+      if (global.sendUserTransactionUpdate) {
+        await global.sendUserTransactionUpdate(transaction.user_id);
+      }
+
+      res.json({
+        success: true,
+        message: 'Transaction reversed successfully',
+        reversedTransaction: {
+          id: transaction.id,
+          type: transaction.type,
+          user_name: transaction.user_name,
+          btc_amount: transaction.btc_amount,
+          inr_amount: transaction.inr_amount
+        },
+        balanceAdjustment: {
+          btc: btcAdjustment,
+          inr: inrAdjustment
+        }
+      });
+    } catch (error) {
+      // Rollback transaction on error
+      await db.rollback();
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error reversing transaction:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

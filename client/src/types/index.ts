@@ -91,6 +91,10 @@ export interface Transaction {
   upiId?: string;
   bankAccount?: string;
   cached?: boolean;
+  // Admin-only fields (populated when fetching admin transactions)
+  user_name?: string;
+  user_email?: string;
+  user_id?: string;
 }
 
 // Order types

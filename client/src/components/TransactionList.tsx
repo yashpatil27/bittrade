@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin, IndianRupee } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
-import { cancelLimitOrder } from '../utils/api';
+import { cancelLimitOrder, reverseTransaction } from '../utils/api';
 import { Transaction } from '../types';
 import { useTransactions } from '../context/TransactionContext';
 import Card from './Card';
@@ -254,6 +254,12 @@ const TransactionList: React.FC<TransactionListProps> = ({
       { label: 'Status', value: txn.status, highlight: true },
     ];
 
+    // Add user information for admin mode
+    if (showAllUsers && txn.user_name && txn.user_email) {
+      details.push({ label: 'User Name', value: txn.user_name, highlight: false });
+      details.push({ label: 'User Email', value: txn.user_email, highlight: false });
+    }
+
     if (txn.execution_price) {
       details.push({ label: 'Execution Price', value: formatRupeesForDisplay(txn.execution_price), highlight: false });
     }
@@ -272,6 +278,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
 
     return details;
   };
+
 
 
   // Removed the problematic useEffect that was causing infinite fetching
@@ -409,25 +416,47 @@ const TransactionList: React.FC<TransactionListProps> = ({
           subDetail={getTransactionSubAmount(selectedTransaction)}
           transactionDetails={getTransactionDetails(selectedTransaction)}
           dcaPlanDetails={[]}
-          actionButtons={
-            !disableActions && selectedTransaction.status === 'PENDING' && 
-            (selectedTransaction.type === 'LIMIT_BUY' || selectedTransaction.type === 'LIMIT_SELL') 
-              ? [{
-                  label: 'Cancel Order',
-                  onClick: async () => {
-                    try {
-                      await cancelLimitOrder(selectedTransaction.id);
-                      // Refresh transactions list
-                      fetchTransactions();
-                      setIsDetailsModalOpen(false);
-                    } catch (error) {
-                      console.error('Failed to cancel limit order:', error);
-                      // TODO: Show error message to user
-                    }
-                  },
-                  variant: 'danger' as const
-                }]
-              : undefined
+          actionButtons={(() => {
+            const buttons = [];
+            
+            // Cancel Order button for pending limit orders
+            if (!disableActions && selectedTransaction.status === 'PENDING' && 
+                (selectedTransaction.type === 'LIMIT_BUY' || selectedTransaction.type === 'LIMIT_SELL')) {
+              buttons.push({
+                label: 'Cancel Order',
+                onClick: async () => {
+                  try {
+                    await cancelLimitOrder(selectedTransaction.id);
+                    fetchTransactions();
+                    setIsDetailsModalOpen(false);
+                  } catch (error) {
+                    console.error('Failed to cancel limit order:', error);
+                  }
+                },
+                variant: 'danger' as const
+              });
+            }
+            
+            // Reverse Transaction button for admins on executed transactions
+            if (showAllUsers && selectedTransaction.status === 'EXECUTED') {
+              buttons.push({
+                label: 'Reverse Transaction',
+                onClick: async () => {
+                  try {
+                    await reverseTransaction(selectedTransaction.id);
+                    fetchTransactions();
+                    setIsDetailsModalOpen(false);
+                  } catch (error) {
+                    console.error('Failed to reverse transaction:', error);
+                    // TODO: Show error message to user
+                  }
+                },
+                variant: 'warning' as const
+              });
+            }
+            
+            return buttons.length > 0 ? buttons : undefined;
+          })()
           }
         />
       )}

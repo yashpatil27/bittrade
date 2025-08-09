@@ -223,4 +223,28 @@ export const cancelLimitOrder = async (transactionId: string) => {
   return response.json();
 };
 
+// Reverse transaction (admin only)
+export const reverseTransaction = async (transactionId: string): Promise<any> => {
+  const token = localStorage.getItem('bittrade_token');
+  if (!token) {
+    throw new Error('No authentication token found');
+  }
+
+  const apiUrl = getApiUrl();
+  const response = await fetch(`${apiUrl}/api/admin/transactions/${transactionId}/reverse`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
 export default API_CONFIG;
