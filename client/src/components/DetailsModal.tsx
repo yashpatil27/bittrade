@@ -156,7 +156,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="absolute inset-x-0 bottom-0 top-0 bg-black max-w-md mx-auto"
+        className="absolute inset-x-0 bottom-0 top-0 bg-black max-w-md mx-auto pb-safe"
         style={{
           transform: `translateY(${isClosing ? '100%' : isAnimating ? `${dragOffset}px` : '100%'})`,
           transition: isDragging ? 'none' : (isAnimating || isClosing) ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none',
@@ -290,7 +290,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
           <div className="flex-1"></div>
 
           {/* Close Button */}
-          <div className="mb-10 pb-20 flex justify-center">
+          <div className="mb-8 pb-20 flex justify-center">
             <button
               onClick={animateClose}
               className="px-6 h-12 text-sm font-medium rounded-xl btn-strike-secondary"

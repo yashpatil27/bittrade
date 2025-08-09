@@ -181,10 +181,10 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
       
       {/* Modal */}
       <div
-        className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col"
+        className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col pb-safe"
         style={{
           maxHeight: '90vh',
-          minHeight: '60vh',
+          minHeight: '40vh',
           transform: `translateY(${isClosing ? '100%' : isAnimating ? '0%' : '100%'})`,
           transition: (isAnimating || isClosing) ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none',
           touchAction: 'none'

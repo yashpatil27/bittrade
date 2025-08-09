@@ -191,7 +191,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col"
+        className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col pb-safe"
         style={{
           maxHeight: '90vh',
           minHeight: '60vh',

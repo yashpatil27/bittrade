@@ -19,8 +19,8 @@ const BottomNav: React.FC = () => {
   };
 
   return (
-    <div className="bg-black border-t border-black">
-      <div className="flex items-center justify-around px-1 py-4">
+    <div className="bg-black border-t border-black pb-safe">
+      <div className="flex items-center justify-around px-1 pt-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const IconComponent = item.icon;
