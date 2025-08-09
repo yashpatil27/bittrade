@@ -227,7 +227,7 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
     }
 
-    // Check if target user is an admin
+    // Check if target user exists
     const [targetUserRows] = await db.execute(
       'SELECT is_admin FROM users WHERE id = ?',
       [targetUserId]
@@ -237,9 +237,7 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    if (targetUserRows[0].is_admin) {
-      return res.status(403).json({ error: 'Cannot delete admin user.' });
-    }
+    const isTargetAdmin = targetUserRows[0].is_admin;
 
     // Start transaction to ensure all deletions are atomic
     await db.beginTransaction();
@@ -257,27 +255,50 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
         [targetUserId]
       );
 
-      // Finally, delete the user
-      const [deletedUserResult] = await db.execute(
-        'DELETE FROM users WHERE id = ?',
-        [targetUserId]
-      );
+      // Finally, delete the user (or just clear balances for admins)
+      let deletedUserResult;
+      if (isTargetAdmin) {
+        // For admins: Clear all balances but keep the user record
+        deletedUserResult = await db.execute(
+          `UPDATE users SET 
+           available_btc = 0, 
+           available_inr = 0, 
+           reserved_btc = 0, 
+           reserved_inr = 0, 
+           collateral_btc = 0, 
+           borrowed_inr = 0, 
+           interest_accrued = 0
+           WHERE id = ?`,
+          [targetUserId]
+        );
+      } else {
+        // For regular users: Complete deletion
+        deletedUserResult = await db.execute(
+          'DELETE FROM users WHERE id = ?',
+          [targetUserId]
+        );
+      }
 
       // Commit the transaction
       await db.commit();
 
-      console.log(`✅ User ${targetUserId} deleted with cleanup:`, {
+      const actionType = isTargetAdmin ? 'cleared' : 'deleted';
+      console.log(`✅ User ${targetUserId} ${actionType} with cleanup:`, {
         deletedPlans: deletedPlansResult.affectedRows,
         deletedTransactions: deletedTransactionsResult.affectedRows,
-        deletedUser: deletedUserResult.affectedRows
+        userAction: isTargetAdmin ? 'balances_cleared' : 'deleted',
+        affectedRows: deletedUserResult.affectedRows
       });
 
       res.json({
         success: true,
-        message: 'User and all associated data deleted successfully',
+        message: isTargetAdmin 
+          ? 'Admin user data cleared successfully (account preserved)'
+          : 'User and all associated data deleted successfully',
         deletedData: {
           plans: deletedPlansResult.affectedRows,
-          transactions: deletedTransactionsResult.affectedRows
+          transactions: deletedTransactionsResult.affectedRows,
+          userAction: isTargetAdmin ? 'balances_cleared' : 'deleted'
         }
       });
     } catch (error) {

@@ -290,8 +290,8 @@ const AdminUsers: React.FC = () => {
             </div>
           </div>
           
-          {/* Delete User Option - Only show for non-admin users */}
-          {selectedUser && !selectedUser.is_admin && (
+          {/* Delete User Option - Now available for all users */}
+          {selectedUser && (
             <div 
               className="bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg p-4 cursor-pointer transition-colors"
               onClick={handleDeleteUser}
@@ -303,7 +303,11 @@ const AdminUsers: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-red-400 text-sm font-medium">Delete User</h3>
-                  <p className="text-gray-400 text-xs mt-1">Permanently remove user account</p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {selectedUser.is_admin 
+                      ? 'Clear admin data (account preserved)' 
+                      : 'Permanently remove user account'}
+                  </p>
                 </div>
               </div>
             </div>
