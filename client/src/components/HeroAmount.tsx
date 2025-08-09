@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useBalance } from '../context/BalanceContext';
 import { usePrice } from '../context/PriceContext';
@@ -12,16 +12,61 @@ interface HeroAmountProps {
 const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) => {
   const { balanceData, isLoading } = useBalance();
   const { sellRateInr } = usePrice();
-  const [showInr, setShowInr] = useState(false);
+  
+  // Initialize state from localStorage
+  const [showInr, setShowInr] = useState(() => {
+    try {
+      const saved = localStorage.getItem('heroAmount-showInr');
+      return saved ? JSON.parse(saved) : false;
+    } catch {
+      return false;
+    }
+  });
+
+  // Animation state - control value to animate from 0
+  const [displayValue, setDisplayValue] = useState<{btc: number, inr: number}>({btc: 0, inr: 0});
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // Calculate values
   const availableBtcSatoshis = balanceData?.available_btc || 0;
   const availableBtc = availableBtcSatoshis / 100000000; // Convert satoshis to BTC
   const sellRate = sellRateInr || 0;
   const inrValue = availableBtc * sellRate;
+  
+  // Update display values when data changes (but not during animation)
+  useEffect(() => {
+    if (!isAnimating) {
+      setDisplayValue({
+        btc: availableBtcSatoshis,
+        inr: inrValue
+      });
+    }
+  }, [availableBtcSatoshis, inrValue, isAnimating]);
+
+  // Save to localStorage whenever showInr changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('heroAmount-showInr', JSON.stringify(showInr));
+    } catch {
+      // Handle localStorage errors gracefully
+    }
+  }, [showInr]);
 
   const toggleAmount = () => {
+    setIsAnimating(true);
     setShowInr(!showInr);
+    
+    // Reset to 0 to start animation
+    setDisplayValue({btc: 0, inr: 0});
+    
+    // After a brief delay, set to target values to trigger animation
+    setTimeout(() => {
+      setDisplayValue({
+        btc: availableBtcSatoshis,
+        inr: inrValue
+      });
+      setIsAnimating(false);
+    }, 50);
   };
 
   if (isLoading) {
@@ -52,9 +97,15 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) =
             className="text-white text-5xl font-medium hover:opacity-80 transition-opacity duration-200 focus:outline-none"
           >
             {showInr ? (
-              <AnimateINR value={inrValue} className="text-5xl font-medium text-white" />
+              <AnimateINR 
+                value={displayValue.inr} 
+                className="text-5xl font-medium text-white" 
+              />
             ) : (
-              <AnimateBTC value={availableBtcSatoshis} className="text-5xl font-medium text-white" />
+              <AnimateBTC 
+                value={displayValue.btc} 
+                className="text-5xl font-medium text-white" 
+              />
             )}
           </button>
         </div>
