@@ -122,6 +122,11 @@ class DCAExecutionService {
           // Notify admin about execution
           await this.sendAdminTransactionUpdate();
           
+          // Send admin user update notification (balance changed)
+          if (global.sendAdminUserUpdate) {
+            await global.sendAdminUserUpdate();
+          }
+          
           // Send admin DCA plans update notification
           if (global.sendAdminDCAPlansUpdate) {
             await global.sendAdminDCAPlansUpdate();

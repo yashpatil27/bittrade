@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { useUsers } from '../../hooks/useUsers';
-import Card from '../../components/Card';
+import { useUsers } from '../../context/BalanceContext';
+import UserList from '../../components/UserList';
 import OptionsModal from '../../components/OptionsModal';
 import AdminChangePasswordModal from '../../components/AdminChangePasswordModal';
 import DepositBitcoinModal from '../../components/DepositBitcoinModal';
 import DepositCashModal from '../../components/DepositCashModal';
 import BitcoinQuote from '../../components/BitcoinQuote';
-import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../../utils/formatters';
 import { getApiUrl } from '../../utils/api';
 import { Bitcoin, DollarSign, Key, Trash2 } from 'lucide-react';
 
@@ -20,13 +19,12 @@ interface UserWithBalance {
 }
 
 const AdminUsers: React.FC = () => {
-  const { users, isLoading, error, fetchUsers } = useUsers();
+  const { users, usersLoading, usersError, refetchUsers } = useUsers();
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithBalance | null>(null);
   const [isDepositBitcoinModalOpen, setIsDepositBitcoinModalOpen] = useState(false);
   const [isDepositCashModalOpen, setIsDepositCashModalOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   
   const handleUserClick = (user: UserWithBalance) => {
     setSelectedUser(user);
@@ -61,7 +59,7 @@ const AdminUsers: React.FC = () => {
   const handleDepositComplete = (user: UserWithBalance, amount: string) => {
     console.log(`Deposit completed for ${user.name}: ${amount}`);
     // Refresh users list to show updated balances
-    fetchUsers();
+    refetchUsers();
   };
   const handleChangePassword = () => {
     setIsOptionsModalOpen(false);
@@ -97,7 +95,7 @@ const AdminUsers: React.FC = () => {
 
       console.log('User deleted successfully:', selectedUser.name);
       // Refresh users list
-      fetchUsers();
+      refetchUsers();
       handleCloseModal();
     } catch (error) {
       console.error('Failed to delete user:', error);
@@ -105,7 +103,9 @@ const AdminUsers: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  // Loading and error states are handled by the UserList component
+  // Just show loading indicator while fetching
+  if (usersLoading) {
     return (
       <div className="min-h-screen bg-black">
         <div className="max-w-md mx-auto bg-black min-h-screen">
@@ -119,30 +119,13 @@ const AdminUsers: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (usersError) {
     return (
       <div className="min-h-screen bg-black">
         <div className="max-w-md mx-auto bg-black min-h-screen">
           <div className="px-4 py-3">
             <div className="text-center py-8">
-              <p className="text-red-500 text-sm">Error: {error}</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (users.length === 0) {
-    return (
-      <div className="min-h-screen bg-black">
-        <div className="max-w-md mx-auto bg-black min-h-screen">
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-medium text-white">All Users</h3>
-            </div>
-            <div className="text-center py-8">
-              <p className="text-gray-400 text-sm">No users found</p>
+              <p className="text-red-500 text-sm">Error: {usersError}</p>
             </div>
           </div>
         </div>
@@ -153,82 +136,19 @@ const AdminUsers: React.FC = () => {
   return (
     <div className="min-h-screen bg-black">
       <div className="max-w-md mx-auto bg-black min-h-screen">
-        <div className="px-4 py-3">
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-medium text-white">All Users</h3>
-              {users.length > 0 && (
-                <span className="bg-brand text-black text-xs px-2 py-0.5 rounded-full font-medium">
-                  {users.length}
-                </span>
-              )}
-            </div>
-            <input 
-              type="text"
-              placeholder="Search by name, email, or ID"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-gray-800 text-white placeholder-gray-500 px-3 py-2 rounded-md w-full text-sm border border-gray-700 focus:border-brand focus:outline-none transition-colors"
-            />
-          </div>
-          {(() => {
-            const filteredUsers = users.filter(user => 
-              user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              String(user.id).includes(searchTerm)
-            );
-            
-            if (filteredUsers.length === 0 && searchTerm) {
-              return (
-                <div className="text-center py-8">
-                  <p className="text-gray-400 text-sm">No users found matching "{searchTerm}"</p>
-                </div>
-              );
-            }
-            
-            return (
-              <Card>
-                <div className="space-y-0">
-                  {filteredUsers.map((user, index) => (
-                    <div key={user.id}>
-                      <div 
-                        className="flex items-center justify-between py-3 cursor-pointer hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors"
-                        onClick={() => handleUserClick(user)}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-medium">
-                              {user.name.charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="text-sm font-light text-white">{user.name}</p>
-                            <p className="text-xs text-gray-400">{user.email}</p>
-                            <p className="text-xs text-gray-500">ID: {user.id}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <p className="text-sm font-light text-white">
-                            {formatBitcoinForDisplay(user.btcBalance)}
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {formatRupeesForDisplay(user.inrBalance)}
-                          </p>
-                        </div>
-                      </div>
-                      {index < filteredUsers.length - 1 && (
-                        <div className="border-b border-gray-800"></div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            );
-          })()}
+        {/* Main Content */}
+        <div className="px-4 py-3 space-y-3">
+          {/* User List Component */}
+          <UserList
+            title="All Users"
+            users={users}
+            onUserClick={handleUserClick}
+            showSearch={true}
+            wrapInCard={true}
+          />
         </div>
         
-        {/* Bitcoin Quote - Outside container for proper spacing */}
+        {/* Bitcoin Quote - Outside space-y container for proper spacing */}
         <BitcoinQuote />
       </div>
       

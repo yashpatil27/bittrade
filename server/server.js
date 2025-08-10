@@ -481,6 +481,11 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
       global.sendAdminTransactionUpdate();
     }
     
+    // Send admin user update via WebSocket (reserved funds changed)
+    if (global.sendAdminUserUpdate) {
+      global.sendAdminUserUpdate();
+    }
+    
     console.log(`✅ LIMIT order created:`, {
       userId,
       transactionId,
@@ -913,6 +918,11 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
       if (global.sendAdminTransactionUpdate) {
         global.sendAdminTransactionUpdate();
       }
+      
+      // Send admin user update via WebSocket (reserved funds changed)
+      if (global.sendAdminUserUpdate) {
+        global.sendAdminUserUpdate();
+      }
 
       console.log(`✅ LIMIT order cancelled:`, {
         userId,
@@ -1106,6 +1116,11 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
         global.sendAdminTransactionUpdate();
       }
       
+      // Send admin user update via WebSocket (balance changed)
+      if (global.sendAdminUserUpdate) {
+        global.sendAdminUserUpdate();
+      }
+      
       console.log(`✅ MARKET ${action.toUpperCase()} executed:`, {
         userId,
         transactionId: transactionResult.insertId,
@@ -1291,6 +1306,11 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
       // Send admin transaction update via WebSocket
       if (global.sendAdminTransactionUpdate) {
         global.sendAdminTransactionUpdate();
+      }
+      
+      // Send admin user update via WebSocket (both users' balances changed)
+      if (global.sendAdminUserUpdate) {
+        global.sendAdminUserUpdate();
       }
       
       console.log(`✅ SEND transaction executed:`, {
@@ -1922,6 +1942,62 @@ async function sendAdminDCAPlansUpdate() {
   }
 }
 
+// Function to send user updates to admin users
+async function sendAdminUserUpdate() {
+  try {
+    console.log('🔍 Sending admin user update to all admin users');
+    
+    // Fetch ALL users with balances for admin view
+    const [users] = await db.execute(
+      `SELECT 
+        id,
+        name,
+        email,
+        available_inr + reserved_inr + borrowed_inr as inrBalance,
+        available_btc + reserved_btc + collateral_btc as btcBalance,
+        is_admin,
+        created_at
+       FROM users 
+       ORDER BY created_at DESC`
+    );
+    
+    const adminUserData = {
+      users,
+      totalCount: users.length,
+      adminCount: users.filter(u => u.is_admin).length,
+      regularCount: users.filter(u => !u.is_admin).length
+    };
+    
+    console.log(`📊 Sending ${users.length} users to admin clients`);
+    
+    // Send to all admin users
+    for (const [userId, socketSet] of userSockets.entries()) {
+      try {
+        // Check if this user is an admin
+        const [adminRows] = await db.execute(
+          'SELECT is_admin FROM users WHERE id = ?',
+          [userId]
+        );
+        
+        if (adminRows.length > 0 && adminRows[0].is_admin) {
+          // Send admin user update to all this admin's sockets
+          socketSet.forEach((socketId) => {
+            io.to(socketId).emit('admin_user_update', {
+              ...adminUserData,
+              timestamp: new Date().toISOString()
+            });
+          });
+          console.log(`📡 Admin user update sent to ${socketSet.size} client(s) for admin ${userId}`);
+        }
+      } catch (error) {
+        console.error(`Error checking admin status for user ${userId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error sending admin user update:', error);
+  }
+}
+
 // Make broadcast function available globally
 global.broadcastToClients = broadcastToClients;
 global.sendUserBalanceUpdate = sendUserBalanceUpdate;
@@ -1929,6 +2005,7 @@ global.sendUserTransactionUpdate = sendUserTransactionUpdate;
 global.sendUserDCAPlansUpdate = sendUserDCAPlansUpdate;
 global.sendAdminTransactionUpdate = sendAdminTransactionUpdate;
 global.sendAdminDCAPlansUpdate = sendAdminDCAPlansUpdate;
+global.sendAdminUserUpdate = sendAdminUserUpdate;
 
 // Function to get local network IP address
 function getLocalNetworkIP() {

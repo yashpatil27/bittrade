@@ -46,7 +46,7 @@ function App() {
           <BalanceProvider>
             <TransactionProvider>
               <DCAPlansProvider>
-              <WebSocketAuthenticator />
+                <WebSocketAuthenticator />
               <Router>
           <Suspense fallback={<PageLoader />}>
             <Routes>

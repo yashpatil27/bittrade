@@ -171,6 +171,11 @@ class DataService {
           global.sendAdminTransactionUpdate();
         }
         
+        // Send admin user update notification (balance changed)
+        if (global.sendAdminUserUpdate) {
+          global.sendAdminUserUpdate();
+        }
+        
       } catch (dbError) {
         await this.db.rollback();
         throw dbError;

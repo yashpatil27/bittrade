@@ -195,8 +195,8 @@ router.get('/users', authenticateToken, async (req, res) => {
 
     const [users] = await db.execute(
       `SELECT id, name, email, 
-              available_btc as btcBalance,
-              available_inr as inrBalance,
+              available_inr + reserved_inr + borrowed_inr as inrBalance,
+              available_btc + reserved_btc + collateral_btc as btcBalance,
               is_admin,
               created_at
        FROM users 
@@ -291,6 +291,11 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
         affectedRows: deletedUserResult.affectedRows
       });
 
+      // Send admin user update via WebSocket
+      if (global.sendAdminUserUpdate) {
+        await global.sendAdminUserUpdate();
+      }
+
       res.json({
         success: true,
         message: isTargetAdmin 
@@ -380,6 +385,11 @@ router.post('/users/:userId/deposit-bitcoin', authenticateToken, async (req, res
       await global.sendUserTransactionUpdate(userId);
     }
 
+    // Send admin user update via WebSocket
+    if (global.sendAdminUserUpdate) {
+      await global.sendAdminUserUpdate();
+    }
+
     res.json({
       success: true,
       message: 'Bitcoin deposited successfully',
@@ -458,6 +468,11 @@ router.post('/users/:userId/deposit-cash', authenticateToken, async (req, res) =
     // Broadcast transaction update to user's connected clients
     if (global.sendUserTransactionUpdate) {
       await global.sendUserTransactionUpdate(userId);
+    }
+
+    // Send admin user update via WebSocket
+    if (global.sendAdminUserUpdate) {
+      await global.sendAdminUserUpdate();
     }
 
     res.json({
@@ -543,6 +558,11 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
     // Broadcast transaction update to user's connected clients
     if (global.sendUserTransactionUpdate) {
       await global.sendUserTransactionUpdate(userId);
+    }
+
+    // Send admin user update via WebSocket
+    if (global.sendAdminUserUpdate) {
+      await global.sendAdminUserUpdate();
     }
 
     res.json({
@@ -721,6 +741,11 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
     // Broadcast transaction update to user's connected clients
     if (global.sendUserTransactionUpdate) {
       await global.sendUserTransactionUpdate(userId);
+    }
+
+    // Send admin user update via WebSocket
+    if (global.sendAdminUserUpdate) {
+      await global.sendAdminUserUpdate();
     }
 
     res.json({
@@ -1058,6 +1083,11 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
       // Broadcast transaction update to user's connected clients
       if (global.sendUserTransactionUpdate) {
         await global.sendUserTransactionUpdate(transaction.user_id);
+      }
+
+      // Send admin user update via WebSocket
+      if (global.sendAdminUserUpdate) {
+        await global.sendAdminUserUpdate();
       }
 
       res.json({
