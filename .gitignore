@@ -114,3 +114,5 @@ nginx.conf
 # PM2 runtime files
 .pm2/
 ecosystem.config.production.js
+ecosystem.config.js
+*.deb
