@@ -194,6 +194,8 @@ export const BalanceProvider: React.FC<BalanceProviderProps> = ({ children }) =>
       fetchUserBalance();
       // Try to fetch users (will only work for admin users)
       fetchUsers();
+      // Try to fetch admin balance (will only work for admin users)
+      fetchAdminBalance();
     } else {
       setBalanceData(null);
       setAdminBalanceData(null);
@@ -201,7 +203,7 @@ export const BalanceProvider: React.FC<BalanceProviderProps> = ({ children }) =>
       setIsLoading(false);
       setUsersLoading(false);
     }
-  }, [isAuthenticated, fetchUserBalance, fetchUsers]);
+  }, [isAuthenticated, fetchUserBalance, fetchUsers, fetchAdminBalance]);
 
   // Handle WebSocket balance updates for individual users
   useWebSocketEvent<BalanceData>('user_balance_update', (data) => {
@@ -227,6 +229,10 @@ export const BalanceProvider: React.FC<BalanceProviderProps> = ({ children }) =>
       setUsers(data.users);
       setUsersError(null);
       setUsersLoading(false);
+      
+      // Also refresh admin balance since user balances changed
+      console.log('📊 BalanceContext: Admin user update received, refreshing admin total balance');
+      fetchAdminBalance();
     }
   });
 
