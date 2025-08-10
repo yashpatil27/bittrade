@@ -116,3 +116,5 @@ nginx.conf
 ecosystem.config.production.js
 ecosystem.config.js
 *.deb
+.env.production
+.env.development
