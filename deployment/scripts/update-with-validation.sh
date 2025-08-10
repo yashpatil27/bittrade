@@ -36,8 +36,8 @@ cd "$PROJECT_ROOT"
 log_info "Starting BitTrade deployment with validation..."
 
 log_info "Step 1/9: Running pre-deployment validation..."
-if [ -f "$SCRIPT_DIR/validate-deployment.sh" ]; then
-    if ! "$SCRIPT_DIR/validate-deployment.sh"; then
+if [ -f "$SCRIPT_DIR/validate-deployment-fixed.sh" ]; then
+    if ! "$SCRIPT_DIR/validate-deployment-fixed.sh"; then
         log_error "Pre-deployment validation failed!"
         log_error "Please fix the issues and try again."
         exit 1
@@ -102,6 +102,7 @@ fi
 # Always test with Node.js as well since that's what the app uses
 log_info "Testing Node.js database connection..."
 NODE_ENV=production timeout 15 node -e "
+require('dotenv').config({ path: '.env.production' });
 const mysql = require('mysql2/promise');
 const config = require('./config/config');
 

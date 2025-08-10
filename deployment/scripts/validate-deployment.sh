@@ -31,7 +31,7 @@ echo ""
 echo "1. Checking Database Configuration..."
 
 # Check if config uses localhost instead of IP
-if grep -q "localhost" /home/ubuntu/bittrade/server/config/config.js; then
+if grep -q "localhost" /home/oem/bittrade/server/config/config.js; then
     print_warning "Config uses 'localhost' - should use explicit IP address"
 fi
 
@@ -51,17 +51,17 @@ echo ""
 echo "2. Checking Environment Files..."
 
 # Check for required env files
-[ -f "/home/ubuntu/bittrade/server/.env.production" ]
+[ -f "/home/oem/bittrade/server/.env.production" ]
 print_status ".env.production exists" $?
 
-[ -f "/home/ubuntu/bittrade/server/.env.development" ]
+[ -f "/home/oem/bittrade/server/.env.development" ]
 print_status ".env.development exists" $?
 
 echo ""
 echo "3. Testing Database Connection..."
 
 # Test database connection with timeout and proper cleanup
-cd /home/ubuntu/bittrade/server
+cd /home/oem/bittrade/server
 
 # Test with production environment (this is what the app will use)
 NODE_ENV=production timeout 10 node -e "
@@ -102,7 +102,7 @@ echo ""
 echo "4. Checking Environment Variable Loading..."
 
 # Test environment variable loading with timeout
-cd /home/ubuntu/bittrade/server
+cd /home/oem/bittrade/server
 NODE_ENV=production timeout 5 node -e "
 const env = process.env.NODE_ENV || 'development';
 try {
@@ -129,11 +129,11 @@ echo ""
 echo "5. Checking PM2 Configuration..."
 
 # Check if ecosystem config exists
-[ -f "/home/ubuntu/bittrade/ecosystem.config.js" ]
+[ -f "/home/oem/bittrade/ecosystem.config.js" ]
 print_status "PM2 ecosystem config exists" $?
 
 # Check if both processes are defined
-if grep -q "bittrade-server" /home/ubuntu/bittrade/ecosystem.config.js && grep -q "bittrade-client" /home/ubuntu/bittrade/ecosystem.config.js; then
+if grep -q "bittrade-server" /home/oem/bittrade/ecosystem.config.js && grep -q "bittrade-client" /home/oem/bittrade/ecosystem.config.js; then
     print_status "Both server and client processes defined" 0
 else
     print_status "Both server and client processes defined" 1
@@ -143,10 +143,10 @@ echo ""
 echo "6. Checking Build Status..."
 
 # Check if client build exists
-[ -d "/home/ubuntu/bittrade/client/build" ]
+[ -d "/home/oem/bittrade/client/build" ]
 print_status "Client build directory exists" $?
 
-[ -f "/home/ubuntu/bittrade/client/build/index.html" ]
+[ -f "/home/oem/bittrade/client/build/index.html" ]
 print_status "Client build files exist" $?
 
 echo ""
