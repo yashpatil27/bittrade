@@ -45,21 +45,38 @@
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
     <script>
-      // Register service worker for PWA caching
+      // Register service worker for PWA caching (only in production)
+      // In development, disable service worker to avoid conflicts with HMR
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(registration => {
-              console.log('[App] SW registered: ', registration);
-              
-              // Check for updates
-              registration.addEventListener('updatefound', () => {
-                console.log('[App] SW update found');
+          // Check if we're in development mode by looking for webpack dev server
+          const isDevelopment = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1' ||
+                               window.location.port === '3000';
+          
+          if (!isDevelopment) {
+            // Production: Register service worker
+            navigator.serviceWorker.register('/sw.js')
+              .then(registration => {
+                console.log('[App] SW registered: ', registration);
+                
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                  console.log('[App] SW update found');
+                });
+              })
+              .catch(registrationError => {
+                console.log('[App] SW registration failed: ', registrationError);
               });
-            })
-            .catch(registrationError => {
-              console.log('[App] SW registration failed: ', registrationError);
+          } else {
+            // Development: Unregister any existing service workers
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for(let registration of registrations) {
+                registration.unregister();
+                console.log('[App] SW unregistered for development - preventing HMR conflicts');
+              }
             });
+          }
         });
       }
     </script>

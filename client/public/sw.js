@@ -66,6 +66,16 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Skip development server assets and HMR requests
+  if (url.port === '3000' || // Development server
+      url.pathname.includes('webpack') || // Webpack assets
+      url.pathname.includes('hot-update') || // HMR updates
+      url.searchParams.has('webpack') || // Webpack queries
+      url.pathname.includes('sockjs-node') || // Dev server websockets
+      url.pathname.includes('__webpack_dev_server__')) { // Dev server assets
+    return;
+  }
+
   // Handle API requests - always go to network for fresh data
   if (url.pathname.startsWith('/api/') || 
       url.pathname.startsWith('/socket.io/') ||
