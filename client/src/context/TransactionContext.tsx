@@ -164,6 +164,18 @@ export const TransactionProvider: React.FC<TransactionProviderProps> = ({ childr
     }
   });
 
+  // Handle WebSocket admin transaction updates
+  useWebSocketEvent<TransactionUpdateData>('admin_transaction_update', (data) => {
+    console.log('📊 TransactionContext: Received admin transaction update via WebSocket:', data);
+    
+    if (data && data.transactions) {
+      // Update admin transactions with the most recent data from WebSocket
+      setAdminTransactions(data.transactions);
+      setAdminTransactionsError(null);
+      setAdminTransactionsLoading(false);
+    }
+  });
+
   // Computed/filtered data using useMemo for performance
   const getPendingOrders = useCallback((isAdmin: boolean = false): Transaction[] => {
     const transactions = isAdmin ? adminTransactions : userTransactions;

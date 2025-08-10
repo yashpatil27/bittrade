@@ -6,9 +6,11 @@ import DCAPlans from '../../components/DCAPlans';
 import BitcoinQuote from '../../components/BitcoinQuote';
 import { Transaction, DCAPlan } from '../../types';
 import { useDCAPlans } from '../../context/DCAPlansContext';
+import { useTransactions } from '../../context/TransactionContext';
 
 const AdminHistory: React.FC = () => {
   const { refetchAdminDCAPlans } = useDCAPlans();
+  const { refetchAdminTransactions } = useTransactions();
   
   const handleTransactionClick = (transaction: Transaction) => {
     console.log('Admin transaction clicked:', transaction);
@@ -18,10 +20,11 @@ const AdminHistory: React.FC = () => {
     console.log('Admin DCA Plan clicked:', plan);
   };
   
-  // Load admin DCA plans when component mounts
+  // Load admin DCA plans and transactions when component mounts
   useEffect(() => {
     refetchAdminDCAPlans();
-  }, [refetchAdminDCAPlans]);
+    refetchAdminTransactions();
+  }, [refetchAdminDCAPlans, refetchAdminTransactions]);
 
   return (
     <div className="min-h-screen bg-black">

@@ -476,6 +476,11 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
       global.sendUserTransactionUpdate(userId);
     }
     
+    // Send admin transaction update via WebSocket
+    if (global.sendAdminTransactionUpdate) {
+      global.sendAdminTransactionUpdate();
+    }
+    
     console.log(`✅ LIMIT order created:`, {
       userId,
       transactionId,
@@ -1076,6 +1081,11 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
         global.sendUserTransactionUpdate(userId);
       }
       
+      // Send admin transaction update via WebSocket
+      if (global.sendAdminTransactionUpdate) {
+        global.sendAdminTransactionUpdate();
+      }
+      
       console.log(`✅ MARKET ${action.toUpperCase()} executed:`, {
         userId,
         transactionId: transactionResult.insertId,
@@ -1256,6 +1266,11 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
       if (global.sendUserTransactionUpdate) {
         global.sendUserTransactionUpdate(userId);
         global.sendUserTransactionUpdate(recipient.id);
+      }
+      
+      // Send admin transaction update via WebSocket
+      if (global.sendAdminTransactionUpdate) {
+        global.sendAdminTransactionUpdate();
       }
       
       console.log(`✅ SEND transaction executed:`, {
@@ -1623,6 +1638,52 @@ async function sendUserTransactionUpdate(userId) {
   }
 }
 
+// Function to send admin transaction updates to all admin users
+async function sendAdminTransactionUpdate() {
+  try {
+    console.log('🔍 Sending admin transaction update');
+    
+    // Fetch recent admin transactions (same as the admin API endpoint)
+    const [transactions] = await db.execute(
+      `SELECT t.id, t.user_id, t.type, t.status, t.btc_amount, t.inr_amount, t.execution_price, t.created_at, t.executed_at,
+              u.name as user_name, u.email as user_email
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE (u.is_admin = false OR u.is_admin IS NULL)
+       ORDER BY t.created_at DESC 
+       LIMIT 100`
+    );
+    
+    console.log(`📊 Sending ${transactions.length} admin transactions`);
+    
+    // Find all connected admin users and send them the update
+    for (const [userId, socketSet] of userSockets.entries()) {
+      try {
+        // Check if this user is an admin
+        const [adminRows] = await db.execute(
+          'SELECT is_admin FROM users WHERE id = ?',
+          [userId]
+        );
+        
+        if (adminRows.length > 0 && adminRows[0].is_admin) {
+          // Send admin transaction update to all this admin's sockets
+          socketSet.forEach((socketId) => {
+            io.to(socketId).emit('admin_transaction_update', {
+              transactions,
+              timestamp: new Date().toISOString()
+            });
+          });
+          console.log(`📡 Admin transaction update sent to ${socketSet.size} client(s) for admin ${userId}`);
+        }
+      } catch (error) {
+        console.error(`Error checking admin status for user ${userId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error sending admin transaction update:', error);
+  }
+}
+
 // Function to send DCA plans update to specific user
 async function sendUserDCAPlansUpdate(userId) {
   try {
@@ -1749,6 +1810,7 @@ global.broadcastToClients = broadcastToClients;
 global.sendUserBalanceUpdate = sendUserBalanceUpdate;
 global.sendUserTransactionUpdate = sendUserTransactionUpdate;
 global.sendUserDCAPlansUpdate = sendUserDCAPlansUpdate;
+global.sendAdminTransactionUpdate = sendAdminTransactionUpdate;
 
 // Function to get local network IP address
 function getLocalNetworkIP() {
