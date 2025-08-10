@@ -178,6 +178,20 @@ export const DCAPlansProvider: React.FC<DCAPlansProviderProps> = ({ children }) 
       fetchAdminDCAPlans();
     }
   });
+  
+  // Handle dedicated admin DCA plans updates via WebSocket
+  useWebSocketEvent<any>('admin_dca_plans_update', (data) => {
+    console.log('📊 DCAPlansContext: Received admin DCA plans update via WebSocket:', data);
+    
+    if (data && data.plans) {
+      setAdminDCAPlans({
+        plans: data.plans,
+        totalCount: data.totalCount
+      });
+      setAdminDCAPlansError(null);
+      setAdminDCAPlansLoading(false);
+    }
+  });
 
   // Computed values
   const hasActivePlans = userDCAPlans ? userDCAPlans.plans.length > 0 : false;

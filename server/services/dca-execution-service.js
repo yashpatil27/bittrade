@@ -122,6 +122,11 @@ class DCAExecutionService {
           // Notify admin about execution
           await this.sendAdminTransactionUpdate();
           
+          // Send admin DCA plans update notification
+          if (global.sendAdminDCAPlansUpdate) {
+            await global.sendAdminDCAPlansUpdate();
+          }
+          
           console.log(`✅ DCA plan ${plan.id} executed successfully`);
         } else {
           // If trade failed, revert the reservation

@@ -630,6 +630,11 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
     if (global.sendUserDCAPlansUpdate) {
       global.sendUserDCAPlansUpdate(userId);
     }
+    
+    // Send admin DCA plans update via WebSocket
+    if (global.sendAdminDCAPlansUpdate) {
+      global.sendAdminDCAPlansUpdate();
+    }
 
     res.status(201).json({ planId: result.insertId, message: 'DCA plan created successfully' });
   } catch (error) {
@@ -721,6 +726,11 @@ app.patch('/api/dca-plans/:planId/status', authenticateToken, async (req, res) =
     if (global.sendUserDCAPlansUpdate) {
       global.sendUserDCAPlansUpdate(userId);
     }
+    
+    // Send admin DCA plans update via WebSocket
+    if (global.sendAdminDCAPlansUpdate) {
+      global.sendAdminDCAPlansUpdate();
+    }
 
     res.json({ message: `Plan ${status.toLowerCase()} successfully` });
   } catch (error) {
@@ -782,6 +792,11 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
       // Send updates via WebSocket
       if (global.sendUserDCAPlansUpdate) {
         global.sendUserDCAPlansUpdate(userId);
+      }
+      
+      // Send admin DCA plans update via WebSocket
+      if (global.sendAdminDCAPlansUpdate) {
+        global.sendAdminDCAPlansUpdate();
       }
 
       res.json({ 
@@ -1810,12 +1825,110 @@ function broadcastToClients(eventName, data) {
   });
 }
 
+// Function to send DCA plans update to admin users
+async function sendAdminDCAPlansUpdate() {
+  try {
+    console.log('🔍 Sending admin DCA plans update to all admin users');
+    
+    // Fetch ALL DCA plans from all users for admin view
+    const [rows] = await db.execute(
+      `SELECT ap.id, ap.user_id, ap.plan_type, ap.status, ap.amount_per_execution_inr, ap.amount_per_execution_btc, 
+              ap.frequency, ap.max_price, ap.min_price, ap.remaining_executions, ap.next_execution_at, 
+              ap.created_at, ap.completed_at, u.name as user_name, u.email as user_email
+       FROM active_plans ap
+       JOIN users u ON ap.user_id = u.id
+       ORDER BY 
+         CASE ap.status
+           WHEN 'ACTIVE' THEN 1
+           WHEN 'PAUSED' THEN 2  
+           WHEN 'COMPLETED' THEN 3
+           ELSE 4
+         END,
+         ap.created_at DESC`
+    );
+    
+    // Get performance data for each plan
+    const plansWithPerformance = await Promise.all(rows.map(async (plan) => {
+      try {
+        const [perfRows] = await db.execute(
+          `SELECT COUNT(*) as total_executions,
+                  SUM(inr_amount) as total_invested,
+                  SUM(btc_amount) as total_btc,
+                  AVG(execution_price) as avg_price
+           FROM transactions 
+           WHERE dca_plan_id = ? AND status = 'EXECUTED'`,
+          [plan.id]
+        );
+        
+        const performance = perfRows[0];
+        return {
+          ...plan,
+          performance: {
+            total_executions: performance.total_executions || 0,
+            total_invested: performance.total_invested || 0,
+            total_btc: performance.total_btc || 0,
+            avg_price: performance.avg_price || 0
+          }
+        };
+      } catch (error) {
+        console.error(`Error fetching performance for plan ${plan.id}:`, error);
+        return {
+          ...plan,
+          performance: {
+            total_executions: 0,
+            total_invested: 0,
+            total_btc: 0,
+            avg_price: 0
+          }
+        };
+      }
+    }));
+    
+    const adminDCAPlansData = {
+      plans: plansWithPerformance,
+      totalCount: plansWithPerformance.length,
+      activeCount: plansWithPerformance.filter(p => p.status === 'ACTIVE').length,
+      pausedCount: plansWithPerformance.filter(p => p.status === 'PAUSED').length,
+      completedCount: plansWithPerformance.filter(p => p.status === 'COMPLETED').length
+    };
+    
+    console.log(`📋 Sending ${plansWithPerformance.length} DCA plans to admin users`);
+    
+    // Send to all admin users
+    for (const [userId, socketSet] of userSockets.entries()) {
+      try {
+        // Check if this user is an admin
+        const [adminRows] = await db.execute(
+          'SELECT is_admin FROM users WHERE id = ?',
+          [userId]
+        );
+        
+        if (adminRows.length > 0 && adminRows[0].is_admin) {
+          // Send admin DCA plans update to all this admin's sockets
+          socketSet.forEach((socketId) => {
+            io.to(socketId).emit('admin_dca_plans_update', {
+              ...adminDCAPlansData,
+              timestamp: new Date().toISOString()
+            });
+          });
+          console.log(`📡 Admin DCA plans update sent to ${socketSet.size} client(s) for admin ${userId}`);
+        }
+      } catch (error) {
+        console.error(`Error checking admin status for user ${userId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error sending admin DCA plans update:', error);
+  }
+}
+
 // Make broadcast function available globally
 global.broadcastToClients = broadcastToClients;
 global.sendUserBalanceUpdate = sendUserBalanceUpdate;
 global.sendUserTransactionUpdate = sendUserTransactionUpdate;
 global.sendUserDCAPlansUpdate = sendUserDCAPlansUpdate;
 global.sendAdminTransactionUpdate = sendAdminTransactionUpdate;
+global.sendAdminDCAPlansUpdate = sendAdminDCAPlansUpdate;
 
 // Function to get local network IP address
 function getLocalNetworkIP() {
