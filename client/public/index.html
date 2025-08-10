@@ -44,5 +44,24 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
+    <script>
+      // Register service worker for PWA caching
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('[App] SW registered: ', registration);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                console.log('[App] SW update found');
+              });
+            })
+            .catch(registrationError => {
+              console.log('[App] SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
