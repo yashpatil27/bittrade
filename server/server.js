@@ -894,6 +894,11 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
         global.sendUserTransactionUpdate(userId);
       }
 
+      // Send admin transaction update via WebSocket (for cancelled orders)
+      if (global.sendAdminTransactionUpdate) {
+        global.sendAdminTransactionUpdate();
+      }
+
       console.log(`✅ LIMIT order cancelled:`, {
         userId,
         transactionId,

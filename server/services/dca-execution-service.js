@@ -119,6 +119,9 @@ class DCAExecutionService {
           await this.sendUserTransactionUpdate(plan.user_id);
           await this.sendUserBalanceUpdate(plan.user_id);
           
+          // Notify admin about execution
+          await this.sendAdminTransactionUpdate();
+          
           console.log(`✅ DCA plan ${plan.id} executed successfully`);
         } else {
           // If trade failed, revert the reservation
@@ -335,6 +338,15 @@ class DCAExecutionService {
       await global.sendUserBalanceUpdate(userId);
     } else {
       console.log(`📨 Send balance update to user ${userId}`);
+    }
+  }
+
+  async sendAdminTransactionUpdate() {
+    // Use global broadcast functions if available
+    if (global.sendAdminTransactionUpdate) {
+      await global.sendAdminTransactionUpdate();
+    } else {
+      console.log(`📨 Send admin transaction update`);
     }
   }
 

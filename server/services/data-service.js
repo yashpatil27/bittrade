@@ -166,6 +166,11 @@ class DataService {
           global.sendUserTransactionUpdate(order.user_id);
         }
         
+        // Send admin transaction update notification
+        if (global.sendAdminTransactionUpdate) {
+          global.sendAdminTransactionUpdate();
+        }
+        
       } catch (dbError) {
         await this.db.rollback();
         throw dbError;
