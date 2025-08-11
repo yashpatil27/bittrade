@@ -13,6 +13,9 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) =
   const { balanceData, isLoading } = useBalance();
   const { sellRateInr } = usePrice();
   
+  // Detect if user is on mobile device
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
   // Initialize state from localStorage
   const [showInr, setShowInr] = useState(() => {
     try {
@@ -94,7 +97,19 @@ const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) =
         <div className="flex items-center justify-center mb-2">
           <button 
             onClick={toggleAmount}
-            className="text-white text-5xl font-medium hover:opacity-80 transition-opacity duration-200 focus:outline-none"
+            className={`text-white text-5xl font-medium hover:opacity-80 transition-opacity duration-200 focus:outline-none ${
+              isMobile ? 'select-none' : ''
+            }`}
+            style={isMobile ? {
+              WebkitUserSelect: 'none',
+              MozUserSelect: 'none',
+              msUserSelect: 'none',
+              userSelect: 'none',
+              WebkitTouchCallout: 'none',
+              WebkitTapHighlightColor: 'transparent'
+            } : {}}
+            onContextMenu={isMobile ? (e) => e.preventDefault() : undefined}
+            onDragStart={isMobile ? (e) => e.preventDefault() : undefined}
           >
             {showInr ? (
               <AnimateINR 
