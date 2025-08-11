@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useCallback } from 'react';
 import { Bitcoin } from 'lucide-react';
 import { usePrice } from '../context/PriceContext';
 import { AnimateINR } from './AnimateNumberFlow';
@@ -12,7 +12,7 @@ interface BitcoinPriceProps {
 }
 
 
-const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate, onChartClick }) => {
+const BitcoinPriceComponent: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick, onSellClick, onRatesUpdate, onChartClick }) => {
   // Use centralized price context
   const { buyRateInr, sellRateInr, pricesLoading, hasValidPrices, chartData, fetchChartData, btcUsdPrice } = usePrice();
 
@@ -34,34 +34,54 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
     }
   }, [chartData, fetchChartData]);
 
-  // Get 1-day chart data for mock chart
-  const oneDayChart = chartData['1d'];
-  const chartPoints = oneDayChart?.data || [];
+  // Get 1-day chart data for mock chart - MEMOIZED
+  const chartMetrics = useMemo(() => {
+    const oneDayChart = chartData['1d'];
+    const chartPoints = oneDayChart?.data || [];
+    const dailyChangePercent = oneDayChart?.priceChangePercent || 0;
+    const isPositive = dailyChangePercent >= 0;
+    
+    return {
+      oneDayChart,
+      chartPoints,
+      dailyChangePercent,
+      isPositive
+    };
+  }, [chartData]);
   
-  // Calculate daily change percentage
-  const dailyChangePercent = oneDayChart?.priceChangePercent || 0;
-  const isPositive = dailyChangePercent >= 0;
+  const { oneDayChart, chartPoints, dailyChangePercent, isPositive } = chartMetrics;
 
-  // Generate smooth SVG path from chart data
-  const generateSmoothPath = (points: any[], width: number, height: number) => {
+  // Generate smooth SVG path from chart data - MEMOIZED for performance
+  const generateSmoothPath = useCallback((points: any[], width: number, height: number) => {
     if (points.length < 2) return '';
 
-    // Sample points for performance (take every nth point based on data length)
-    const maxPoints = 24;
-    const step = Math.max(1, Math.floor(points.length / maxPoints));
-    const sampledPoints = points.filter((_, index) => index % step === 0);
+    // Use moving average to smooth the data (averages groups of 12 points)
+    const windowSize = 12;
+    const smoothedPoints = [];
     
-    if (sampledPoints.length < 2) return '';
+    for (let i = 0; i <= points.length - windowSize; i += windowSize) {
+      const window = points.slice(i, i + windowSize);
+      const avgPrice = window.reduce((sum, point) => sum + point.price, 0) / window.length;
+      
+      // Use the timestamp from the middle of the window for better representation
+      const midIndex = Math.floor(window.length / 2);
+      smoothedPoints.push({
+        ...window[midIndex],
+        price: avgPrice
+      });
+    }
+    
+    if (smoothedPoints.length < 2) return '';
 
     // Find min/max prices for scaling
-    const prices = sampledPoints.map(p => p.price);
+    const prices = smoothedPoints.map(p => p.price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
     const priceRange = maxPrice - minPrice || 1;
 
     // Convert to SVG coordinates
-    const svgPoints = sampledPoints.map((point, index) => {
-      const x = (index / (sampledPoints.length - 1)) * width;
+    const svgPoints = smoothedPoints.map((point, index) => {
+      const x = (index / (smoothedPoints.length - 1)) * width;
       const y = height - ((point.price - minPrice) / priceRange) * (height * 0.8) - (height * 0.1);
       return { x, y };
     });
@@ -152,8 +172,36 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
     }
     
     return path;
-  };
+  }, []); // No dependencies - pure function
 
+  // Memoize SVG path generation - MUST be at top level to follow Rules of Hooks
+  const memoizedSvgPath = useMemo(() => {
+    const linePath = generateSmoothPath(chartPoints, 300, 100);
+    
+    return (
+      <>
+        {/* Actual line path if available */}               
+        {linePath && (
+          <path
+            fill="none"
+            stroke="#ffd4d4"
+            strokeWidth="2"
+            d={linePath}
+          />
+        )}
+        
+        {/* Fallback to mock data if no real data */}
+        {!linePath && (
+          <path
+            fill="none"
+            stroke="#ffd4d4"
+            strokeWidth="2"
+            d="M0,65 C8,63 15,58 25,55 C35,52 42,68 52,72 C62,76 68,45 78,42 C88,39 95,75 105,78 C115,81 122,35 132,32 C142,29 148,85 158,88 C168,91 175,25 185,22 C195,19 202,80 212,83 C222,86 228,40 238,37 C248,34 255,70 265,73 C275,76 285,28 300,25"
+          />
+        )}
+      </>
+    );
+  }, [chartPoints, generateSmoothPath]);
 
   // Show loading state when no data is available
   if (pricesLoading || !hasValidPrices) {
@@ -233,34 +281,8 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
         {/* Mock chart visualization */}
         <svg className="w-full h-full" viewBox="0 0 300 100" preserveAspectRatio="none">
           
-          {/* Real 1-day chart data with smooth curves */}
-          {(() => {
-            const linePath = generateSmoothPath(chartPoints, 300, 100);
-            
-            return (
-              <>
-                {/* Actual line path if available */}               
-                {linePath && (
-                  <path
-                    fill="none"
-                    stroke="#ffd4d4"
-                    strokeWidth="2"
-                    d={linePath}
-                  />
-                )}
-                
-                {/* Fallback to mock data if no real data */}
-                {!linePath && (
-                  <path
-                    fill="none"
-                    stroke="#ffd4d4"
-                    strokeWidth="2"
-                    d="M0,65 C8,63 15,58 25,55 C35,52 42,68 52,72 C62,76 68,45 78,42 C88,39 95,75 105,78 C115,81 122,35 132,32 C142,29 148,85 158,88 C168,91 175,25 185,22 C195,19 202,80 212,83 C222,86 228,40 238,37 C248,34 255,70 265,73 C275,76 285,28 300,25"
-                  />
-                )}
-              </>
-            );
-          })()}
+          {/* Real 1-day chart data with smooth curves - MEMOIZED */}
+          {memoizedSvgPath}
         </svg>
       </div>
       
@@ -307,5 +329,11 @@ const BitcoinPrice: React.FC<BitcoinPriceProps> = ({ className = "", onBuyClick,
     </div>
   );
 };
+
+// Memoize the component for performance
+const BitcoinPrice = React.memo(BitcoinPriceComponent);
+
+// Add display name for debugging
+BitcoinPrice.displayName = 'BitcoinPrice';
 
 export default BitcoinPrice;
