@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Target, CalendarSync, ArrowDown, ArrowUp, Zap, Plus, Bitcoin, IndianRupee } from 'lucide-react';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
@@ -26,7 +26,7 @@ interface TransactionListProps {
   disableActions?: boolean; // If true, disable cancel order functionality
 }
 
-const TransactionList: React.FC<TransactionListProps> = ({
+const TransactionListComponent = ({
   title = 'Transactions',
   showViewAll = true,
   onTransactionClick,
@@ -40,7 +40,7 @@ const TransactionList: React.FC<TransactionListProps> = ({
   wrapInCard = false,
   showAllUsers = false,
   disableActions = false
-}) => {
+}: TransactionListProps) => {
   // Use new PortfolioContext
   const {
     userTransactions,
@@ -75,14 +75,16 @@ const TransactionList: React.FC<TransactionListProps> = ({
   const [showAll, setShowAll] = useState(false);
   const INITIAL_LOAD_COUNT = 10;
   
-  // Use centralized filtering functions for better performance
-  const filteredTransactions = filterPending 
-    ? getPendingOrders(showAllUsers)
-    : excludePending 
-    ? getCompletedTransactions(showAllUsers)
-    : filterDCA
-    ? getDCATransactions(showAllUsers)
-    : transactions;
+  // Use centralized filtering functions with memoization for better performance
+  const filteredTransactions = useMemo(() => {
+    return filterPending 
+      ? getPendingOrders(showAllUsers)
+      : excludePending 
+      ? getCompletedTransactions(showAllUsers)
+      : filterDCA
+      ? getDCATransactions(showAllUsers)
+      : transactions;
+  }, [filterPending, excludePending, filterDCA, showAllUsers, transactions, getPendingOrders, getCompletedTransactions, getDCATransactions]);
   
   // Determine how many transactions to display
   const getDisplayTransactions = () => {
@@ -463,5 +465,11 @@ const TransactionList: React.FC<TransactionListProps> = ({
   
   return wrapInCard ? <Card>{content}</Card> : content;
 };
+
+// Memoize the component to prevent unnecessary re-renders
+const TransactionList = React.memo(TransactionListComponent);
+
+// Add display name for debugging
+TransactionList.displayName = 'TransactionList';
 
 export default TransactionList;

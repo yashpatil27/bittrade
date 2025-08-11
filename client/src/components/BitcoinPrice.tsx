@@ -42,14 +42,13 @@ const BitcoinPriceComponent: React.FC<BitcoinPriceProps> = ({ className = "", on
     const isPositive = dailyChangePercent >= 0;
     
     return {
-      oneDayChart,
       chartPoints,
       dailyChangePercent,
       isPositive
     };
   }, [chartData]);
   
-  const { oneDayChart, chartPoints, dailyChangePercent, isPositive } = chartMetrics;
+  const { chartPoints, dailyChangePercent, isPositive } = chartMetrics;
 
   // Generate smooth SVG path from chart data - MEMOIZED for performance
   const generateSmoothPath = useCallback((points: any[], width: number, height: number) => {
