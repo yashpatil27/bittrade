@@ -91,7 +91,7 @@ export const PriceProvider: React.FC<PriceProviderProps> = ({ children }) => {
   
   // Chart data state
   const [chartData, setChartData] = useState<ChartDataCache>({});
-  const [currentChartTimeframe, setCurrentChartTimeframe] = useState('90d');
+  const [currentChartTimeframe, setCurrentChartTimeframe] = useState('1d');
 
   // Fetch bitcoin prices from API
   const fetchMarketRates = useCallback(async () => {
