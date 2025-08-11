@@ -50,11 +50,9 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           // Check if we're in development mode by looking for webpack dev server
-          const isDevelopment = window.location.hostname === 'localhost' || 
-                               window.location.hostname === '127.0.0.1' ||
-                               window.location.port === '3000';
+          const isProduction = '%NODE_ENV%' === 'production';
           
-          if (!isDevelopment) {
+          if (isProduction) {
             // Production: Register service worker
             navigator.serviceWorker.register('/sw.js')
               .then(registration => {
