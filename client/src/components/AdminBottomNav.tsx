@@ -20,7 +20,7 @@ const AdminBottomNav: React.FC = () => {
 
   return (
     <div className="bg-black border-t border-black pb-safe">
-      <div className="flex items-center justify-around px-1 pt-1">
+      <div className="flex items-center justify-around px-1 pt-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const IconComponent = item.icon;
