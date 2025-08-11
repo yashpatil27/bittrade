@@ -59,7 +59,6 @@ const AdminUsers: React.FC = () => {
   };
   
   const handleDepositComplete = (user: UserWithBalance, amount: string) => {
-    console.log(`Deposit completed for ${user.name}: ${amount}`);
     // Refresh users list to show updated balances
     refetchUsers();
   };
@@ -95,7 +94,6 @@ const AdminUsers: React.FC = () => {
         throw new Error(errorData.error || 'Failed to delete user');
       }
 
-      console.log('User deleted successfully:', selectedUser.name);
       // Refresh users list
       refetchUsers();
       handleCloseModal();

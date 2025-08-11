@@ -52,7 +52,6 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   };
 
   const handleTradingComplete = (type: 'buy' | 'sell', amount: string) => {
-    console.log(`${type} completed with amount:`, amount);
     // Here you would typically:
     // 1. Update local state with new transaction
     // 2. Refresh balance
@@ -97,7 +96,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
         
 {/* Pending Orders - Only shown when there are pending limit orders */}
         <PendingOrdersList 
-          onTransactionClick={(order) => console.log('Clicked pending order:', order)}
+          onTransactionClick={(order) => { /* TODO: Handle pending order click */ }}
         />
 
         {/* Recent Transactions */}
@@ -106,7 +105,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
             title="Recent Activity"
             maxItems={5}
             excludePending={true}
-            onTransactionClick={(txn) => console.log('Clicked transaction:', txn)}
+            onTransactionClick={(txn) => { /* TODO: Handle transaction click */ }}
 onViewAllClick={() => navigate('/history')}
           />
         </Card>

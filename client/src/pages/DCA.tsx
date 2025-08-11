@@ -39,7 +39,6 @@ const DCA: React.FC = () => {
   };
 
   const handleDCAComplete = (dcaPlan: any) => {
-    console.log('DCA Plan created:', dcaPlan);
     setIsDCAModalOpen(false);
     // Refresh DCA plans through context
     refetchUserDCAPlans();
@@ -47,7 +46,6 @@ const DCA: React.FC = () => {
 
 
   const handlePlanClick = (plan: DCAPlan) => {
-    console.log('DCA Plan clicked:', plan);
     // TODO: Add plan details modal or navigation
   };
 
@@ -96,7 +94,7 @@ const DCA: React.FC = () => {
             {/* DCA Transaction History */}
             <DCATransactionList
               onTransactionClick={(transaction: Transaction) => {
-                console.log('DCA Transaction clicked:', transaction);
+                // TODO: Handle DCA transaction click
               }}
             />
           </div>

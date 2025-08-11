@@ -251,7 +251,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       
       const data = await response.json();
       setUserBalance(data);
-      console.log('📊 PortfolioContext: Fetched user balance:', data);
     } catch (err) {
       console.error('❌ PortfolioContext: User balance fetch error:', err);
       setErrorState('userBalance', err instanceof Error ? err.message : 'Failed to fetch balance');
@@ -298,7 +297,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       
       setHasMoreUserTransactions(data.hasMore || false);
       setUserTransactionsPage(requestedPage);
-      console.log('📊 PortfolioContext: Fetched user transactions:', data.transactions?.length || 0);
     } catch (err) {
       console.error('❌ PortfolioContext: User transactions fetch error:', err);
       setErrorState('userTransactions', err instanceof Error ? err.message : 'Failed to fetch transactions');
@@ -334,7 +332,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         active_plans: data.active_plans || 0,
         paused_plans: data.paused_plans || 0
       });
-      console.log('📊 PortfolioContext: Fetched user DCA plans:', data.plans?.length || 0);
     } catch (err) {
       console.error('❌ PortfolioContext: User DCA plans fetch error:', err);
       setErrorState('userDCAPlans', err instanceof Error ? err.message : 'Failed to fetch DCA plans');
@@ -367,7 +364,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       
       const data = await response.json();
       setAdminBalance(data);
-      console.log('📊 PortfolioContext: Fetched admin balance:', data);
     } catch (err) {
       console.error('❌ PortfolioContext: Admin balance fetch error:', err);
       setErrorState('adminBalance', err instanceof Error ? err.message : 'Failed to fetch admin balance');
@@ -398,7 +394,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       
       const data = await response.json();
       setAdminTransactions(data.transactions || []);
-      console.log('📊 PortfolioContext: Fetched admin transactions:', data.transactions?.length || 0);
     } catch (err) {
       console.error('❌ PortfolioContext: Admin transactions fetch error:', err);
       setErrorState('adminTransactions', err instanceof Error ? err.message : 'Failed to fetch admin transactions');
@@ -432,7 +427,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         plans: data.plans || [],
         totalCount: data.totalCount || 0
       });
-      console.log('📊 PortfolioContext: Fetched admin DCA plans:', data.plans?.length || 0);
     } catch (err) {
       console.error('❌ PortfolioContext: Admin DCA plans fetch error:', err);
       setErrorState('adminDCAPlans', err instanceof Error ? err.message : 'Failed to fetch admin DCA plans');
@@ -464,7 +458,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       
       const data = await response.json();
       setAdminUsers(data.users || []);
-      console.log('📊 PortfolioContext: Fetched admin users:', data.users?.length || 0);
     } catch (err) {
       console.error('❌ PortfolioContext: Admin users fetch error:', err);
       setErrorState('adminUsers', err instanceof Error ? err.message : 'Failed to fetch users');
@@ -477,54 +470,44 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   // ============= BATCH ACTIONS =============
   
   const fetchUserData = useCallback(async () => {
-    console.log('🔄 PortfolioContext: Fetching all user data...');
     await Promise.all([
       fetchUserBalance(),
       fetchUserTransactions(1),
       fetchUserDCAPlans()
     ]);
-    console.log('✅ PortfolioContext: All user data fetched');
   }, [fetchUserBalance, fetchUserTransactions, fetchUserDCAPlans]);
   
   const fetchAdminData = useCallback(async () => {
-    console.log('🔄 PortfolioContext: Fetching all admin data...');
     await Promise.all([
       fetchAdminBalance(),
       fetchAdminTransactions(),
       fetchAdminDCAPlans(),
       fetchAdminUsers()
     ]);
-    console.log('✅ PortfolioContext: All admin data fetched');
   }, [fetchAdminBalance, fetchAdminTransactions, fetchAdminDCAPlans, fetchAdminUsers]);
   
   const fetchAllData = useCallback(async () => {
-    console.log('🔄 PortfolioContext: Fetching all portfolio data...');
     await Promise.all([
       fetchUserData(),
       fetchAdminData()
     ]);
-    console.log('✅ PortfolioContext: All portfolio data fetched');
   }, [fetchUserData, fetchAdminData]);
   
   // ============= WEBSOCKET EVENT HANDLERS =============
   
   // Handle User Balance Updates
   useWebSocketEvent<BalanceData>('user_balance_update', (data) => {
-    console.log('📊 PortfolioContext: Received balance update via WebSocket:', data);
     setUserBalance(data);
     setLoadingState('userBalance', false);
     
     // If admin balance exists, refresh it too since user balance changed
     if (adminBalance) {
-      console.log('📊 PortfolioContext: User balance changed, refreshing admin balance');
       fetchAdminBalance();
     }
   });
   
   // Handle User Transaction Updates
   useWebSocketEvent<TransactionUpdateData>('user_transaction_update', (data) => {
-    console.log('📊 PortfolioContext: Received user transaction update via WebSocket:', data);
-    
     if (data && data.transactions) {
       setUserTransactions(data.transactions);
       setErrorState('userTransactions', null);
@@ -534,8 +517,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   
   // Handle Admin Transaction Updates
   useWebSocketEvent<TransactionUpdateData>('admin_transaction_update', (data) => {
-    console.log('📊 PortfolioContext: Received admin transaction update via WebSocket:', data);
-    
     if (data && data.transactions) {
       setAdminTransactions(data.transactions);
       setErrorState('adminTransactions', null);
@@ -545,8 +526,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   
   // Handle User DCA Plans Updates
   useWebSocketEvent<DCAPlansUpdateData>('user_dca_plans_update', (data) => {
-    console.log('📊 PortfolioContext: Received DCA plans update via WebSocket:', data);
-    
     if (data && data.plans) {
       setUserDCAPlans({
         plans: data.plans,
@@ -559,7 +538,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       
       // Refresh admin DCA plans if they exist
       if (adminDCAPlans) {
-        console.log('📊 PortfolioContext: User DCA plans changed, refreshing admin DCA plans');
         fetchAdminDCAPlans();
       }
     }
@@ -567,8 +545,6 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   
   // Handle Admin DCA Plans Updates
   useWebSocketEvent<AdminDCAPlansUpdateData>('admin_dca_plans_update', (data) => {
-    console.log('📊 PortfolioContext: Received admin DCA plans update via WebSocket:', data);
-    
     if (data && data.plans) {
       setAdminDCAPlans({
         plans: data.plans,
@@ -581,15 +557,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   
   // Handle Admin User Updates
   useWebSocketEvent<AdminUserUpdateData>('admin_user_update', (data) => {
-    console.log('📊 PortfolioContext: Received admin user update via WebSocket:', data);
-    
     if (data && data.users) {
       setAdminUsers(data.users);
       setErrorState('adminUsers', null);
       setLoadingState('adminUsers', false);
       
       // Also refresh admin balance since user balances changed
-      console.log('📊 PortfolioContext: Admin user update received, refreshing admin balance');
       fetchAdminBalance();
     }
   });
