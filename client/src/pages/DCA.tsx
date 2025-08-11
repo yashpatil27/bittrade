@@ -6,8 +6,7 @@ import DCAModal from '../components/DCAModal';
 import DCATypeSelectionModal from '../components/DCATypeSelectionModal';
 import { TrendingUp, Calendar, Repeat, Target, ArrowRight } from 'lucide-react';
 import { DCAPlan, Transaction } from '../types';
-import { useBalance } from '../context/BalanceContext';
-import { useDCAPlans } from '../context/DCAPlansContext';
+import { usePortfolio } from '../context/PortfolioContext';
 import BitcoinQuote from '../components/BitcoinQuote';
 
 
@@ -17,8 +16,7 @@ const DCA: React.FC = () => {
   const [selectedPlanType, setSelectedPlanType] = useState<'DCA_BUY' | 'DCA_SELL'>('DCA_BUY');
   
   // Use centralized contexts
-  const { balanceData } = useBalance();
-  const { hasAnyPlans, refetchUserDCAPlans } = useDCAPlans();
+  const { userBalance: balanceData, hasAnyPlans, refetchUserDCAPlans } = usePortfolio();
 
   const handleStartDCA = () => {
     // Open type selection modal first

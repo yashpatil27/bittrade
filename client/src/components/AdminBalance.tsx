@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useBalance } from '../context/BalanceContext';
+import { usePortfolio } from '../context/PortfolioContext';
 import { usePrice } from '../context/PriceContext';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
 
@@ -22,12 +22,13 @@ interface AdminBalanceProps {
 const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
   const [showBalances, setShowBalances] = useState(true);
   
-  // Use centralized balance and price contexts
-  const { adminBalanceData, isLoading: loading, refetchAdminBalance } = useBalance();
+  // Use new PortfolioContext
+  const { 
+    adminBalance: balanceData, 
+    loading: { adminBalance: loading }, 
+    refetchAdminBalance 
+  } = usePortfolio();
   const { sellRateInr } = usePrice();
-  
-  // Use admin balance data
-  const balanceData = adminBalanceData;
 
   // Calculate asset allocation percentages using real-time data
   const inrValue = Number((balanceData as AdminTotalBalanceData)?.total_available_inr || 0);
@@ -59,10 +60,10 @@ const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
 
   // Fetch admin balance data if needed
   useEffect(() => {
-    if (!adminBalanceData) {
+    if (!balanceData) {
       refetchAdminBalance();
     }
-  }, [adminBalanceData, refetchAdminBalance]);
+  }, [balanceData, refetchAdminBalance]);
 
   const { isAuthenticated } = useAuth();
 

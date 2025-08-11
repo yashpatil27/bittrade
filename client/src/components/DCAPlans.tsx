@@ -4,7 +4,7 @@ import { updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
 import { DCAPlan } from '../types';
 import Card from './Card';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
-import { useDCAPlans } from '../context/DCAPlansContext';
+import { usePortfolio } from '../context/PortfolioContext';
 
 // Lazy load DetailsModal
 import DetailsModal from './DetailsModal';
@@ -27,22 +27,20 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
   showAllUsers = false,
   disableActions = false
 }) => {
-  // Use centralized DCA Plans context
+  // Use new PortfolioContext
   const {
     userDCAPlans,
-    userDCAPlansLoading,
-    userDCAPlansError,
     adminDCAPlans,
-    adminDCAPlansLoading,
-    adminDCAPlansError,
+    loading,
+    errors,
     refetchUserDCAPlans,
     refetchAdminDCAPlans
-  } = useDCAPlans();
+  } = usePortfolio();
   
   // Select appropriate data based on showAllUsers prop
   const dcaPlans = showAllUsers ? adminDCAPlans : userDCAPlans;
-  const isLoading = showAllUsers ? adminDCAPlansLoading : userDCAPlansLoading;
-  const error = showAllUsers ? adminDCAPlansError : userDCAPlansError;
+  const isLoading = showAllUsers ? loading.adminDCAPlans : loading.userDCAPlans;
+  const error = showAllUsers ? errors.adminDCAPlans : errors.userDCAPlans;
   const fetchDCAPlans = showAllUsers ? refetchAdminDCAPlans : refetchUserDCAPlans;
   
   // DetailsModal state

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { useBalance } from '../context/BalanceContext';
+import { usePortfolio } from '../context/PortfolioContext';
 import { usePrice } from '../context/PriceContext';
 import { AnimateBTC, AnimateINR } from './AnimateNumberFlow';
 
@@ -10,7 +10,8 @@ interface HeroAmountProps {
 }
 
 const HeroAmount: React.FC<HeroAmountProps> = ({ className = '', onMaxClick }) => {
-  const { balanceData, isLoading } = useBalance();
+  const { userBalance: balanceData, loading } = usePortfolio();
+  const isLoading = loading.userBalance;
   const { sellRateInr } = usePrice();
   
   // Detect if user is on mobile device

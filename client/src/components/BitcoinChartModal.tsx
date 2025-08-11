@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
-import { useBalance } from '../context/BalanceContext';
-import { useTransactions } from '../context/TransactionContext';
+import { usePortfolio } from '../context/PortfolioContext';
 import { Transaction } from '../types';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 
@@ -37,8 +36,8 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
   
   // Use contexts for balance and transaction data
-  const { balanceData } = useBalance();
-  const { userTransactions, userTransactionsLoading: portfolioLoading } = useTransactions();
+  const { userBalance: balanceData, userTransactions, loading } = usePortfolio();
+  const portfolioLoading = loading.userTransactions;
   
   // Calculate portfolio metrics from balance data
   const totalBitcoinSatoshis = balanceData?.available_btc || 0;

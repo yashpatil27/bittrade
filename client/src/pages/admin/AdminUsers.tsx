@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useUsers } from '../../context/BalanceContext';
+import { usePortfolio } from '../../context/PortfolioContext';
 import UserList from '../../components/UserList';
 import OptionsModal from '../../components/OptionsModal';
 import AdminChangePasswordModal from '../../components/AdminChangePasswordModal';
@@ -19,7 +19,9 @@ interface UserWithBalance {
 }
 
 const AdminUsers: React.FC = () => {
-  const { users, usersLoading, usersError, refetchUsers } = useUsers();
+  const { adminUsersFiltered: users, loading, errors, refetchAdminUsers: refetchUsers } = usePortfolio();
+  const usersLoading = loading.adminUsers;
+  const usersError = errors.adminUsers;
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithBalance | null>(null);
   const [isDepositBitcoinModalOpen, setIsDepositBitcoinModalOpen] = useState(false);

@@ -5,7 +5,7 @@ import OptionsModal from './OptionsModal';
 import { Mail, AlertCircle } from 'lucide-react';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
-import { useBalance } from '../context/BalanceContext';
+import { usePortfolio } from '../context/PortfolioContext';
 import { getApiUrl } from '../utils/api';
 
 interface SendModalProps {
@@ -14,7 +14,7 @@ interface SendModalProps {
 }
 
 const SendModal: React.FC<SendModalProps> = ({ isOpen, onRequestClose }) => {
-  const { balanceData } = useBalance();
+  const { userBalance: balanceData } = usePortfolio();
   const [inputValue, setInputValue] = useState('');
   const [inputCurrency, setInputCurrency] = useState<'inr' | 'btc'>('inr');
   const [recipientEmail, setRecipientEmail] = useState('');

@@ -5,10 +5,8 @@ import AdminLayout from './components/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider } from './context/AuthContext';
-import { BalanceProvider } from './context/BalanceContext';
-import { TransactionProvider } from './context/TransactionContext';
 import { PriceProvider } from './context/PriceContext';
-import { DCAPlansProvider } from './context/DCAPlansContext';
+import { PortfolioProvider } from './context/PortfolioContext';
 import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
 
@@ -43,11 +41,9 @@ function App() {
     <AuthProvider>
       <WebSocketProvider>
         <PriceProvider>
-          <BalanceProvider>
-            <TransactionProvider>
-              <DCAPlansProvider>
-                <WebSocketAuthenticator />
-              <Router>
+          <PortfolioProvider>
+            <WebSocketAuthenticator />
+            <Router>
           <Suspense fallback={<PageLoader />}>
             <Routes>
             {/* Public Routes */}
@@ -136,10 +132,8 @@ function App() {
             } />
             </Routes>
           </Suspense>
-              </Router>
-              </DCAPlansProvider>
-            </TransactionProvider>
-          </BalanceProvider>
+            </Router>
+          </PortfolioProvider>
         </PriceProvider>
       </WebSocketProvider>
     </AuthProvider>

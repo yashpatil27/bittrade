@@ -5,12 +5,10 @@ import PendingOrdersList from '../../components/PendingOrdersList';
 import DCAPlans from '../../components/DCAPlans';
 import BitcoinQuote from '../../components/BitcoinQuote';
 import { Transaction, DCAPlan } from '../../types';
-import { useDCAPlans } from '../../context/DCAPlansContext';
-import { useTransactions } from '../../context/TransactionContext';
+import { usePortfolio } from '../../context/PortfolioContext';
 
 const AdminHistory: React.FC = () => {
-  const { refetchAdminDCAPlans } = useDCAPlans();
-  const { refetchAdminTransactions } = useTransactions();
+  const { refetchAdminDCAPlans, refetchAdminTransactions } = usePortfolio();
   
   const handleTransactionClick = (transaction: Transaction) => {
     console.log('Admin transaction clicked:', transaction);

@@ -4,7 +4,7 @@ import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder, reverseTransaction } from '../utils/api';
 import { Transaction } from '../types';
-import { useTransactions } from '../context/TransactionContext';
+import { usePortfolio } from '../context/PortfolioContext';
 import Card from './Card';
 
 // Lazy load DetailsModal
@@ -41,33 +41,31 @@ const TransactionList: React.FC<TransactionListProps> = ({
   showAllUsers = false,
   disableActions = false
 }) => {
-  // Use centralized transaction context
+  // Use new PortfolioContext
   const {
     userTransactions,
     adminTransactions,
-    userTransactionsLoading,
-    adminTransactionsLoading,
-    userTransactionsError,
-    adminTransactionsError,
+    loading,
+    errors,
     refetchUserTransactions,
     refetchAdminTransactions,
     getPendingOrders,
     getCompletedTransactions,
     getDCATransactions
-  } = useTransactions();
+  } = usePortfolio();
   
   // Get appropriate data based on showAllUsers prop
   const transactions = showAllUsers ? adminTransactions : userTransactions;
-  const isLoading = showAllUsers ? adminTransactionsLoading : userTransactionsLoading;
-  const error = showAllUsers ? adminTransactionsError : userTransactionsError;
+  const isLoading = showAllUsers ? loading.adminTransactions : loading.userTransactions;
+  const error = showAllUsers ? errors.adminTransactions : errors.userTransactions;
   const fetchTransactions = showAllUsers ? refetchAdminTransactions : refetchUserTransactions;
   
   // Fetch admin transactions if needed
   useEffect(() => {
-    if (showAllUsers && adminTransactions.length === 0 && !adminTransactionsLoading) {
+    if (showAllUsers && adminTransactions.length === 0 && !loading.adminTransactions) {
       refetchAdminTransactions();
     }
-  }, [showAllUsers, adminTransactions.length, adminTransactionsLoading, refetchAdminTransactions]);
+  }, [showAllUsers, adminTransactions.length, loading.adminTransactions, refetchAdminTransactions]);
   
   // DetailsModal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);

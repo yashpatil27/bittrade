@@ -8,7 +8,7 @@ import HeroAmount from '../components/HeroAmount';
 import TradingModal from '../components/TradingModal';
 import SendModal from '../components/SendModal';
 import OptionsModal from '../components/OptionsModal';
-import { useBalance } from '../context/BalanceContext';
+import { usePortfolio } from '../context/PortfolioContext';
 import { usePrice } from '../context/PriceContext';
 import { Bitcoin, Send, IndianRupee } from 'lucide-react';
 import { AnimateINR, AnimateBTC } from '../components/AnimateNumberFlow';
@@ -31,7 +31,7 @@ const Home: React.FC<HomeProps> = ({ setModalOpen: setAppModalOpen }) => {
   const [balanceOptionsOpen, setBalanceOptionsOpen] = React.useState(false);
   
   // Use centralized contexts
-  const { balanceData } = useBalance();
+  const { userBalance: balanceData } = usePortfolio();
   const { buyRateInr, sellRateInr } = usePrice();
 
   const handleBuyClick = () => {
