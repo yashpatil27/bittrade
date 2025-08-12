@@ -22,6 +22,11 @@ interface AdminBalanceProps {
 const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
   const [showBalances, setShowBalances] = useState(true);
   
+  // Stable state for NumberFlow to prevent re-mounting during refreshes
+  const [stableInrValue, setStableInrValue] = useState(0);
+  const [stableBtcValue, setStableBtcValue] = useState(0);
+  const [hasInitialData, setHasInitialData] = useState(false);
+  
   // Use new PortfolioContext
   const { 
     adminBalance: balanceData, 
@@ -57,6 +62,27 @@ const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
     });
   }
 
+  // Update stable values when data changes
+  useEffect(() => {
+    if (balanceData) {
+      const newInrValue = Number((balanceData as AdminTotalBalanceData)?.total_available_inr || 0);
+      const newBtcValue = Number((balanceData as AdminTotalBalanceData).total_available_btc || 0);
+      
+      setStableInrValue(newInrValue);
+      setStableBtcValue(newBtcValue);
+      
+      if (!hasInitialData) {
+        setHasInitialData(true);
+      }
+      
+      console.log('🔄 AdminBalance: Updated stable values', {
+        newInrValue,
+        newBtcValue,
+        hasInitialData
+      });
+    }
+  }, [balanceData, hasInitialData]);
+
   // Fetch admin balance data if needed
   useEffect(() => {
     if (!balanceData) {
@@ -76,7 +102,8 @@ const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
     );
   }
 
-  if (loading || !balanceData) {
+  // Only show loading on very first load when we have no data at all
+  if (!balanceData && !hasInitialData) {
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-3 ${className}`}>
         <div className="mb-3 flex items-center justify-between">
@@ -128,7 +155,10 @@ const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
             <span className="text-sm text-gray-400">₹ INR</span>
             <span className="text-base font-semibold text-white">
               {showBalances ? (
-                <AnimateINR value={inrValue} />
+                <AnimateINR 
+                  value={inrValue} 
+                  className="text-base font-semibold text-white" 
+                />
               ) : (
                 '••••••'
               )}
@@ -149,7 +179,10 @@ const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
             <span className="text-sm text-gray-400">₿ BTC</span>
             <span className="text-base font-semibold text-white">
               {showBalances ? (
-                <AnimateBTC value={(balanceData as AdminTotalBalanceData)?.total_available_btc || 0} />
+                <AnimateBTC 
+                  value={(balanceData as AdminTotalBalanceData)?.total_available_btc || 0} 
+                  className="text-base font-semibold text-white" 
+                />
               ) : (
                 '••••••••'
               )}
