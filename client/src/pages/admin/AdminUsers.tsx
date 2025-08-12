@@ -19,7 +19,7 @@ interface UserWithBalance {
 }
 
 const AdminUsers: React.FC = () => {
-  const { adminUsersFiltered: users, loading, errors, refetchAdminUsers: refetchUsers } = usePortfolio();
+  const { adminUsers: users, loading, errors, refetchAdminUsers: refetchUsers } = usePortfolio();
   const usersLoading = loading.adminUsers;
   const usersError = errors.adminUsers;
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);

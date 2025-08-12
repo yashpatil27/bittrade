@@ -88,7 +88,7 @@ const BitcoinQuote: React.FC<BitcoinQuoteProps> = ({ className = '' }) => {
 
   return (
     <div className={`mt-24 mb-16 text-center transition-opacity duration-500 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'} ${className}`}>
-      <p className="text-xs text-gray-400 px-4 max-w-2xl mx-auto">
+      <p className="text-xs text-gray-400 px-4 max-w-2xl mx-auto pb-safe">
         {quote}
       </p>
     </div>

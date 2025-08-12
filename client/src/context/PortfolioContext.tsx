@@ -210,7 +210,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     adminUsers: null,
   });
   
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   
   // ============= UTILITY FUNCTIONS =============
   
@@ -611,6 +611,11 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   useEffect(() => {
     if (isAuthenticated) {
       fetchUserData();
+      
+      // Also fetch admin data if user is an admin
+      if (user?.is_admin) {
+        fetchAdminData();
+      }
     } else {
       // Reset all state when not authenticated
       setUserBalance(null);
@@ -630,7 +635,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         adminUsers: false,
       });
     }
-  }, [isAuthenticated, fetchUserData]);
+  }, [isAuthenticated, user?.is_admin, fetchUserData, fetchAdminData]);
   
   // ============= CONTEXT VALUE =============
   
