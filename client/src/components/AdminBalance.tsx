@@ -32,7 +32,6 @@ const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
 
   // Calculate asset allocation percentages using real-time data
   const inrValue = Number((balanceData as AdminTotalBalanceData)?.total_available_inr || 0);
-  
   const btcAmountInBTC = balanceData ? Number((balanceData as AdminTotalBalanceData).total_available_btc || 0) / 100000000 : 0; // Convert satoshis to BTC
   
   // Use sell_rate_inr for BTC value calculation (what user would get if selling)

@@ -612,12 +612,14 @@ router.get('/metrics', authenticateToken, async (req, res) => {
        WHERE t.status = 'EXECUTED' AND (u.is_admin = false OR u.is_admin IS NULL)`
     );
 
-    // Get total volume (sum of all executed INR amounts, excluding admin users)
+    // Get total volume (sum of buy + sell trading volume only, excluding admin users)
     const [totalVolumeRows] = await db.execute(
       `SELECT SUM(t.inr_amount) as total_volume 
        FROM transactions t
        JOIN users u ON t.user_id = u.id
-       WHERE t.status = 'EXECUTED' AND (u.is_admin = false OR u.is_admin IS NULL)`
+       WHERE t.status = 'EXECUTED' 
+       AND t.type IN ('MARKET_BUY', 'LIMIT_BUY', 'DCA_BUY', 'MARKET_SELL', 'LIMIT_SELL', 'DCA_SELL')
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
     );
 
     // Get buy volume (sum of all executed buy transactions, excluding admin users)
@@ -666,13 +668,57 @@ router.get('/metrics', authenticateToken, async (req, res) => {
        AND (u.is_admin = false OR u.is_admin IS NULL)`
     );
 
+    // Get total cash deposits (excluding admin users)
+    const [totalCashDepositsRows] = await db.execute(
+      `SELECT SUM(t.inr_amount) as total_cash_deposits 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' 
+       AND t.type = 'DEPOSIT_INR'
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get total cash withdrawals (excluding admin users)
+    const [totalCashWithdrawalsRows] = await db.execute(
+      `SELECT SUM(t.inr_amount) as total_cash_withdrawals 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' 
+       AND t.type = 'WITHDRAW_INR'
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get total bitcoin deposits (excluding admin users)
+    const [totalBitcoinDepositsRows] = await db.execute(
+      `SELECT SUM(t.btc_amount) as total_bitcoin_deposits 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' 
+       AND t.type = 'DEPOSIT_BTC'
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
+    // Get total bitcoin withdrawals (excluding admin users)
+    const [totalBitcoinWithdrawalsRows] = await db.execute(
+      `SELECT SUM(t.btc_amount) as total_bitcoin_withdrawals 
+       FROM transactions t
+       JOIN users u ON t.user_id = u.id
+       WHERE t.status = 'EXECUTED' 
+       AND t.type = 'WITHDRAW_BTC'
+       AND (u.is_admin = false OR u.is_admin IS NULL)`
+    );
+
     const metrics = {
       total_trades: tradesCountRows[0]?.total_trades || 0,
       total_volume: totalVolumeRows[0]?.total_volume || 0,
       buy_volume: buyVolumeRows[0]?.buy_volume || 0,
       sell_volume: sellVolumeRows[0]?.sell_volume || 0,
       active_dca_plans: activeDCAPlansRows[0]?.active_dca_plans || 0,
-      avg_daily_dca_amount: Math.round(avgDCAAmountRows[0]?.avg_daily_dca_amount || 0)
+      avg_daily_dca_amount: Math.round(avgDCAAmountRows[0]?.avg_daily_dca_amount || 0),
+      total_cash_deposits: totalCashDepositsRows[0]?.total_cash_deposits || 0,
+      total_cash_withdrawals: totalCashWithdrawalsRows[0]?.total_cash_withdrawals || 0,
+      total_bitcoin_deposits: totalBitcoinDepositsRows[0]?.total_bitcoin_deposits || 0,
+      total_bitcoin_withdrawals: totalBitcoinWithdrawalsRows[0]?.total_bitcoin_withdrawals || 0
     };
 
     res.json(metrics);

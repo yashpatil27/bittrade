@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { TrendingUp, BarChart3, ShoppingCart, TrendingDown, Repeat, Calculator } from 'lucide-react';
+import { TrendingUp, BarChart3, ShoppingCart, TrendingDown, Repeat, Calculator, ArrowDownToLine, ArrowUpFromLine, Coins, Banknote } from 'lucide-react';
 import { getApiUrl } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
-import { AnimateINR } from './AnimateNumberFlow';
+import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 
 interface AdminMetricsData {
   total_trades: number;
@@ -11,6 +11,10 @@ interface AdminMetricsData {
   sell_volume: number;
   active_dca_plans: number;
   avg_daily_dca_amount: number;
+  total_cash_deposits: number;
+  total_cash_withdrawals: number;
+  total_bitcoin_deposits: number;
+  total_bitcoin_withdrawals: number;
 }
 
 interface AdminMetricsProps {
@@ -106,6 +110,38 @@ const AdminMetrics: React.FC<AdminMetricsProps> = ({ className = '' }) => {
       color: 'text-orange-400',
       bgColor: 'bg-orange-500/10',
       format: 'currency'
+    },
+    {
+      title: 'Cash Deposits',
+      value: metrics?.total_cash_deposits || 0,
+      icon: ArrowDownToLine,
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-500/10',
+      format: 'currency'
+    },
+    {
+      title: 'Cash Withdrawals',
+      value: metrics?.total_cash_withdrawals || 0,
+      icon: ArrowUpFromLine,
+      color: 'text-rose-400',
+      bgColor: 'bg-rose-500/10',
+      format: 'currency'
+    },
+    {
+      title: 'BTC Deposits',
+      value: metrics?.total_bitcoin_deposits || 0,
+      icon: Coins,
+      color: 'text-amber-400',
+      bgColor: 'bg-amber-500/10',
+      format: 'bitcoin'
+    },
+    {
+      title: 'BTC Withdrawals',
+      value: metrics?.total_bitcoin_withdrawals || 0,
+      icon: Banknote,
+      color: 'text-orange-400',
+      bgColor: 'bg-orange-500/10',
+      format: 'bitcoin'
     }
   ];
 
@@ -117,7 +153,7 @@ const AdminMetrics: React.FC<AdminMetricsProps> = ({ className = '' }) => {
         </div>
         
         <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 6 }).map((_, index) => (
+          {Array.from({ length: 10 }).map((_, index) => (
             <div key={index} className="bg-gray-800/50 rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="w-8 h-8 bg-gray-700 rounded-lg animate-pulse"></div>
@@ -154,7 +190,17 @@ const AdminMetrics: React.FC<AdminMetricsProps> = ({ className = '' }) => {
 
   const formatValue = (value: number, format: string) => {
     if (format === 'currency') {
-      return <AnimateINR value={value} className="text-lg font-bold text-white" />;
+      return (
+        <span className="text-lg font-bold text-white">
+          {formatRupeesForDisplay(value)}
+        </span>
+      );
+    } else if (format === 'bitcoin') {
+      return (
+        <span className="text-lg font-bold text-white">
+          {formatBitcoinForDisplay(value)}
+        </span>
+      );
     } else {
       return (
         <span className="text-lg font-bold text-white">

@@ -522,6 +522,11 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       setAdminTransactions(data.transactions);
       setErrorState('adminTransactions', null);
       setLoadingState('adminTransactions', false);
+      
+      // Refresh admin balance when admin transactions update (since they affect total balances)
+      if (adminBalance) {
+        fetchAdminBalance();
+      }
     }
   });
   
