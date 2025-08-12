@@ -2,6 +2,7 @@ const express = require('express');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
 const { authenticateToken } = require('../middleware/auth');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -11,9 +12,9 @@ let db;
 async function initDB() {
   try {
     db = await mysql.createConnection(require('../config/config').database);
-    console.log('Admin routes: Database connected');
+    logger.success('Admin routes: Database connected', 'ADMIN');
   } catch (error) {
-    console.error('Admin routes: Database connection failed:', error);
+    logger.error('Admin routes: Database connection failed', error, 'ADMIN');
     throw error;
   }
 }
@@ -50,7 +51,7 @@ router.get('/transactions', authenticateToken, async (req, res) => {
       transactions
     });
   } catch (error) {
-    console.error('Error fetching all transactions:', error);
+    logger.error('Error fetching all transactions', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -120,7 +121,7 @@ router.get('/dca-plans', authenticateToken, async (req, res) => {
       totalCount: plans.length
     });
   } catch (error) {
-    console.error('Error fetching all DCA plans:', error);
+    logger.error('Error fetching all DCA plans', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -173,7 +174,7 @@ router.get('/total-balance', authenticateToken, async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error('Error fetching admin total balance:', error);
+    logger.error('Error fetching admin total balance', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -207,7 +208,7 @@ router.get('/users', authenticateToken, async (req, res) => {
       users
     });
   } catch (error) {
-    console.error('Error fetching all users:', error);
+    logger.error('Error fetching all users', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -284,12 +285,7 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
       await db.commit();
 
       const actionType = isTargetAdmin ? 'cleared' : 'deleted';
-      console.log(`✅ User ${targetUserId} ${actionType} with cleanup:`, {
-        deletedPlans: deletedPlansResult.affectedRows,
-        deletedTransactions: deletedTransactionsResult.affectedRows,
-        userAction: isTargetAdmin ? 'balances_cleared' : 'deleted',
-        affectedRows: deletedUserResult.affectedRows
-      });
+      logger.success(`User ${targetUserId} ${actionType} with cleanup`, 'ADMIN', `plans: ${deletedPlansResult.affectedRows}, transactions: ${deletedTransactionsResult.affectedRows}`);
 
       // Send admin user update via WebSocket
       if (global.sendAdminUserUpdate) {
@@ -313,7 +309,7 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
       throw error;
     }
   } catch (error) {
-    console.error('Error deleting user:', error);
+    logger.error('Error deleting user', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -373,7 +369,7 @@ router.post('/users/:userId/deposit-bitcoin', authenticateToken, async (req, res
 
     const newBalance = updatedBalanceRows[0].available_btc;
 
-    console.log(`✅ Admin ${adminUserId} deposited ${amount} satoshis to user ${userId} (transaction created)`);
+    logger.transaction('DEPOSIT_BTC', userId, `${amount} sats`, 'EXECUTED', `by admin ${adminUserId}`);
 
     // Broadcast balance update to user's connected clients
     if (global.sendUserBalanceUpdate) {
@@ -398,7 +394,7 @@ router.post('/users/:userId/deposit-bitcoin', authenticateToken, async (req, res
       newBalance: newBalance
     });
   } catch (error) {
-    console.error('Error depositing Bitcoin:', error);
+    logger.error('Error depositing Bitcoin', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -458,7 +454,7 @@ router.post('/users/:userId/deposit-cash', authenticateToken, async (req, res) =
 
     const newBalance = updatedBalanceRows[0].available_inr;
 
-    console.log(`✅ Admin ${adminUserId} deposited ₹${amount} to user ${userId} (transaction created)`);
+    logger.transaction('DEPOSIT_INR', userId, `₹${amount}`, 'EXECUTED', `by admin ${adminUserId}`);
 
     // Broadcast balance update to user's connected clients
     if (global.sendUserBalanceUpdate) {
@@ -483,7 +479,7 @@ router.post('/users/:userId/deposit-cash', authenticateToken, async (req, res) =
       newBalance: newBalance
     });
   } catch (error) {
-    console.error('Error depositing cash:', error);
+    logger.error('Error depositing cash', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -548,7 +544,7 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
 
     const newBalance = updatedBalanceRows[0].available_btc;
 
-    console.log(`✅ Admin ${adminUserId} withdrew ${amount} satoshis from user ${userId} (transaction created)`);
+    logger.transaction('WITHDRAW_BTC', userId, `${amount} sats`, 'EXECUTED', `by admin ${adminUserId}`);
 
     // Broadcast balance update to user's connected clients
     if (global.sendUserBalanceUpdate) {
@@ -573,7 +569,7 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
       newBalance: newBalance
     });
   } catch (error) {
-    console.error('Error withdrawing Bitcoin:', error);
+    logger.error('Error withdrawing Bitcoin', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -666,7 +662,7 @@ router.get('/metrics', authenticateToken, async (req, res) => {
 
     res.json(metrics);
   } catch (error) {
-    console.error('Error fetching admin metrics:', error);
+    logger.error('Error fetching admin metrics', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -731,7 +727,7 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
 
     const newBalance = updatedBalanceRows[0].available_inr;
 
-    console.log(`✅ Admin ${adminUserId} withdrew ₹${amount} from user ${userId} (transaction created)`);
+    logger.transaction('WITHDRAW_INR', userId, `₹${amount}`, 'EXECUTED', `by admin ${adminUserId}`);
 
     // Broadcast balance update to user's connected clients
     if (global.sendUserBalanceUpdate) {
@@ -756,7 +752,7 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
       newBalance: newBalance
     });
   } catch (error) {
-    console.error('Error withdrawing cash:', error);
+    logger.error('Error withdrawing cash', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -805,7 +801,7 @@ router.put('/users/:userId/password', authenticateToken, async (req, res) => {
       [hashedPassword, userId]
     );
 
-    console.log(`✅ Admin ${adminUserId} changed password for user ${userId} (${targetUser.name})`);
+    logger.success(`Password changed for user ${userId} by admin ${adminUserId}`, 'ADMIN', targetUser.name);
 
     res.json({
       success: true,
@@ -813,7 +809,7 @@ router.put('/users/:userId/password', authenticateToken, async (req, res) => {
       user: targetUser
     });
   } catch (error) {
-    console.error('Error changing user password:', error);
+    logger.error('Error changing user password', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -849,7 +845,7 @@ router.get('/settings', authenticateToken, async (req, res) => {
 
     res.json(settingsObj);
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    logger.error('Error fetching settings', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -896,12 +892,12 @@ router.put('/settings', authenticateToken, async (req, res) => {
       updatedSettings[key] = numValue;
     }
 
-    console.log(`✅ Admin ${userId} updated settings:`, updatedSettings);
+    logger.success(`Settings updated by admin ${userId}`, 'ADMIN', JSON.stringify(updatedSettings));
 
     // Reload settings in DataService to update cached multipliers
     if (global.dataService && global.dataService.reloadSettings) {
       await global.dataService.reloadSettings();
-      console.log('🔄 DataService settings reloaded');
+      logger.debug('DataService settings reloaded', 'ADMIN');
     }
 
     res.json({
@@ -910,7 +906,7 @@ router.put('/settings', authenticateToken, async (req, res) => {
       updatedSettings
     });
   } catch (error) {
-    console.error('Error updating settings:', error);
+    logger.error('Error updating settings', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1072,8 +1068,7 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
       // Commit the transaction
       await db.commit();
 
-      console.log(`✅ Admin ${adminUserId} reversed transaction ${transactionId} for user ${transaction.user_id} (${transaction.user_name})`);
-      console.log(`   Transaction type: ${transaction.type}, BTC adj: ${btcAdjustment}, INR adj: ${inrAdjustment}`);
+      logger.success(`Transaction ${transactionId} reversed by admin ${adminUserId}`, 'ADMIN', `user: ${transaction.user_name}, type: ${transaction.type}, BTC adj: ${btcAdjustment}, INR adj: ${inrAdjustment}`);
 
       // Broadcast balance update to user's connected clients
       if (global.sendUserBalanceUpdate) {
@@ -1111,7 +1106,7 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
       throw error;
     }
   } catch (error) {
-    console.error('Error reversing transaction:', error);
+    logger.error('Error reversing transaction', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -8,23 +8,23 @@ const logger = require('../utils/logger');
 class DataService {
   async loadPendingLimitOrdersToCache() {
     try {
-      logger.info('Loading pending limit orders from database');
+      logger.info('Loading pending limit orders from database', 'DATA');
       const [orders] = await this.db.execute(`
         SELECT * FROM transactions 
         WHERE status = 'PENDING' AND type IN ('LIMIT_BUY', 'LIMIT_SELL')
       `);
       
       await this.redis.set('pending_limit_orders', JSON.stringify(orders));
-      logger.success(`Loaded ${orders.length} pending limit orders into cache`);
+      logger.success(`Loaded ${orders.length} pending limit orders into cache`, 'DATA');
       
       // Log summary of pending orders
       if (orders.length > 0) {
         const buyOrders = orders.filter(o => o.type === 'LIMIT_BUY').length;
         const sellOrders = orders.filter(o => o.type === 'LIMIT_SELL').length;
-        logger.info(`${buyOrders} buy orders, ${sellOrders} sell orders loaded`);
+        logger.info(`${buyOrders} buy orders, ${sellOrders} sell orders loaded`, 'DATA');
       }
     } catch (error) {
-      logger.error('Error loading pending limit orders', error);
+      logger.error('Error loading pending limit orders', error, 'DATA');
     }
   }
 
@@ -415,7 +415,7 @@ async fetchBitcoinData() {
         this.lastBtcPrice = bitcoinData.btc_usd_price;
         this.broadcastPriceUpdate(bitcoinData.btc_usd_price);
       } else {
-        logger.debug(`Bitcoin price unchanged: $${bitcoinData.btc_usd_price}`, { component: 'DATA' });
+        logger.debug(`Bitcoin price unchanged: $${bitcoinData.btc_usd_price}`, 'DATA');
       }
 
       // Keep only last 5 records

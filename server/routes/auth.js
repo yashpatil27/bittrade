@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const mysql = require('mysql2/promise');
 const config = require('../config/config');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -15,9 +16,9 @@ let db;
 async function initDB() {
   try {
     db = await mysql.createConnection(config.database);
-    console.log('Auth routes: Database connected');
+    logger.success('Auth routes: Database connected', 'AUTH');
   } catch (error) {
-    console.error('Auth routes: Database connection failed:', error);
+    logger.error('Auth routes: Database connection failed', error, 'AUTH');
     throw error;
   }
 }
@@ -101,7 +102,7 @@ router.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Registration error:', error);
+    logger.error('Registration error', error, 'AUTH');
     res.status(500).json({ 
       error: 'Internal server error' 
     });
@@ -165,7 +166,7 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error', error, 'AUTH');
     res.status(500).json({ 
       error: 'Internal server error' 
     });
@@ -203,7 +204,7 @@ router.get('/verify', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Token verification error:', error);
+    logger.error('Token verification error', error, 'AUTH');
     res.status(401).json({ 
       error: 'Invalid token' 
     });

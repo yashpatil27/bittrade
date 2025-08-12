@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const mysql = require('mysql2/promise');
 const config = require('../config/config');
 const { authenticateToken } = require('../middleware/auth');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -12,9 +13,9 @@ let db;
 async function initDB() {
   try {
     db = await mysql.createConnection(config.database);
-    console.log('User routes: Database connected');
+    logger.success('User routes: Database connected', 'USER');
   } catch (error) {
-    console.error('User routes: Database connection failed:', error);
+    logger.error('User routes: Database connection failed', error, 'USER');
     throw error;
   }
 }
@@ -73,7 +74,7 @@ router.put('/profile/name', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Name update error:', error);
+    logger.error('Name update error', error, 'USER');
     res.status(500).json({
       error: 'Internal server error'
     });
@@ -145,7 +146,7 @@ router.put('/profile/email', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Email update error:', error);
+    logger.error('Email update error', error, 'USER');
     res.status(500).json({
       error: 'Internal server error'
     });
@@ -218,7 +219,7 @@ router.put('/profile/password', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Password update error:', error);
+    logger.error('Password update error', error, 'USER');
     res.status(500).json({
       error: 'Internal server error'
     });
@@ -247,7 +248,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get profile error:', error);
+    logger.error('Get profile error', error, 'USER');
     res.status(500).json({
       error: 'Internal server error'
     });

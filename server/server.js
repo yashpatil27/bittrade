@@ -1255,7 +1255,7 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
           await global.dataService.redis.del(`user_balance_${recipient.id}`);
           logger.cache('CLEAR', 'user_caches');
         } catch (error) {
-          console.error('Error clearing user caches:', error);
+          logger.error('Error clearing user caches', error, 'CACHE');
         }
       }
       
@@ -1314,7 +1314,7 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
     const userId = req.user.id; // Fixed: use 'id' instead of 'userId'
     
     // Debug logging
-    logger.debug('Balance request received', { component: 'API', user: req.user.id });
+    logger.debug(`Balance request received for user ${req.user.id}`, 'API');
     // userId already logged above
     
     if (!userId) {
@@ -1379,7 +1379,7 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  logger.error('Application error', err);
+  logger.error('Application error', err, 'SERVER');
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
@@ -1437,7 +1437,7 @@ io.on('connection', async (socket) => {
       });
       
     } catch (error) {
-      console.error('WebSocket authentication failed:', error);
+      logger.error('WebSocket authentication failed', error, 'WS');
       socket.emit('authentication_error', {
         message: 'Authentication failed',
         error: error.message
@@ -1469,7 +1469,7 @@ io.on('connection', async (socket) => {
         logger.bitcoin('price_sent', bitcoinData.btc_usd_price, `to ${socket.id}`);
       }
     } catch (error) {
-      console.error('Error sending cached price to client:', error);
+      logger.error('Error sending cached price to client', error, 'WS');
     }
   }
   
@@ -1500,11 +1500,11 @@ async function sendUserBalanceUpdate(userId) {
   try {
     // Validate userId
     if (!userId) {
-      console.error('❌ sendUserBalanceUpdate: userId is undefined');
+      logger.error('sendUserBalanceUpdate: userId is undefined', null, 'WS');
       return;
     }
     
-    logger.debug('Sending balance update', { component: 'WS', user: userId });
+    logger.debug(`Sending balance update for user ${userId}`, 'WS');
     
     // Fetch balance data from database
     const [rows] = await db.execute(
@@ -1552,7 +1552,7 @@ async function sendUserBalanceUpdate(userId) {
       });
       logger.websocket('balance_update', `sent to ${userSocketSet.size} clients`, userId);
     } else {
-      logger.debug(`No active connections for user ${userId}`, { component: 'WS' });
+      logger.debug(`No active connections for user ${userId}`, 'WS');
     }
   } catch (error) {
     logger.error(`Error sending balance update for user ${userId}`, error, 'WS');
@@ -1568,7 +1568,7 @@ async function sendUserTransactionUpdate(userId) {
       return;
     }
     
-    logger.debug('Sending transaction update', { component: 'WS', user: userId });
+    logger.debug(`Sending transaction update for user ${userId}`, 'WS');
     
     // Fetch most recent 15 transactions from database (both PENDING and EXECUTED)
     const [rows] = await db.execute(
@@ -1628,7 +1628,7 @@ async function sendUserTransactionUpdate(userId) {
       });
       logger.websocket('transaction_update', `sent to ${userSocketSet.size} clients`, userId);
     } else {
-      console.log(`⚠️  No active connections for user ${userId}`);
+      logger.debug(`No active connections for user ${userId}`, 'WS');
     }
   } catch (error) {
     logger.error(`Error sending transaction update for user ${userId}`, error, 'WS');
@@ -1638,7 +1638,7 @@ async function sendUserTransactionUpdate(userId) {
 // Function to send admin transaction updates to all admin users
 async function sendAdminTransactionUpdate() {
   try {
-    logger.debug('Sending admin transaction update', { component: 'WS' });
+    logger.debug('Sending admin transaction update', 'WS');
     
     // Fetch recent admin transactions (same as the admin API endpoint)
     const [transactions] = await db.execute(
@@ -1690,7 +1690,7 @@ async function sendUserDCAPlansUpdate(userId) {
       return;
     }
     
-    logger.debug('Sending DCA plans update', { component: 'WS', user: userId });
+    logger.debug(`Sending DCA plans update for user ${userId}`, 'WS');
     
     // Get ALL plans (including completed) for total count
     const [allPlansCount] = await db.execute(
@@ -1787,7 +1787,7 @@ async function sendUserDCAPlansUpdate(userId) {
       });
       logger.websocket('dca_plans_update', `sent to ${userSocketSet.size} clients`, userId);
     } else {
-      console.log(`⚠️  No active connections for user ${userId}`);
+      logger.debug(`No active connections for user ${userId}`, 'WS');
     }
   } catch (error) {
     logger.error(`Error sending DCA plans update for user ${userId}`, error, 'WS');
@@ -1805,7 +1805,7 @@ function broadcastToClients(eventName, data) {
 // Function to send DCA plans update to admin users
 async function sendAdminDCAPlansUpdate() {
   try {
-    logger.debug('Sending admin DCA plans update', { component: 'WS' });
+    logger.debug('Sending admin DCA plans update', 'WS');
     
     // Fetch ALL DCA plans from all users for admin view
     const [rows] = await db.execute(
@@ -1848,7 +1848,7 @@ async function sendAdminDCAPlansUpdate() {
           }
         };
       } catch (error) {
-        console.error(`Error fetching performance for plan ${plan.id}:`, error);
+        logger.error(`Error fetching performance for plan ${plan.id}`, error, 'DB');
         return {
           ...plan,
           performance: {
@@ -1891,7 +1891,7 @@ async function sendAdminDCAPlansUpdate() {
           logger.websocket('admin_dca_plans_update', `sent to ${socketSet.size} clients`, userId);
         }
       } catch (error) {
-        console.error(`Error checking admin status for user ${userId}:`, error);
+        logger.error(`Error checking admin status for user ${userId}`, error, 'WS');
       }
     }
   } catch (error) {
@@ -1902,7 +1902,7 @@ async function sendAdminDCAPlansUpdate() {
 // Function to send user updates to admin users
 async function sendAdminUserUpdate() {
   try {
-    logger.debug('Sending admin user update', { component: 'WS' });
+    logger.debug('Sending admin user update', 'WS');
     
     // Fetch ALL users with balances for admin view
     const [users] = await db.execute(
@@ -1947,7 +1947,7 @@ async function sendAdminUserUpdate() {
           logger.websocket('admin_user_update', `sent to ${socketSet.size} clients`, userId);
         }
       } catch (error) {
-        console.error(`Error checking admin status for user ${userId}:`, error);
+        logger.error(`Error checking admin status for user ${userId}`, error, 'WS');
       }
     }
   } catch (error) {
@@ -2018,11 +2018,11 @@ async function startServer() {
   
   httpServer.listen(PORT, '0.0.0.0', () => {
     logger.server(`BitTrade API Server running on port ${PORT}`);
-    logger.info('Server accessible at:');
-    logger.info(`  http://localhost:${PORT}`);
-    logger.info(`  http://0.0.0.0:${PORT}`);
-    logger.info(`  http://${networkIP}:${PORT}`);
-    logger.info(`Health check: http://localhost:${PORT}/api/health`);
+    logger.info('Server accessible at:', 'SERVER');
+    logger.info(`  http://localhost:${PORT}`, 'SERVER');
+    logger.info(`  http://0.0.0.0:${PORT}`, 'SERVER');
+    logger.info(`  http://${networkIP}:${PORT}`, 'SERVER');
+    logger.info(`Health check: http://localhost:${PORT}/api/health`, 'SERVER');
     logger.websocket('server_ready', 'WebSocket server ready for broadcasting');
     logger.websocket('broadcasts_enabled', 'btc_price_update events enabled');
     logger.websocket('clients_connected', `${io.engine.clientsCount} clients connected`);
@@ -2043,12 +2043,12 @@ process.on('SIGINT', async () => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception', err);
+  logger.error('Uncaught Exception', err, 'SERVER');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
-  logger.error('Unhandled Rejection', err);
+  logger.error('Unhandled Rejection', err, 'SERVER');
   process.exit(1);
 });
 
