@@ -386,6 +386,11 @@ router.post('/users/:userId/deposit-bitcoin', authenticateToken, async (req, res
       await global.sendAdminUserUpdate();
     }
 
+    // Send admin transaction update via WebSocket
+    if (global.sendAdminTransactionUpdate) {
+      await global.sendAdminTransactionUpdate();
+    }
+
     res.json({
       success: true,
       message: 'Bitcoin deposited successfully',
@@ -469,6 +474,11 @@ router.post('/users/:userId/deposit-cash', authenticateToken, async (req, res) =
     // Send admin user update via WebSocket
     if (global.sendAdminUserUpdate) {
       await global.sendAdminUserUpdate();
+    }
+
+    // Send admin transaction update via WebSocket
+    if (global.sendAdminTransactionUpdate) {
+      await global.sendAdminTransactionUpdate();
     }
 
     res.json({
@@ -559,6 +569,11 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
     // Send admin user update via WebSocket
     if (global.sendAdminUserUpdate) {
       await global.sendAdminUserUpdate();
+    }
+
+    // Send admin transaction update via WebSocket
+    if (global.sendAdminTransactionUpdate) {
+      await global.sendAdminTransactionUpdate();
     }
 
     res.json({
@@ -742,6 +757,11 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
     // Send admin user update via WebSocket
     if (global.sendAdminUserUpdate) {
       await global.sendAdminUserUpdate();
+    }
+
+    // Send admin transaction update via WebSocket
+    if (global.sendAdminTransactionUpdate) {
+      await global.sendAdminTransactionUpdate();
     }
 
     res.json({

@@ -1807,13 +1807,14 @@ async function sendAdminDCAPlansUpdate() {
   try {
     logger.debug('Sending admin DCA plans update', 'WS');
     
-    // Fetch ALL DCA plans from all users for admin view
+    // Fetch ALL DCA plans from all non-admin users for admin view
     const [rows] = await db.execute(
       `SELECT ap.id, ap.user_id, ap.plan_type, ap.status, ap.amount_per_execution_inr, ap.amount_per_execution_btc, 
               ap.frequency, ap.max_price, ap.min_price, ap.remaining_executions, ap.next_execution_at, 
               ap.created_at, ap.completed_at, u.name as user_name, u.email as user_email
        FROM active_plans ap
        JOIN users u ON ap.user_id = u.id
+       WHERE (u.is_admin = false OR u.is_admin IS NULL)
        ORDER BY 
          CASE ap.status
            WHEN 'ACTIVE' THEN 1

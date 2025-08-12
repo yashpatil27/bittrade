@@ -60,12 +60,7 @@ const TransactionListComponent = ({
   const error = showAllUsers ? errors.adminTransactions : errors.userTransactions;
   const fetchTransactions = showAllUsers ? refetchAdminTransactions : refetchUserTransactions;
   
-  // Fetch admin transactions if needed
-  useEffect(() => {
-    if (showAllUsers && adminTransactions.length === 0 && !loading.adminTransactions) {
-      refetchAdminTransactions();
-    }
-  }, [showAllUsers, adminTransactions.length, loading.adminTransactions, refetchAdminTransactions]);
+  // Note: PortfolioContext handles initial data loading automatically
   
   // DetailsModal state
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);

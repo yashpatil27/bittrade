@@ -1,15 +1,12 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import Card from '../../components/Card';
 import TransactionList from '../../components/TransactionList';
 import PendingOrdersList from '../../components/PendingOrdersList';
 import DCAPlans from '../../components/DCAPlans';
 import BitcoinQuote from '../../components/BitcoinQuote';
 import { Transaction, DCAPlan } from '../../types';
-import { usePortfolio } from '../../context/PortfolioContext';
 
 const AdminHistory: React.FC = () => {
-  const { refetchAdminDCAPlans, refetchAdminTransactions } = usePortfolio();
-  
   const handleTransactionClick = (transaction: Transaction) => {
     console.log('Admin transaction clicked:', transaction);
   };
@@ -17,12 +14,6 @@ const AdminHistory: React.FC = () => {
   const handlePlanClick = (plan: DCAPlan) => {
     console.log('Admin DCA Plan clicked:', plan);
   };
-  
-  // Load admin DCA plans and transactions when component mounts
-  useEffect(() => {
-    refetchAdminDCAPlans();
-    refetchAdminTransactions();
-  }, [refetchAdminDCAPlans, refetchAdminTransactions]);
 
   return (
     <div className="min-h-screen bg-black">
