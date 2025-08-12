@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getWebSocketUrl } from '../utils/api';
+import logger from '../utils/logger';
 
 interface WebSocketContextType {
   socket: Socket | null;
@@ -29,36 +30,36 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     // Connection event handlers
     socketInstance.on('connect', () => {
-      console.log('🌐 Connected to WebSocket server');
+      logger.websocket('connect', 'Connected to WebSocket server');
       setIsConnected(true);
       setConnectionStatus('connected');
     });
 
     socketInstance.on('disconnect', (reason) => {
-      console.log('🌐 Disconnected from WebSocket server:', reason);
+      logger.websocket('disconnect', `Disconnected: ${reason}`);
       setIsConnected(false);
       setConnectionStatus('disconnected');
     });
 
     socketInstance.on('reconnecting', (attemptNumber) => {
-      console.log(`🌐 Reconnecting to WebSocket server (attempt ${attemptNumber})`);
+      logger.websocket('reconnecting', `Attempt ${attemptNumber}`);
       setConnectionStatus('reconnecting');
     });
 
     socketInstance.on('reconnect', (attemptNumber) => {
-      console.log(`🌐 Reconnected to WebSocket server (attempt ${attemptNumber})`);
+      logger.websocket('reconnect', `Reconnected after ${attemptNumber} attempts`);
       setIsConnected(true);
       setConnectionStatus('connected');
     });
 
-    socketInstance.on('connect_error', (error) => {
-      console.error('🌐 WebSocket connection error:', error);
+    socketInstance.on('connect_error', (error: Error) => {
+      logger.error('WebSocket connection error', error, { component: 'WebSocketContext' });
       setConnectionStatus('disconnected');
     });
 
     // Handle initial connection acknowledgment
     socketInstance.on('connection_established', (data) => {
-      console.log('🌐 Connection established:', data);
+      logger.websocket('connection_established', 'Connection acknowledged');
     });
 
     // Set socket instance
@@ -67,7 +68,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     // Cleanup function
     return () => {
-      console.log('🌐 Cleaning up WebSocket connection');
+      logger.websocket('cleanup', 'Disconnecting WebSocket');
       socketInstance.disconnect();
     };
   }, []);

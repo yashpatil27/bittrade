@@ -13,6 +13,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
 const { authenticateToken, optionalAuth } = require('./middleware/auth');
+const logger = require('./utils/logger');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,9 +29,9 @@ let db;
 async function initDB() {
   try {
     db = await mysql.createConnection(config.database);
-    console.log('Database connected for API server');
+    logger.success('Database connected', 'API');
   } catch (error) {
-    console.error('Database connection failed:', error);
+    logger.error('Database connection failed', error, 'API');
     process.exit(1);
   }
 }
@@ -65,7 +66,7 @@ app.get('/api/bitcoin/current', async (req, res) => {
           });
         }
       } catch (redisError) {
-        console.error('Redis cache error, falling back to database:', redisError);
+        logger.warn('Redis cache error, falling back to database', 'CACHE');
       }
     }
     
@@ -80,7 +81,7 @@ app.get('/api/bitcoin/current', async (req, res) => {
     
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error fetching Bitcoin data:', error);
+    logger.error('Error fetching Bitcoin data', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -105,7 +106,7 @@ app.get('/api/market-rates', async (req, res) => {
           });
         }
       } catch (redisError) {
-        console.error('Redis cache error, falling back to database:', redisError);
+        logger.warn('Redis cache error, falling back to database', 'CACHE');
       }
     }
     
@@ -129,7 +130,7 @@ app.get('/api/market-rates', async (req, res) => {
       cached: false
     });
   } catch (error) {
-    console.error('Error fetching market rates:', error);
+    logger.error('Error fetching market rates', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -157,14 +158,14 @@ app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
             chartData.price_data = JSON.parse(chartData.price_data);
           }
           
-          console.log(`📦 Served ${timeframe} chart data from Redis cache`);
+          logger.cache('SERVE', `chart_data_${timeframe}`, true);
           return res.json({
             ...chartData,
             cached: true
           });
         }
       } catch (redisError) {
-        console.error(`Redis cache error for ${timeframe} chart data, falling back to database:`, redisError);
+        logger.warn(`Redis cache error for ${timeframe} chart data, falling back to database`, 'CACHE');
       }
     }
     
@@ -206,19 +207,19 @@ app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
         };
         
         await global.dataService.redis.set(cacheKey, JSON.stringify(cacheData), 'EX', ttl);
-        console.log(`📦 Cached ${timeframe} chart data from database request (TTL: ${ttl}s)`);
+        logger.cache('STORE', `chart_data_${timeframe}`);
       } catch (redisError) {
-        console.error(`Error caching ${timeframe} chart data:`, redisError);
+        logger.error(`Error caching ${timeframe} chart data`, redisError, 'CACHE');
       }
     }
     
-    console.log(`🗄️ Served ${timeframe} chart data from database`);
+    logger.database('SELECT', `bitcoin_chart_data(${timeframe})`);
     res.json({
       ...chartData,
       cached: false
     });
   } catch (error) {
-    console.error('Error fetching chart data:', error);
+    logger.error('Error fetching chart data', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -236,7 +237,7 @@ app.get('/api/bitcoin/sentiment', async (req, res) => {
     
     res.json(rows[0]);
   } catch (error) {
-    console.error('Error fetching sentiment data:', error);
+    logger.error('Error fetching sentiment data', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -252,7 +253,7 @@ app.get('/api/bitcoin/history', async (req, res) => {
     
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching Bitcoin history:', error);
+    logger.error('Error fetching Bitcoin history', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -281,7 +282,7 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
         const cachedData = await global.dataService.redis.get(redisKey);
         if (cachedData) {
           const transactionData = JSON.parse(cachedData);
-          console.log('💾 Transactions served from Redis cache:', redisKey);
+          logger.cache('SERVE', `user_transactions_${userId}`, true);
           
           // Send raw cached transactions data
           const transactions = transactionData.slice(0, limit).map(row => ({
@@ -304,7 +305,7 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
           });
         }
       } catch (redisError) {
-        console.error('Redis error, falling back to database:', redisError);
+        logger.warn('Redis error, falling back to database', 'CACHE');
       }
     }
     
@@ -352,9 +353,9 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
           created_at: row.created_at
         }));
         await global.dataService.redis.set(redisKey, JSON.stringify(cacheData), 'EX', 60 * 60); // Cache for 1 hour
-        console.log('💾 Transactions cached in Redis:', redisKey);
+        logger.cache('STORE', redisKey);
       } catch (redisError) {
-        console.error('Error caching transactions in Redis:', redisError);
+        logger.error('Error caching transactions in Redis', redisError, 'CACHE');
       }
     }
     
@@ -365,7 +366,7 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
       hasMore
     });
   } catch (error) {
-    console.error('Error fetching transactions:', error);
+    logger.error('Error fetching transactions', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -402,7 +403,7 @@ async function executeTrade(userId, type, btcAmount, inrAmount, price, action) {
           [inrAmount, inrAmount, userId]
         );
         
-        console.log(`💰 Reserved ₹${inrAmount} for limit buy order (User ${userId})`);
+        logger.info(`Reserved ₹${inrAmount} for limit buy order`, 'ORDER');
         
       } else if (type === 'LIMIT_SELL') {
         // For limit sell: need to reserve BTC
@@ -416,7 +417,7 @@ async function executeTrade(userId, type, btcAmount, inrAmount, price, action) {
           [btcAmount, btcAmount, userId]
         );
         
-        console.log(`₿ Reserved ${btcAmount} satoshis for limit sell order (User ${userId})`);
+        logger.info(`Reserved ${btcAmount} satoshis for limit sell order`, 'ORDER');
       }
     }
     
@@ -454,15 +455,15 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
     if (global.dataService && global.dataService.redis) {
       try {
         await global.dataService.redis.del(`user_transactions_${userId}`);
-        console.log('💾 Cleared transaction cache for user:', userId);
+        logger.cache('CLEAR', `user_transactions_${userId}`);
         
         // Reload pending limit orders cache for limit orders
         if (type.startsWith('LIMIT')) {
           await global.dataService.loadPendingLimitOrdersToCache();
-          console.log('🔄 Refreshed pending limit orders cache after order creation');
+          logger.info('Refreshed pending limit orders cache', 'ORDER');
         }
       } catch (error) {
-        console.error('Error clearing transaction cache or reloading limit orders:', error);
+        logger.error('Error clearing transaction cache or reloading limit orders', error, 'CACHE');
       }
     }
     
@@ -486,18 +487,11 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
       global.sendAdminUserUpdate();
     }
     
-    console.log(`✅ LIMIT order created:`, {
-      userId,
-      transactionId,
-      type,
-      btc_amount,
-      inr_amount,
-      execution_price
-    });
+    logger.success('Limit order created', 'ORDER');
     
     res.status(201).json({ transactionId, status: 'PENDING' });
   } catch (error) {
-    console.error('Error creating order:', error);
+    logger.error('Error creating order', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -572,7 +566,7 @@ app.get('/api/dca-plans', authenticateToken, async (req, res) => {
       paused_plans: plans.filter(p => p.status === 'PAUSED').length
     });
   } catch (error) {
-    console.error('Error fetching DCA plans:', error);
+    logger.error('Error fetching DCA plans', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -643,7 +637,7 @@ app.post('/api/dca-plans', authenticateToken, async (req, res) => {
 
     res.status(201).json({ planId: result.insertId, message: 'DCA plan created successfully' });
   } catch (error) {
-    console.error('Error creating DCA plan:', error);
+    logger.error('Error creating DCA plan', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -702,12 +696,7 @@ app.patch('/api/dca-plans/:planId/status', authenticateToken, async (req, res) =
         return res.status(404).json({ error: 'Plan not found or unauthorized' });
       }
       
-      console.log(`✅ DCA plan resumed with new execution time:`, {
-        userId,
-        planId,
-        frequency,
-        status: 'ACTIVE'
-      });
+      logger.success('DCA plan resumed', 'DCA');
       
     } else {
       // For pausing, just update the status
@@ -720,11 +709,7 @@ app.patch('/api/dca-plans/:planId/status', authenticateToken, async (req, res) =
         return res.status(404).json({ error: 'Plan not found or unauthorized' });
       }
       
-      console.log(`✅ DCA plan paused:`, {
-        userId,
-        planId,
-        status: 'PAUSED'
-      });
+      logger.success('DCA plan paused', 'DCA');
     }
 
     // Send updates via WebSocket
@@ -739,7 +724,7 @@ app.patch('/api/dca-plans/:planId/status', authenticateToken, async (req, res) =
 
     res.json({ message: `Plan ${status.toLowerCase()} successfully` });
   } catch (error) {
-    console.error('Error updating DCA plan status:', error);
+    logger.error('Error updating DCA plan status', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -787,12 +772,7 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
       // Commit the transaction
       await db.commit();
 
-      console.log(`✅ DCA plan deleted:`, {
-        userId,
-        planId,
-        planType: plan.plan_type,
-        relatedTransactionsDeleted: deleteTransactionsResult.affectedRows
-      });
+      logger.success('DCA plan deleted', 'DCA');
 
       // Send updates via WebSocket
       if (global.sendUserDCAPlansUpdate) {
@@ -818,7 +798,7 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Error deleting DCA plan:', error);
+    logger.error('Error deleting DCA plan', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -864,7 +844,7 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
           'UPDATE users SET available_inr = available_inr + ?, reserved_inr = reserved_inr - ? WHERE id = ?',
           [transaction.inr_amount, transaction.inr_amount, userId]
         );
-        console.log(`💰 Released ₹${transaction.inr_amount} from cancelled limit buy order (User ${userId})`);
+        logger.info('Released funds from cancelled buy order', 'ORDER');
         
       } else if (transaction.type === 'LIMIT_SELL') {
         // For limit sell: release reserved BTC back to available BTC
@@ -872,7 +852,7 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
           'UPDATE users SET available_btc = available_btc + ?, reserved_btc = reserved_btc - ? WHERE id = ?',
           [transaction.btc_amount, transaction.btc_amount, userId]
         );
-        console.log(`₿ Released ${transaction.btc_amount} satoshis from cancelled limit sell order (User ${userId})`);
+        logger.info('Released funds from cancelled sell order', 'ORDER');
       }
 
       // Delete the transaction from database
@@ -885,9 +865,9 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
       if (global.dataService && global.dataService.redis) {
         try {
           await global.dataService.loadPendingLimitOrdersToCache();
-          console.log('🔄 Refreshed pending limit orders cache after cancellation');
+          logger.info('Refreshed pending limit orders cache', 'CACHE');
         } catch (redisError) {
-          console.error('Error refreshing limit orders cache:', redisError);
+          logger.error('Error refreshing limit orders cache', redisError, 'CACHE');
         }
       }
 
@@ -899,9 +879,9 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
         try {
           await global.dataService.redis.del(`user_transactions_${userId}`);
           await global.dataService.redis.del(`user_balance_${userId}`);
-          console.log('💾 Cleared user caches after order cancellation');
+          logger.cache('CLEAR', 'user_caches');
         } catch (error) {
-          console.error('Error clearing user caches:', error);
+          logger.error('Error clearing user caches', error, 'CACHE');
         }
       }
 
@@ -924,13 +904,7 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
         global.sendAdminUserUpdate();
       }
 
-      console.log(`✅ LIMIT order cancelled:`, {
-        userId,
-        transactionId,
-        type: transaction.type,
-        btc_amount: transaction.btc_amount,
-        inr_amount: transaction.inr_amount
-      });
+      logger.success('Limit order cancelled', 'ORDER');
 
       res.json({ 
         message: 'Limit order cancelled successfully',
@@ -948,7 +922,7 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
     }
 
   } catch (error) {
-    console.error('Error cancelling limit order:', error);
+    logger.error('Error cancelling limit order', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -987,7 +961,7 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
           marketPrice = action === 'buy' ? rates.buy_rate_inr : rates.sell_rate_inr;
         }
       } catch (redisError) {
-        console.error('Redis error, falling back to database for price:', redisError);
+        logger.warn('Redis error, falling back to database for price', 'CACHE');
       }
     }
 
@@ -1096,9 +1070,9 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
         try {
           await global.dataService.redis.del(`user_transactions_${userId}`);
           await global.dataService.redis.del(`user_balance_${userId}`);
-          console.log('💾 Cleared user caches after trade execution');
+          logger.cache('CLEAR', 'user_caches');
         } catch (error) {
-          console.error('Error clearing user caches:', error);
+          logger.error('Error clearing user caches', error, 'CACHE');
         }
       }
       
@@ -1121,14 +1095,7 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
         global.sendAdminUserUpdate();
       }
       
-      console.log(`✅ MARKET ${action.toUpperCase()} executed:`, {
-        userId,
-        transactionId: transactionResult.insertId,
-        type: transactionType,
-        btc_amount: btcAmount,
-        inr_amount: inrAmount,
-        execution_price: marketPrice
-      });
+      logger.success(`Market ${action} executed`, 'TRADE');
       
       // Return success response
       res.json({
@@ -1150,7 +1117,7 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
     }
     
   } catch (error) {
-    console.error('Error executing trade:', error);
+    logger.error('Error executing trade', error, 'API');
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
@@ -1286,7 +1253,7 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
           await global.dataService.redis.del(`user_balance_${userId}`);
           await global.dataService.redis.del(`user_transactions_${recipient.id}`);
           await global.dataService.redis.del(`user_balance_${recipient.id}`);
-          console.log('💾 Cleared user caches after send transaction');
+          logger.cache('CLEAR', 'user_caches');
         } catch (error) {
           console.error('Error clearing user caches:', error);
         }
@@ -1313,17 +1280,7 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
         global.sendAdminUserUpdate();
       }
       
-      console.log(`✅ SEND transaction executed:`, {
-        senderId: userId,
-        senderEmail: sender.email,
-        recipientId: recipient.id,
-        recipientEmail: recipient.email,
-        currency: currency,
-        btc_amount: btcAmount,
-        inr_amount: inrAmount,
-        senderTransactionId: senderTransactionResult.insertId,
-        recipientTransactionId: recipientTransactionResult.insertId
-      });
+      logger.success('Send transaction executed', 'TRANSFER');
       
       // Return success response
       res.json({
@@ -1346,7 +1303,7 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
     }
     
   } catch (error) {
-    console.error('Error executing send transaction:', error);
+    logger.error('Error executing send transaction', error, 'API');
     res.status(500).json({ error: error.message || 'Internal server error' });
   }
 });
@@ -1357,11 +1314,11 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
     const userId = req.user.id; // Fixed: use 'id' instead of 'userId'
     
     // Debug logging
-    console.log('🔍 Balance request - req.user:', req.user);
-    console.log('🔍 Balance request - userId:', userId);
+    logger.debug('Balance request received', { component: 'API', user: req.user.id });
+    // userId already logged above
     
     if (!userId) {
-      console.error('❌ UserId is undefined in balance request');
+      logger.error('UserId is undefined in balance request', null, 'API');
       return res.status(400).json({ error: 'User ID not found in token' });
     }
     
@@ -1373,11 +1330,11 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
         // Try to fetch balance from Redis
         const cachedData = await global.dataService.redis.get(redisKey);
         if (cachedData) {
-          console.log('💾 Balance served from Redis cache:', redisKey);
+          logger.cache('SERVE', redisKey, true);
           return res.json(JSON.parse(cachedData));
         }
       } catch (redisError) {
-        console.error('Redis error, falling back to database:', redisError);
+        logger.warn('Redis error, falling back to database', 'CACHE');
       }
     }
     
@@ -1398,9 +1355,9 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
       try {
         const redisKey = `user_balance_${userId}`;
         await global.dataService.redis.set(redisKey, JSON.stringify(balanceData), 'EX', 60 * 10); // Cache for 10 minutes
-        console.log('💾 Balance cached in Redis:', redisKey);
+        logger.cache('STORE', redisKey);
       } catch (redisError) {
-        console.error('Error caching balance in Redis:', redisError);
+        logger.error('Error caching balance in Redis', redisError, 'CACHE');
       }
     }
     
@@ -1415,14 +1372,14 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
       interest_accrued: balanceData.interest_accrued
     });
   } catch (error) {
-    console.error('Error fetching balance:', error);
+    logger.error('Error fetching balance', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error('Application error', err);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
@@ -1445,7 +1402,7 @@ const userSockets = new Map(); // userId -> Set of socket.id
 
 // Socket.IO connection handling
 io.on('connection', async (socket) => {
-  console.log(`📡 Client connected: ${socket.id}`);
+  logger.websocket('connect', `client connected: ${socket.id}`);
   
   // Handle user authentication for WebSocket
   socket.on('authenticate', async (token) => {
@@ -1462,7 +1419,7 @@ io.on('connection', async (socket) => {
       }
       userSockets.get(decoded.id).add(socket.id);
       
-      console.log(`🔐 User authenticated: ${decoded.email} (${socket.id})`);
+      logger.auth('authenticated', decoded.id, decoded.email);
       
       // Send initial balance data after authentication
       await sendUserBalanceUpdate(decoded.id);
@@ -1509,7 +1466,7 @@ io.on('connection', async (socket) => {
           timestamp: new Date().toISOString()
         });
         
-        console.log(`🔄 Sent cached Bitcoin price to ${socket.id}: $${bitcoinData.btc_usd_price}`);
+        logger.bitcoin('price_sent', bitcoinData.btc_usd_price, `to ${socket.id}`);
       }
     } catch (error) {
       console.error('Error sending cached price to client:', error);
@@ -1518,7 +1475,7 @@ io.on('connection', async (socket) => {
   
   // Handle client disconnect
   socket.on('disconnect', (reason) => {
-    console.log(`📡 Client disconnected: ${socket.id} (${reason})`);
+    logger.websocket('disconnect', `client disconnected: ${socket.id} (${reason})`);
     
     // Clean up user socket mapping
     if (socket.userId) {
@@ -1534,7 +1491,7 @@ io.on('connection', async (socket) => {
   
   // Handle client errors
   socket.on('error', (error) => {
-    console.error(`📡 Socket error for ${socket.id}:`, error);
+    logger.error('Socket error', error, 'WS');
   });
 });
 
@@ -1547,7 +1504,7 @@ async function sendUserBalanceUpdate(userId) {
       return;
     }
     
-    console.log(`🔍 Sending balance update for userId: ${userId}`);
+    logger.debug('Sending balance update', { component: 'WS', user: userId });
     
     // Fetch balance data from database
     const [rows] = await db.execute(
@@ -1556,21 +1513,21 @@ async function sendUserBalanceUpdate(userId) {
     );
     
     if (rows.length === 0) {
-      console.log(`❌ User ${userId} not found for balance update`);
+      logger.warn(`User ${userId} not found for balance update`, 'WS');
       return;
     }
 
     const balanceData = rows[0];
-    console.log(`💰 Sending balance update for user ${userId}:`, balanceData);
+    logger.info('Sending balance update', 'WS');
 
     // Update Redis cache with fresh balance data
     if (global.dataService && global.dataService.redis) {
       try {
         const redisKey = `user_balance_${userId}`;
         await global.dataService.redis.set(redisKey, JSON.stringify(balanceData), 'EX', 60 * 10); // Cache for 10 minutes
-        console.log(`💾 Balance cache updated in Redis: ${redisKey}`);
+        logger.cache('UPDATE', redisKey);
       } catch (redisError) {
-        console.error('Error updating balance cache in Redis:', redisError);
+        logger.error('Error updating balance cache', redisError, 'CACHE');
       }
     }
 
@@ -1593,12 +1550,12 @@ async function sendUserBalanceUpdate(userId) {
           timestamp: new Date().toISOString()
         });
       });
-      console.log(`📡 Balance update sent to ${userSocketSet.size} client(s) for user ${userId}`);
+      logger.websocket('balance_update', `sent to ${userSocketSet.size} clients`, userId);
     } else {
-      console.log(`⚠️  No active connections for user ${userId}`);
+      logger.debug(`No active connections for user ${userId}`, { component: 'WS' });
     }
   } catch (error) {
-    console.error(`Error sending balance update for user ${userId}:`, error);
+    logger.error(`Error sending balance update for user ${userId}`, error, 'WS');
   }
 }
 
@@ -1607,11 +1564,11 @@ async function sendUserTransactionUpdate(userId) {
   try {
     // Validate userId
     if (!userId) {
-      console.error('❌ sendUserTransactionUpdate: userId is undefined');
+      logger.error('sendUserTransactionUpdate: userId is undefined', null, 'WS');
       return;
     }
     
-    console.log(`🔍 Sending transaction update for userId: ${userId}`);
+    logger.debug('Sending transaction update', { component: 'WS', user: userId });
     
     // Fetch most recent 15 transactions from database (both PENDING and EXECUTED)
     const [rows] = await db.execute(
@@ -1637,16 +1594,16 @@ async function sendUserTransactionUpdate(userId) {
       created_at: row.created_at
     }));
     
-    console.log(`💳 Sending ${transactionData.length} transactions for user ${userId}`);
+    logger.info(`Sending ${transactionData.length} transactions`, 'WS');
 
     // Cache transaction data in Redis (if available)
     if (global.dataService && global.dataService.redis) {
       try {
         const redisKey = `user_transactions_${userId}`;
         await global.dataService.redis.set(redisKey, JSON.stringify(transactionData), 'EX', 60 * 60); // Cache for 1 hour
-        console.log(`💾 Transaction data cached in Redis: ${redisKey}`);
+        logger.cache('STORE', redisKey);
       } catch (redisError) {
-        console.error('Error caching transaction data in Redis:', redisError);
+        logger.error('Error caching transaction data', redisError, 'CACHE');
       }
     }
 
@@ -1669,19 +1626,19 @@ async function sendUserTransactionUpdate(userId) {
           timestamp: new Date().toISOString()
         });
       });
-      console.log(`📡 Transaction update sent to ${userSocketSet.size} client(s) for user ${userId}`);
+      logger.websocket('transaction_update', `sent to ${userSocketSet.size} clients`, userId);
     } else {
       console.log(`⚠️  No active connections for user ${userId}`);
     }
   } catch (error) {
-    console.error(`Error sending transaction update for user ${userId}:`, error);
+    logger.error(`Error sending transaction update for user ${userId}`, error, 'WS');
   }
 }
 
 // Function to send admin transaction updates to all admin users
 async function sendAdminTransactionUpdate() {
   try {
-    console.log('🔍 Sending admin transaction update');
+    logger.debug('Sending admin transaction update', { component: 'WS' });
     
     // Fetch recent admin transactions (same as the admin API endpoint)
     const [transactions] = await db.execute(
@@ -1694,7 +1651,7 @@ async function sendAdminTransactionUpdate() {
        LIMIT 100`
     );
     
-    console.log(`📊 Sending ${transactions.length} admin transactions`);
+    logger.info(`Sending ${transactions.length} admin transactions`, 'WS');
     
     // Find all connected admin users and send them the update
     for (const [userId, socketSet] of userSockets.entries()) {
@@ -1713,14 +1670,14 @@ async function sendAdminTransactionUpdate() {
               timestamp: new Date().toISOString()
             });
           });
-          console.log(`📡 Admin transaction update sent to ${socketSet.size} client(s) for admin ${userId}`);
+          logger.websocket('admin_transaction_update', `sent to ${socketSet.size} clients`, userId);
         }
       } catch (error) {
-        console.error(`Error checking admin status for user ${userId}:`, error);
+        logger.error(`Error checking admin status for user ${userId}`, error, 'WS');
       }
     }
   } catch (error) {
-    console.error('Error sending admin transaction update:', error);
+    logger.error('Error sending admin transaction update', error, 'WS');
   }
 }
 
@@ -1729,11 +1686,11 @@ async function sendUserDCAPlansUpdate(userId) {
   try {
     // Validate userId
     if (!userId) {
-      console.error('❌ sendUserDCAPlansUpdate: userId is undefined');
+      logger.error('sendUserDCAPlansUpdate: userId is undefined', null, 'WS');
       return;
     }
     
-    console.log(`🔍 Sending DCA plans update for userId: ${userId}`);
+    logger.debug('Sending DCA plans update', { component: 'WS', user: userId });
     
     // Get ALL plans (including completed) for total count
     const [allPlansCount] = await db.execute(
@@ -1782,7 +1739,7 @@ async function sendUserDCAPlansUpdate(userId) {
           }
         };
       } catch (error) {
-        console.error(`Error fetching performance for plan ${plan.id}:`, error);
+        logger.error(`Error fetching performance for plan ${plan.id}`, error, 'DB');
         return {
           ...plan,
           performance: {
@@ -1806,16 +1763,16 @@ async function sendUserDCAPlansUpdate(userId) {
       paused_plans: pausedPlans
     };
     
-    console.log(`📋 Sending ${allPlansCount[0].total_count} DCA plans for user ${userId} (${activePlans} active, ${pausedPlans} paused)`);
+    logger.info(`Sending ${allPlansCount[0].total_count} DCA plans`, 'WS');
 
     // Cache DCA plans data in Redis (if available)
     if (global.dataService && global.dataService.redis) {
       try {
         const redisKey = `user_dca_plans_${userId}`;
         await global.dataService.redis.set(redisKey, JSON.stringify(dcaPlansData), 'EX', 60 * 30); // Cache for 30 minutes
-        console.log(`💾 DCA plans data cached in Redis: ${redisKey}`);
+        logger.cache('STORE', redisKey);
       } catch (redisError) {
-        console.error('Error caching DCA plans data in Redis:', redisError);
+        logger.error('Error caching DCA plans data', redisError, 'CACHE');
       }
     }
 
@@ -1828,12 +1785,12 @@ async function sendUserDCAPlansUpdate(userId) {
           timestamp: new Date().toISOString()
         });
       });
-      console.log(`📡 DCA plans update sent to ${userSocketSet.size} client(s) for user ${userId}`);
+      logger.websocket('dca_plans_update', `sent to ${userSocketSet.size} clients`, userId);
     } else {
       console.log(`⚠️  No active connections for user ${userId}`);
     }
   } catch (error) {
-    console.error(`Error sending DCA plans update for user ${userId}:`, error);
+    logger.error(`Error sending DCA plans update for user ${userId}`, error, 'WS');
   }
 }
 
@@ -1848,7 +1805,7 @@ function broadcastToClients(eventName, data) {
 // Function to send DCA plans update to admin users
 async function sendAdminDCAPlansUpdate() {
   try {
-    console.log('🔍 Sending admin DCA plans update to all admin users');
+    logger.debug('Sending admin DCA plans update', { component: 'WS' });
     
     // Fetch ALL DCA plans from all users for admin view
     const [rows] = await db.execute(
@@ -1912,7 +1869,7 @@ async function sendAdminDCAPlansUpdate() {
       completedCount: plansWithPerformance.filter(p => p.status === 'COMPLETED').length
     };
     
-    console.log(`📋 Sending ${plansWithPerformance.length} DCA plans to admin users`);
+    logger.info(`Sending ${plansWithPerformance.length} DCA plans to admins`, 'WS');
     
     // Send to all admin users
     for (const [userId, socketSet] of userSockets.entries()) {
@@ -1931,21 +1888,21 @@ async function sendAdminDCAPlansUpdate() {
               timestamp: new Date().toISOString()
             });
           });
-          console.log(`📡 Admin DCA plans update sent to ${socketSet.size} client(s) for admin ${userId}`);
+          logger.websocket('admin_dca_plans_update', `sent to ${socketSet.size} clients`, userId);
         }
       } catch (error) {
         console.error(`Error checking admin status for user ${userId}:`, error);
       }
     }
   } catch (error) {
-    console.error('Error sending admin DCA plans update:', error);
+    logger.error('Error sending admin DCA plans update', error, 'WS');
   }
 }
 
 // Function to send user updates to admin users
 async function sendAdminUserUpdate() {
   try {
-    console.log('🔍 Sending admin user update to all admin users');
+    logger.debug('Sending admin user update', { component: 'WS' });
     
     // Fetch ALL users with balances for admin view
     const [users] = await db.execute(
@@ -1968,7 +1925,7 @@ async function sendAdminUserUpdate() {
       regularCount: users.filter(u => !u.is_admin).length
     };
     
-    console.log(`📊 Sending ${users.length} users to admin clients`);
+    logger.info(`Sending ${users.length} users to admin clients`, 'WS');
     
     // Send to all admin users
     for (const [userId, socketSet] of userSockets.entries()) {
@@ -1987,14 +1944,14 @@ async function sendAdminUserUpdate() {
               timestamp: new Date().toISOString()
             });
           });
-          console.log(`📡 Admin user update sent to ${socketSet.size} client(s) for admin ${userId}`);
+          logger.websocket('admin_user_update', `sent to ${socketSet.size} clients`, userId);
         }
       } catch (error) {
         console.error(`Error checking admin status for user ${userId}:`, error);
       }
     }
   } catch (error) {
-    console.error('Error sending admin user update:', error);
+    logger.error('Error sending admin user update', error, 'WS');
   }
 }
 
@@ -2060,21 +2017,21 @@ async function startServer() {
   const networkIP = getLocalNetworkIP();
   
   httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 BitTrade API Server running on port ${PORT}`);
-    console.log(`📱 Server accessible at:`);
-    console.log(`[SERVER]    - http://localhost:${PORT}`);
-    console.log(`[SERVER]    - http://0.0.0.0:${PORT}`);
-    console.log(`[SERVER]    - http://${networkIP}:${PORT}`);
-    console.log(`[SERVER] 🏥 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🌐 WebSocket server ready for real-time data broadcasting`);
-    console.log(`📡 WebSocket 'btc_price_update' broadcasts enabled`);
-    console.log(`📡 Connected clients: ${io.engine.clientsCount}`);
+    logger.server(`BitTrade API Server running on port ${PORT}`);
+    logger.info('Server accessible at:');
+    logger.info(`  http://localhost:${PORT}`);
+    logger.info(`  http://0.0.0.0:${PORT}`);
+    logger.info(`  http://${networkIP}:${PORT}`);
+    logger.info(`Health check: http://localhost:${PORT}/api/health`);
+    logger.websocket('server_ready', 'WebSocket server ready for broadcasting');
+    logger.websocket('broadcasts_enabled', 'btc_price_update events enabled');
+    logger.websocket('clients_connected', `${io.engine.clientsCount} clients connected`);
   });
 }
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down server...');
+  logger.server('Shutting down server...');
   if (global.dataService) {
     await global.dataService.stop();
   }
@@ -2086,12 +2043,12 @@ process.on('SIGINT', async () => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+  logger.error('Uncaught Exception', err);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
-  console.error('Unhandled Rejection:', err);
+  logger.error('Unhandled Rejection', err);
   process.exit(1);
 });
 
@@ -2106,4 +2063,4 @@ async function startAllServices() {
   await startDCAExecutionService();
 }
 
-startAllServices().catch(console.error);
+startAllServices().catch(err => logger.error('Failed to start services', err));

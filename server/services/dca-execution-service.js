@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const config = require('../config/config');
+const logger = require('../utils/logger');
 
 class DCAExecutionService {
   constructor() {
@@ -11,17 +12,17 @@ class DCAExecutionService {
 
   async start() {
     if (this.isRunning) {
-      console.log('DCA Execution Service is already running');
+      logger.warn('DCA Execution Service is already running', 'DCA');
       return;
     }
 
     try {
       // Initialize database connection
       this.db = await mysql.createConnection(config.database);
-      console.log('DCA Execution Service: Database connected');
+      logger.success('DCA Execution Service: Database connected', 'DCA');
       
       this.isRunning = true;
-      console.log('🔄 DCA Execution Service started');
+      logger.success('DCA Execution Service started', 'DCA');
       
       // Load settings from database
       await this.loadSettings();
@@ -30,7 +31,7 @@ class DCAExecutionService {
       await this.scheduleNextExecution();
       
     } catch (error) {
-      console.error('Failed to start DCA Execution Service:', error);
+      logger.error('Failed to start DCA Execution Service', error, 'DCA');
       throw error;
     }
   }
@@ -54,7 +55,7 @@ class DCAExecutionService {
       this.db = null;
     }
     
-    console.log('🛑 DCA Execution Service stopped');
+    logger.info('DCA Execution Service stopped', 'DCA');
   }
 
   async scheduleNextExecution() {
@@ -93,18 +94,18 @@ class DCAExecutionService {
       ['ACTIVE']
     );
     
-    console.log(`📊 Found ${plans.length} DCA plans due for execution`);
+    logger.info(`Found ${plans.length} DCA plans due for execution`, 'DCA');
     
     for (const plan of plans) {
       try {
-        console.log(`🔄 Executing DCA plan ${plan.id} for user ${plan.user_id}`);
+        logger.info(`Executing DCA plan ${plan.id} for user ${plan.user_id}`, 'DCA');
         
         // CRITICAL: Check and atomically update the plan status BEFORE executing trade
         // This prevents race conditions where multiple instances try to execute the same plan
         const shouldExecute = await this.checkAndReservePlanForExecution(plan);
         
         if (!shouldExecute) {
-          console.log(`⏭️ DCA plan ${plan.id} already completed or being processed by another instance`);
+          logger.warn(`DCA plan ${plan.id} already completed or being processed by another instance`, 'DCA');
           continue;
         }
         
@@ -132,20 +133,20 @@ class DCAExecutionService {
             await global.sendAdminDCAPlansUpdate();
           }
           
-          console.log(`✅ DCA plan ${plan.id} executed successfully`);
+          logger.success(`DCA plan ${plan.id} executed successfully`, 'DCA');
         } else {
           // If trade failed, revert the reservation
           await this.revertPlanReservation(plan);
-          console.log(`❌ DCA plan ${plan.id} execution failed: ${tradeResult.error}`);
+          logger.error(`DCA plan ${plan.id} execution failed: ${tradeResult.error}`, null, 'DCA');
         }
   
       } catch (error) {
-        console.error(`Failed to execute DCA plan ${plan.id} for user ${plan.user_id}:`, error);
+        logger.error(`Failed to execute DCA plan ${plan.id} for user ${plan.user_id}`, error, 'DCA');
         // Revert reservation on error
         try {
           await this.revertPlanReservation(plan);
         } catch (revertError) {
-          console.error(`Failed to revert plan reservation for ${plan.id}:`, revertError);
+          logger.error(`Failed to revert plan reservation for ${plan.id}`, revertError, 'DCA');
         }
       }
     }
@@ -153,7 +154,7 @@ class DCAExecutionService {
 
 
   async sendUserTransactionUpdate(userId) {
-    console.log(`Placeholder: Send transaction update to user ${userId}`);
+    logger.debug(`Placeholder: Send transaction update to user ${userId}`, 'DCA');
   }
 
   async executeTrade(plan) {
@@ -261,7 +262,7 @@ class DCAExecutionService {
         
         await connection.commit();
         
-        console.log(`💰 DCA BUY executed: User ${plan.user_id} bought ${btcAmountSatoshis} satoshis for ₹${inrAmount} at ₹${currentPrice}/BTC`);
+        logger.transaction('DCA_BUY', plan.user_id, `${btcAmountSatoshis} sats for ₹${inrAmount}`, 'EXECUTED');
         
         return { success: true, inrAmount, btcAmount: btcAmountSatoshis, price: currentPrice };
         
@@ -319,14 +320,14 @@ class DCAExecutionService {
         
         await connection.commit();
         
-        console.log(`💰 DCA SELL executed: User ${plan.user_id} sold ${btcAmountSatoshis} satoshis for ₹${inrAmount} at ₹${currentPrice}/BTC`);
+        logger.transaction('DCA_SELL', plan.user_id, `${btcAmountSatoshis} sats for ₹${inrAmount}`, 'EXECUTED');
         
         return { success: true, inrAmount, btcAmount: btcAmountSatoshis, price: currentPrice };
       }
       
     } catch (error) {
       await connection.rollback();
-      console.error('Trade execution error:', error);
+      logger.error('Trade execution error', error, 'DCA');
       return { success: false, error: error.message };
     } finally {
       await connection.end();
@@ -338,7 +339,7 @@ class DCAExecutionService {
     if (global.sendUserTransactionUpdate) {
       await global.sendUserTransactionUpdate(userId);
     } else {
-      console.log(`📨 Send transaction update to user ${userId}`);
+      logger.debug(`Send transaction update to user ${userId}`, 'DCA');
     }
   }
 
@@ -347,7 +348,7 @@ class DCAExecutionService {
     if (global.sendUserBalanceUpdate) {
       await global.sendUserBalanceUpdate(userId);
     } else {
-      console.log(`📨 Send balance update to user ${userId}`);
+      logger.debug(`Send balance update to user ${userId}`, 'DCA');
     }
   }
 
@@ -356,7 +357,7 @@ class DCAExecutionService {
     if (global.sendAdminTransactionUpdate) {
       await global.sendAdminTransactionUpdate();
     } else {
-      console.log(`📨 Send admin transaction update`);
+      logger.debug('Send admin transaction update', 'DCA');
     }
   }
 
@@ -372,9 +373,9 @@ class DCAExecutionService {
         this.settings[row.key] = row.value;
       });
       
-      console.log('DCA Execution Service - Settings loaded:', this.settings);
+      logger.info('DCA Execution Service - Settings loaded', 'DCA', JSON.stringify(this.settings));
     } catch (error) {
-      console.error('Error loading settings for DCA service:', error);
+      logger.error('Error loading settings for DCA service', error, 'DCA');
     }
   }
 
@@ -396,7 +397,7 @@ class DCAExecutionService {
       // If affectedRows is 0, the plan was already processed by another instance
       return result.affectedRows > 0;
     } catch (error) {
-      console.error(`Error reserving plan ${plan.id}:`, error);
+      logger.error(`Error reserving plan ${plan.id}`, error, 'DCA');
       return false;
     }
   }
@@ -411,7 +412,7 @@ class DCAExecutionService {
       );
       
       if (currentPlanRows.length === 0) {
-        console.log(`Plan ${plan.id} not found during finalization`);
+        logger.warn(`Plan ${plan.id} not found during finalization`, 'DCA');
         return;
       }
       
@@ -442,7 +443,7 @@ class DCAExecutionService {
           [plan.id]
         );
         
-        console.log(`Next execution scheduled for unlimited plan ${plan.id}`);
+        logger.info(`Next execution scheduled for unlimited plan ${plan.id}`, 'DCA');
         return;
       }
       
@@ -458,7 +459,7 @@ class DCAExecutionService {
           [plan.id]
         );
         
-        console.log(`✅ DCA plan ${plan.id} completed after final execution`);
+        logger.success(`DCA plan ${plan.id} completed after final execution`, 'DCA');
         return;
       }
       
@@ -489,10 +490,10 @@ class DCAExecutionService {
         [plan.id]
       );
       
-      console.log(`Next execution scheduled for plan ${plan.id}. Remaining: ${currentRemainingExecutions - 1}`);
+      logger.info(`Next execution scheduled for plan ${plan.id}. Remaining: ${currentRemainingExecutions - 1}`, 'DCA');
       
     } catch (error) {
-      console.error(`Error finalizing execution for plan ${plan.id}:`, error);
+      logger.error(`Error finalizing execution for plan ${plan.id}`, error, 'DCA');
     }
   }
   
@@ -523,9 +524,9 @@ class DCAExecutionService {
         [plan.id]
       );
       
-      console.log(`Reverted reservation for plan ${plan.id}`);
+      logger.info(`Reverted reservation for plan ${plan.id}`, 'DCA');
     } catch (error) {
-      console.error(`Error reverting reservation for plan ${plan.id}:`, error);
+      logger.error(`Error reverting reservation for plan ${plan.id}`, error, 'DCA');
     }
   }
 
@@ -542,11 +543,11 @@ class DCAExecutionService {
       );
       
       if (result.affectedRows > 0) {
-        console.log(`🧹 Cleaned up ${result.affectedRows} completed DCA plan(s) older than 7 days`);
+        logger.info(`Cleaned up ${result.affectedRows} completed DCA plan(s) older than 7 days`, 'DCA');
       }
       
     } catch (error) {
-      console.error('Error cleaning up completed DCA plans:', error);
+      logger.error('Error cleaning up completed DCA plans', error, 'DCA');
     }
   }
   

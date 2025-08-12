@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { getApiUrl } from '../utils/api';
+import logger from '../utils/logger';
 
 interface User {
   id: number;
@@ -47,7 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logout();
       }
     } catch (error) {
-      console.error('Token verification failed:', error);
+      logger.error('Token verification failed', error, { component: 'AuthContext' });
       logout();
     } finally {
       setIsLoading(false);
@@ -94,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('bittrade_user', JSON.stringify(data.user));
       
     } catch (error) {
-      console.error('Login error:', error);
+      logger.error('Login failed', error, { component: 'AuthContext' });
       throw error;
     }
   };
@@ -123,7 +124,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('bittrade_user', JSON.stringify(data.user));
       
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration failed', error, { component: 'AuthContext' });
       throw error;
     }
   };

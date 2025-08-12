@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { useWebSocketEvent } from './WebSocketContext';
 import { getApiUrl } from '../utils/api';
 import { Transaction, DCAPlan } from '../types';
+import logger from '../utils/logger';
 
 // =============================================
 // INTERFACES & TYPES
@@ -252,7 +253,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       const data = await response.json();
       setUserBalance(data);
     } catch (err) {
-      console.error('❌ PortfolioContext: User balance fetch error:', err);
+      logger.error('User balance fetch failed', err, { component: 'PortfolioContext' });
       setErrorState('userBalance', err instanceof Error ? err.message : 'Failed to fetch balance');
     } finally {
       setLoadingState('userBalance', false);
@@ -298,7 +299,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       setHasMoreUserTransactions(data.hasMore || false);
       setUserTransactionsPage(requestedPage);
     } catch (err) {
-      console.error('❌ PortfolioContext: User transactions fetch error:', err);
+      logger.error('User transactions fetch failed', err, { component: 'PortfolioContext' });
       setErrorState('userTransactions', err instanceof Error ? err.message : 'Failed to fetch transactions');
     } finally {
       setLoadingState('userTransactions', false);
@@ -333,7 +334,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         paused_plans: data.paused_plans || 0
       });
     } catch (err) {
-      console.error('❌ PortfolioContext: User DCA plans fetch error:', err);
+      logger.error('User DCA plans fetch failed', err, { component: 'PortfolioContext' });
       setErrorState('userDCAPlans', err instanceof Error ? err.message : 'Failed to fetch DCA plans');
       setUserDCAPlans({ plans: [], total_plans: 0, active_plans: 0, paused_plans: 0 });
     } finally {
@@ -365,7 +366,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       const data = await response.json();
       setAdminBalance(data);
     } catch (err) {
-      console.error('❌ PortfolioContext: Admin balance fetch error:', err);
+      logger.error('Admin balance fetch failed', err, { component: 'PortfolioContext' });
       setErrorState('adminBalance', err instanceof Error ? err.message : 'Failed to fetch admin balance');
     } finally {
       setLoadingState('adminBalance', false);
@@ -395,7 +396,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       const data = await response.json();
       setAdminTransactions(data.transactions || []);
     } catch (err) {
-      console.error('❌ PortfolioContext: Admin transactions fetch error:', err);
+      logger.error('Admin transactions fetch failed', err, { component: 'PortfolioContext' });
       setErrorState('adminTransactions', err instanceof Error ? err.message : 'Failed to fetch admin transactions');
     } finally {
       setLoadingState('adminTransactions', false);
@@ -428,7 +429,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         totalCount: data.totalCount || 0
       });
     } catch (err) {
-      console.error('❌ PortfolioContext: Admin DCA plans fetch error:', err);
+      logger.error('Admin DCA plans fetch failed', err, { component: 'PortfolioContext' });
       setErrorState('adminDCAPlans', err instanceof Error ? err.message : 'Failed to fetch admin DCA plans');
     } finally {
       setLoadingState('adminDCAPlans', false);
@@ -459,7 +460,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       const data = await response.json();
       setAdminUsers(data.users || []);
     } catch (err) {
-      console.error('❌ PortfolioContext: Admin users fetch error:', err);
+      logger.error('Admin users fetch failed', err, { component: 'PortfolioContext' });
       setErrorState('adminUsers', err instanceof Error ? err.message : 'Failed to fetch users');
       setAdminUsers([]);
     } finally {

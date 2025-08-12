@@ -3,37 +3,28 @@ const axios = require('axios');
 const cron = require('node-cron');
 const { createClient } = require('redis');
 const config = require('../config/config');
+const logger = require('../utils/logger');
 
 class DataService {
   async loadPendingLimitOrdersToCache() {
     try {
-      console.log('🔄 Loading pending limit orders from database...');
+      logger.info('Loading pending limit orders from database');
       const [orders] = await this.db.execute(`
         SELECT * FROM transactions 
         WHERE status = 'PENDING' AND type IN ('LIMIT_BUY', 'LIMIT_SELL')
       `);
       
-      console.log('📊 Raw database query result:', orders);
-      
       await this.redis.set('pending_limit_orders', JSON.stringify(orders));
-      console.log(`📋 Loaded ${orders.length} pending limit orders into Redis cache`);
+      logger.success(`Loaded ${orders.length} pending limit orders into cache`);
       
       // Log summary of pending orders
       if (orders.length > 0) {
         const buyOrders = orders.filter(o => o.type === 'LIMIT_BUY').length;
         const sellOrders = orders.filter(o => o.type === 'LIMIT_SELL').length;
-        console.log(`   • ${buyOrders} LIMIT_BUY orders`);
-        console.log(`   • ${sellOrders} LIMIT_SELL orders`);
-        
-        // Log individual orders for debugging
-        orders.forEach(order => {
-          console.log(`   📝 Order ${order.id}: ${order.type} - Target: ₹${order.execution_price?.toLocaleString()} - User: ${order.user_id}`);
-        });
+        logger.info(`${buyOrders} buy orders, ${sellOrders} sell orders loaded`);
       }
     } catch (error) {
-      console.error('❌ Error loading pending limit orders:', error);
-      console.error('   Error details:', error.message);
-      console.error('   Stack:', error.stack);
+      logger.error('Error loading pending limit orders', error);
     }
   }
 
@@ -46,37 +37,19 @@ class DataService {
       const initialOrderCount = orders.length;
       let executedCount = 0;
       
-      // Debug logging
-      console.log(`\n🔍 LIMIT ORDER CHECK:`);
-      console.log(`   📊 BTC USD Price: $${btcUsdPrice.toLocaleString()}`);
-      console.log(`   💱 Buy Rate INR: ₹${rates.buy_rate_inr.toLocaleString()}`);
-      console.log(`   💱 Sell Rate INR: ₹${rates.sell_rate_inr.toLocaleString()}`);
-      console.log(`   📋 Pending orders in cache: ${initialOrderCount}`);
+      // Check and execute orders
+      if (initialOrderCount > 0) {
+        logger.info(`Checking ${initialOrderCount} orders at $${btcUsdPrice.toLocaleString()}`, 'LIMIT');
+      }
 
       orders = orders.filter(order => {
         if (order.type === 'LIMIT_BUY' && rates.buy_rate_inr <= order.execution_price) {
-          // Execute buy order
-          console.log(`\n🟢 EXECUTING LIMIT_BUY ORDER`);
-          console.log(`   Order ID: ${order.id}`);
-          console.log(`   User ID: ${order.user_id}`);
-          console.log(`   Target Price: ₹${order.execution_price.toLocaleString()}`);
-          console.log(`   Current Buy Rate: ₹${rates.buy_rate_inr.toLocaleString()}`);
-          console.log(`   BTC Amount: ${(order.btc_amount / 100000000).toFixed(8)} BTC`);
-          console.log(`   INR Amount: ₹${order.inr_amount.toLocaleString()}`);
-          
+          logger.success(`Executing buy order ${order.id} at ₹${rates.buy_rate_inr.toLocaleString()}`, 'LIMIT');
           this.executeOrder(order, rates);
           executedCount++;
           return false; // Remove executed order
         } else if (order.type === 'LIMIT_SELL' && rates.sell_rate_inr >= order.execution_price) {
-          // Execute sell order
-          console.log(`\n🔴 EXECUTING LIMIT_SELL ORDER`);
-          console.log(`   Order ID: ${order.id}`);
-          console.log(`   User ID: ${order.user_id}`);
-          console.log(`   Target Price: ₹${order.execution_price.toLocaleString()}`);
-          console.log(`   Current Sell Rate: ₹${rates.sell_rate_inr.toLocaleString()}`);
-          console.log(`   BTC Amount: ${(order.btc_amount / 100000000).toFixed(8)} BTC`);
-          console.log(`   INR Amount: ₹${order.inr_amount.toLocaleString()}`);
-          
+          logger.success(`Executing sell order ${order.id} at ₹${rates.sell_rate_inr.toLocaleString()}`, 'LIMIT');
           this.executeOrder(order, rates);
           executedCount++;
           return false; // Remove executed order
@@ -84,20 +57,14 @@ class DataService {
         return true; // Keep pending order
       });
 
-      // Log summary if orders were checked
+      // Log summary if orders were processed
       if (initialOrderCount > 0) {
-        console.log(`\n📊 LIMIT ORDER CHECK SUMMARY:`);
-        console.log(`   📋 Orders checked: ${initialOrderCount}`);
-        console.log(`   ✅ Orders executed: ${executedCount}`);
-        console.log(`   ⏳ Orders still pending: ${orders.length}`);
-        console.log(`   💰 Current BTC USD: $${btcUsdPrice.toLocaleString()}`);
-        console.log(`   💱 Buy Rate INR: ₹${rates.buy_rate_inr.toLocaleString()}`);
-        console.log(`   💱 Sell Rate INR: ₹${rates.sell_rate_inr.toLocaleString()}`);
+        logger.info(`Orders processed: ${executedCount} executed, ${orders.length} pending`, 'LIMIT');
       }
 
       await this.redis.set('pending_limit_orders', JSON.stringify(orders));
     } catch (error) {
-      console.error('❌ Error checking/executing limit orders:', error);
+      logger.error('Error checking/executing limit orders', error, 'LIMIT');
     }
   }
 
@@ -123,7 +90,7 @@ class DataService {
             'UPDATE users SET reserved_inr = reserved_inr - ?, available_btc = available_btc + ? WHERE id = ?',
             [order.inr_amount, order.btc_amount, order.user_id]
           );
-          console.log(`   💰 Converted ₹${order.inr_amount} to ${order.btc_amount} satoshis for user ${order.user_id}`);
+          logger.transaction('LIMIT_BUY', order.user_id, `₹${order.inr_amount}`, 'EXECUTED');
           
         } else if (order.type === 'LIMIT_SELL') {
           // For limit sell: convert reserved BTC to available INR
@@ -131,17 +98,12 @@ class DataService {
             'UPDATE users SET reserved_btc = reserved_btc - ?, available_inr = available_inr + ? WHERE id = ?',
             [order.btc_amount, order.inr_amount, order.user_id]
           );
-          console.log(`   ₿ Converted ${order.btc_amount} satoshis to ₹${order.inr_amount} for user ${order.user_id}`);
+          logger.transaction('LIMIT_SELL', order.user_id, `${order.btc_amount} sats`, 'EXECUTED');
         }
         
         await this.db.commit();
         
-        console.log(`✅ ORDER EXECUTION SUCCESSFUL`);
-        console.log(`   Order ID: ${order.id}`);
-        console.log(`   Type: ${order.type}`);
-        console.log(`   User ID: ${order.user_id}`);
-        console.log(`   Executed at: ${executionTime}`);
-        console.log(`   Status: EXECUTED`);
+        logger.success(`Order ${order.id} executed for user ${order.user_id}`, 'ORDER');
         
         // Broadcast order execution to WebSocket clients if available
         if (this.io) {
@@ -154,7 +116,7 @@ class DataService {
             executionPrice: order.execution_price,
             executedAt: executionTime
           });
-          console.log(`📡 Broadcasted order execution to ${this.io.engine.clientsCount} clients`);
+          logger.websocket('order_executed', `broadcasted to ${this.io.engine.clientsCount} clients`);
         }
         
         // Send real-time updates to the specific user
@@ -182,8 +144,7 @@ class DataService {
       }
       
     } catch (error) {
-      console.error(`❌ ERROR EXECUTING ORDER ${order.id}:`, error);
-      console.error(`   Error details:`, error.message);
+      logger.error(`Error executing order ${order.id}`, error, 'ORDER');
     }
   }
   constructor(io = null) {
@@ -198,7 +159,7 @@ async connect() {
     try {
       // Connect to MySQL
       this.db = await mysql.createConnection(config.database);
-      console.log('Connected to MySQL database');
+      logger.success('MySQL connected', 'DATA');
       
       // Connect to Redis
       this.redis = createClient({
@@ -209,11 +170,11 @@ async connect() {
       });
       
       this.redis.on('error', (err) => {
-        console.error('Redis connection error:', err);
+        logger.error('Redis connection error', err, 'DATA');
       });
       
       await this.redis.connect();
-      console.log('Connected to Redis cache');
+      logger.success('Redis connected', 'DATA');
       
       // Load initial settings
       await this.loadSettings();
@@ -221,7 +182,7 @@ async connect() {
       // Load pending limit orders into Redis cache
       await this.loadPendingLimitOrdersToCache();
     } catch (error) {
-      console.error('Database/Redis connection failed:', error);
+      logger.error('Database/Redis connection failed', error, 'DATA');
       throw error;
     }
   }
@@ -229,12 +190,12 @@ async connect() {
   async disconnect() {
     if (this.db) {
       await this.db.end();
-      console.log('Database connection closed');
+      logger.info('MySQL disconnected', 'DATA');
     }
     
     if (this.redis) {
       await this.redis.quit();
-      console.log('Redis connection closed');
+      logger.info('Redis disconnected', 'DATA');
     }
   }
 
@@ -250,9 +211,9 @@ async connect() {
         this.settings[row.key] = row.value;
       });
       
-      console.log('Settings loaded:', this.settings);
+      logger.info(`Settings loaded: buy=${this.settings.buy_multiplier}, sell=${this.settings.sell_multiplier}`, 'DATA');
     } catch (error) {
-      console.error('Error loading settings:', error);
+      logger.error('Error loading settings', error, 'DATA');
     }
   }
 
@@ -280,7 +241,7 @@ async connect() {
   // Triggered when bitcoin_data.btc_usd_price changes
   broadcastPriceUpdate(btcUsdPrice) {
     if (!this.io) {
-      console.log('⚠️  No WebSocket connection available for broadcasting');
+      logger.warn('No WebSocket connection available for broadcasting', 'WS');
       return;
     }
     
@@ -294,20 +255,19 @@ async connect() {
       timestamp: new Date().toISOString()
     });
     
-    console.log(`📡 Broadcasted btc_price_update: $${btcUsdPrice} USD (Buy: ₹${rates.buy_rate_inr}, Sell: ₹${rates.sell_rate_inr})`);
-    console.log(`📡 Connected clients: ${this.io.engine.clientsCount}`);
+    logger.bitcoin('price_update', btcUsdPrice, `broadcasted to ${this.io.engine.clientsCount} clients`);
   }
 
   // Broadcast initial Bitcoin price from database
   // This ensures clients get the latest data immediately after connecting
   async broadcastInitialPrice() {
     if (!this.io) {
-      console.log('⚠️  No WebSocket connection available for initial broadcast');
+      logger.warn('No WebSocket connection available for initial broadcast', 'WS');
       return;
     }
     
     if (!this.db) {
-      console.log('⚠️  No database connection available for initial broadcast');
+      logger.warn('No database connection available for initial broadcast', 'DATA');
       return;
     }
     
@@ -321,19 +281,19 @@ async connect() {
         const btcUsdPrice = rows[0].btc_usd_price;
         this.lastBtcPrice = btcUsdPrice; // Set to avoid duplicate broadcast
         this.broadcastPriceUpdate(btcUsdPrice);
-        console.log(`🔄 Initial Bitcoin price broadcasted: $${btcUsdPrice}`);
+        logger.success(`Initial Bitcoin price broadcasted: $${btcUsdPrice}`, 'WS');
       } else {
-        console.log('⚠️  No Bitcoin data found in database for initial broadcast');
+        logger.warn('No Bitcoin data found for initial broadcast', 'DATA');
       }
     } catch (error) {
-      console.error('Error broadcasting initial price:', error);
+      logger.error('Error broadcasting initial price', error, 'WS');
     }
   }
 
   // Cache existing chart data from database to Redis on startup
   async cacheExistingChartData() {
     if (!this.redis || !this.db) {
-      console.log('⚠️  Redis or database not available for initial chart caching');
+      logger.warn('Redis or database not available for initial chart caching', 'CACHE');
       return;
     }
 
@@ -371,19 +331,19 @@ async connect() {
           };
 
           await this.redis.set(cacheKey, JSON.stringify(formattedData), 'EX', ttl);
-          console.log(`📦 Cached existing ${timeframe} chart data in Redis (TTL: ${ttl}s)`);
+          logger.cache('STORE', `chart_data_${timeframe}`);
         } else {
-          console.log(`⚠️  No existing ${timeframe} chart data found in database`);
+          logger.warn(`No existing ${timeframe} chart data found in database`, 'CACHE');
         }
       } catch (error) {
-        console.error(`Error caching existing ${timeframe} chart data:`, error);
+        logger.error(`Error caching existing ${timeframe} chart data`, error, 'CACHE');
       }
     }
   }
 
   // Fetch Bitcoin data from CoinGecko
 async reloadSettings() {
-  console.log('Reloading settings...');
+  logger.info('Reloading settings', 'DATA');
   await this.loadSettings();
 }
 
@@ -413,7 +373,7 @@ async fetchBitcoinData() {
         ath_change_pct: marketData.ath_change_percentage.usd
       };
     } catch (error) {
-      console.error('Error fetching Bitcoin data:', error);
+      logger.error('Error fetching Bitcoin data', error, 'DATA');
       throw error;
     }
   }
@@ -450,12 +410,12 @@ async fetchBitcoinData() {
       // Check if price changed and broadcast update
       // This implements the trigger condition from notes/state.txt
       if (this.lastBtcPrice !== bitcoinData.btc_usd_price) {
-        const priceDirection = this.lastBtcPrice ? (bitcoinData.btc_usd_price > this.lastBtcPrice ? '⬆️' : '⬇️') : '🔄';
-        console.log(`💰 Bitcoin price changed: $${this.lastBtcPrice || 'N/A'} → $${bitcoinData.btc_usd_price} ${priceDirection}`);
+        const priceDirection = this.lastBtcPrice ? (bitcoinData.btc_usd_price > this.lastBtcPrice ? '↗' : '↘') : '';
+        logger.bitcoin('price_changed', bitcoinData.btc_usd_price, `${this.lastBtcPrice || 'N/A'} → ${bitcoinData.btc_usd_price} ${priceDirection}`);
         this.lastBtcPrice = bitcoinData.btc_usd_price;
         this.broadcastPriceUpdate(bitcoinData.btc_usd_price);
       } else {
-        console.log(`💰 Bitcoin price unchanged: $${bitcoinData.btc_usd_price} (no broadcast)`);
+        logger.debug(`Bitcoin price unchanged: $${bitcoinData.btc_usd_price}`, { component: 'DATA' });
       }
 
       // Keep only last 5 records
@@ -470,9 +430,9 @@ async fetchBitcoinData() {
         )
       `);
 
-      console.log('Bitcoin data updated successfully');
+      logger.success('Bitcoin data updated', 'DATA');
     } catch (error) {
-      console.error('Error updating Bitcoin data:', error);
+      logger.error('Error updating Bitcoin data', error, 'DATA');
     }
   }
 
@@ -488,7 +448,7 @@ async fetchBitcoinData() {
         data_date: new Date(parseInt(data.timestamp) * 1000).toISOString().split('T')[0]
       };
     } catch (error) {
-      console.error('Error fetching Fear & Greed data:', error);
+      logger.error('Error fetching Fear & Greed data', error, 'DATA');
       throw error;
     }
   }
@@ -539,9 +499,9 @@ async fetchBitcoinData() {
         )
       `);
 
-      console.log('Bitcoin sentiment updated successfully');
+      logger.success('Bitcoin sentiment updated', 'DATA');
     } catch (error) {
-      console.error('Error updating Bitcoin sentiment:', error);
+      logger.error('Error updating Bitcoin sentiment', error, 'DATA');
     }
   }
 
@@ -585,7 +545,7 @@ price_data: JSON.stringify(priceData),
         date_to: new Date(chartData.prices[chartData.prices.length - 1][0]).toISOString().slice(0, 19).replace('T', ' ')
       };
     } catch (error) {
-      console.error(`Error fetching ${timeframe} chart data:`, error);
+      logger.error(`Error fetching ${timeframe} chart data`, error, 'DATA');
       throw error;
     }
   }
@@ -626,9 +586,9 @@ chartData.price_change_pct,
         
         try {
           await this.redis.set(cacheKey, JSON.stringify(chartData), 'EX', ttl);
-          console.log(`📦 Cached ${timeframe} chart data in Redis (TTL: ${ttl}s)`);
+          logger.cache('STORE', `chart_data_${timeframe}`, `TTL: ${ttl}s`);
         } catch (redisError) {
-          console.error(`Error caching ${timeframe} chart data in Redis:`, redisError);
+          logger.error(`Error caching ${timeframe} chart data in Redis`, redisError, 'CACHE');
         }
       }
 
@@ -645,9 +605,9 @@ chartData.price_change_pct,
         )
       `, [timeframe, timeframe]);
 
-      console.log(`${timeframe} chart data updated successfully (${chartData.data_points_count} data points)`);
+      logger.success(`${timeframe} chart data updated`, 'DATA', `${chartData.data_points_count} data points`);
     } catch (error) {
-      console.error(`Error updating ${timeframe} chart data:`, error);
+      logger.error(`Error updating ${timeframe} chart data`, error, 'DATA');
     }
   }
 
@@ -664,16 +624,16 @@ chartData.price_change_pct,
     schedules.forEach(({ timeframe, startupDelay, updateInterval }) => {
       // Initial fetch with startup delay
       setTimeout(async () => {
-        console.log(`Fetching initial ${timeframe} chart data...`);
+        logger.info(`Fetching initial ${timeframe} chart data`, 'DATA');
         await this.updateBitcoinChartData(timeframe);
         
         // Schedule regular updates
         cron.schedule(updateInterval, async () => {
-          console.log(`Updating ${timeframe} chart data...`);
+          logger.info(`Updating ${timeframe} chart data`, 'DATA');
           await this.updateBitcoinChartData(timeframe);
         });
         
-        console.log(`${timeframe} chart data scheduled for updates: ${updateInterval}`);
+        logger.info(`${timeframe} chart data scheduled for updates: ${updateInterval}`, 'DATA');
       }, startupDelay);
     });
   }
@@ -684,28 +644,28 @@ chartData.price_change_pct,
 
     // Update Bitcoin data every 30 seconds
     cron.schedule('*/30 * * * * *', async () => {
-      console.log('Updating Bitcoin data...');
+      logger.debug('Updating Bitcoin data', 'CRON');
       await this.updateBitcoinData();
     });
 
     // Update Bitcoin sentiment once per day at 12:00 AM
     cron.schedule('0 0 * * *', async () => {
-      console.log('Updating Bitcoin sentiment...');
+      logger.info('Updating Bitcoin sentiment', 'CRON');
       await this.updateBitcoinSentiment();
     });
 
     // Schedule chart data updates
     this.scheduleChartDataUpdates();
 
-    console.log('Data service started');
-    console.log('- Bitcoin data updates every 30 seconds');
-    console.log('- Bitcoin sentiment updates daily at midnight');
-    console.log('- Chart data updates scheduled with staggered startup:');
-    console.log('  * 1d chart: 5 min startup delay, then every hour');
-    console.log('  * 7d chart: 10 min startup delay, then every 6 hours');
-    console.log('  * 30d chart: 15 min startup delay, then every 12 hours');
-    console.log('  * 90d chart: 20 min startup delay, then every 18 hours');
-    console.log('  * 365d chart: 25 min startup delay, then daily');
+    logger.success('Data service started', 'DATA');
+    logger.info('- Bitcoin data updates every 30 seconds', 'DATA');
+    logger.info('- Bitcoin sentiment updates daily at midnight', 'DATA');
+    logger.info('- Chart data updates scheduled with staggered startup:', 'DATA');
+    logger.info('  * 1d chart: 5 min startup delay, then every hour', 'DATA');
+    logger.info('  * 7d chart: 10 min startup delay, then every 6 hours', 'DATA');
+    logger.info('  * 30d chart: 15 min startup delay, then every 12 hours', 'DATA');
+    logger.info('  * 90d chart: 20 min startup delay, then every 18 hours', 'DATA');
+    logger.info('  * 365d chart: 25 min startup delay, then daily', 'DATA');
 
     // Initial data fetch
     await this.updateBitcoinData();
@@ -715,13 +675,13 @@ chartData.price_change_pct,
   // Stop the service
   async stop() {
     await this.disconnect();
-    console.log('Data service stopped');
+    logger.info('Data service stopped', 'DATA');
   }
 }
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\nShutting down data service...');
+  logger.warn('Shutting down data service...', 'DATA');
   if (global.dataService) {
     await global.dataService.stop();
   }
@@ -732,7 +692,7 @@ process.on('SIGINT', async () => {
 if (require.main === module) {
   const dataService = new DataService();
   global.dataService = dataService;
-  dataService.start().catch(console.error);
+  dataService.start().catch((error) => logger.error('Failed to start data service', error, 'DATA'));
 }
 
 module.exports = DataService;

@@ -5,6 +5,7 @@ import OptionsModal from './OptionsModal';
 import { formatBitcoinForDisplay, formatRupeesForDisplay } from '../utils/formatters';
 import { executeTrade, createLimitOrder } from '../utils/tradingApi';
 import { AnimateINR, AnimateBTC } from './AnimateNumberFlow';
+import logger from '../utils/logger';
 
 interface BalanceData {
   available_inr: number;
@@ -46,19 +47,19 @@ const TradingModal: React.FC<TradingModalProps> = ({
 
   // Handle settings icon click
   const handleSettingsClick = () => {
-    console.log('Settings icon clicked');
+    logger.component('TradingModal', 'settings_clicked');
     setShowOrderTypeModal(true);
   };
   
   // Handle orbit icon click
   const handleOrbitClick = () => {
-    console.log('Orbit icon clicked');
+    logger.component('TradingModal', 'orbit_clicked');
     // Add orbit functionality here
   };
   
   // Handle currency change from SingleInputModal
   const handleCurrencyChange = (currency: 'inr' | 'btc') => {
-    console.log('Currency changed to:', currency);
+    logger.component('TradingModal', 'currency_changed', currency);
     setInputCurrency(currency);
   };
   
@@ -80,7 +81,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
   
   // Handle order type selection
   const handleOrderTypeSelect = (selectedOrderType: 'market' | 'limit') => {
-    console.log('Order type selected:', selectedOrderType);
+    logger.component('TradingModal', 'order_type_selected', selectedOrderType);
     setOrderType(selectedOrderType);
     setShowOrderTypeModal(false);
     
@@ -159,8 +160,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
     setIsProcessing(true);
     
     try {
-      let tradeResult;
-      
       if (orderType === 'limit' && targetPrice) {
         // Handle limit order
         const conversion = calculateConversion(inputValue);
@@ -171,8 +170,8 @@ const TradingModal: React.FC<TradingModalProps> = ({
           execution_price: parseFloat(targetPrice)
         };
         
-        console.log('🔄 Creating limit order:', orderData);
-        tradeResult = await createLimitOrder(orderData);
+        logger.api('POST', '/api/orders', undefined, undefined);
+        await createLimitOrder(orderData);
       } else if (orderType === 'market') {
         // Handle market order
         const tradeRequest = {
@@ -182,11 +181,11 @@ const TradingModal: React.FC<TradingModalProps> = ({
           currency: inputCurrency // Use the actual selected currency
         };
         
-        console.log('🔄 Executing market trade:', tradeRequest);
-        tradeResult = await executeTrade(tradeRequest);
+        logger.api('POST', '/api/trade', undefined, undefined);
+        await executeTrade(tradeRequest);
       }
       
-      console.log('✅ Trade executed successfully:', tradeResult);
+      logger.success(`${type} order executed successfully`, { component: 'TradingModal' });
       
       // Call completion callback
       if (onComplete) {
@@ -196,7 +195,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
       // Close entire modal flow
       onClose();
     } catch (error) {
-      console.error('❌ Trade execution failed:', error);
+      logger.error('Trade execution failed', error, { component: 'TradingModal' });
       
       // Show error message to user
       const errorMessage = error instanceof Error ? error.message : 'Trade execution failed';
@@ -309,9 +308,9 @@ const TradingModal: React.FC<TradingModalProps> = ({
   
   // Get max button text with proper formatting based on currency type
   const getMaxButtonText = () => {
-    console.log('🔍 getMaxButtonText called:', { balanceData, type, inputCurrency, orderType, targetPrice });
+    logger.debug('getMaxButtonText called', { component: 'TradingModal' });
     if (!balanceData) {
-      console.log('⚠️ No balance data available');
+      logger.debug('No balance data available', { component: 'TradingModal' });
       return 'Max';
     }
     
@@ -324,27 +323,23 @@ const TradingModal: React.FC<TradingModalProps> = ({
       if (inputCurrency === 'inr') {
         // Show available INR
         const formatted = formatRupeesForDisplay(balanceData.available_inr);
-        console.log('💰 Buy max button (INR):', formatted);
         return `Max ${formatted}`;
       } else if (inputCurrency === 'btc' && effectiveRate > 0) {
         // Show max BTC that can be bought with available INR using effective rate
         const maxBtc = balanceData.available_inr / effectiveRate;
         const maxBtcSatoshis = Math.round(maxBtc * 100000000);
         const formatted = formatBitcoinForDisplay(maxBtcSatoshis);
-        console.log('₿ Buy max button (BTC) with rate:', effectiveRate, 'formatted:', formatted);
         return `Max ${formatted}`;
       }
     } else {
       if (inputCurrency === 'btc') {
         // Show available BTC
         const formatted = formatBitcoinForDisplay(balanceData.available_btc);
-        console.log('₿ Sell max button (BTC):', formatted);
         return `Max ${formatted}`;
       } else if (inputCurrency === 'inr' && effectiveRate > 0) {
         // Show max INR that can be obtained by selling available BTC using effective rate
         const maxInr = (balanceData.available_btc / 100000000) * effectiveRate;
         const formatted = formatRupeesForDisplay(maxInr);
-        console.log('💰 Sell max button (INR) with rate:', effectiveRate, 'formatted:', formatted);
         return `Max ${formatted}`;
       }
     }
