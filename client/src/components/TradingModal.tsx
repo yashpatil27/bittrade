@@ -295,13 +295,18 @@ const TradingModal: React.FC<TradingModalProps> = ({
       if (inputCurrency === 'inr') {
         return balanceData.available_inr;
       } else if (inputCurrency === 'btc' && effectiveRate > 0) {
-        return balanceData.available_inr / effectiveRate;
+        // Use Math.floor to prevent rounding errors for buy with BTC input
+        const maxBtcRaw = balanceData.available_inr / effectiveRate;
+        const maxBtcSatoshis = Math.floor(maxBtcRaw * 100000000);
+        return maxBtcSatoshis / 100000000;
       }
     } else {
       if (inputCurrency === 'btc') {
         return balanceData.available_btc / 100000000; // Convert satoshis to BTC
       } else if (inputCurrency === 'inr' && effectiveRate > 0) {
-        return (balanceData.available_btc / 100000000) * effectiveRate;
+        // Use Math.floor to prevent rounding errors for sell with INR input
+        const maxInrRaw = (balanceData.available_btc / 100000000) * effectiveRate;
+        return Math.floor(maxInrRaw);
       }
     }
   };
@@ -327,7 +332,7 @@ const TradingModal: React.FC<TradingModalProps> = ({
       } else if (inputCurrency === 'btc' && effectiveRate > 0) {
         // Show max BTC that can be bought with available INR using effective rate
         const maxBtc = balanceData.available_inr / effectiveRate;
-        const maxBtcSatoshis = Math.round(maxBtc * 100000000);
+        const maxBtcSatoshis = Math.floor(maxBtc * 100000000);
         const formatted = formatBitcoinForDisplay(maxBtcSatoshis);
         return `Max ${formatted}`;
       }
