@@ -28,7 +28,9 @@ const BITCOIN_QUOTES = [
   "Bitcoin is for everyone.",
   "You can't print bitcoin.",
   "Rules, not rulers",
-  "Every day is a good day to stack sats."
+  "Every day is a good day to stack sats.",
+  "It's Fuck You Money",
+  "Bitcoin is freedom money."
 ];
 
 interface BitcoinQuoteProps {

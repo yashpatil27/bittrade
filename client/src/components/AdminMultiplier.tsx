@@ -1,140 +1,72 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, TrendingUp, TrendingDown, Save, RefreshCcw } from 'lucide-react';
-import { getApiUrl } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
-
-interface MultiplierSettings {
-  buy_multiplier: {
-    value: number;
-    updated_at: string;
-  };
-  sell_multiplier: {
-    value: number;
-    updated_at: string;
-  };
-  loan_interest_rate?: {
-    value: number;
-    updated_at: string;
-  };
-}
+import { usePortfolio } from '../context/PortfolioContext';
 
 interface AdminMultiplierProps {
   className?: string;
 }
 
 const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => {
-  const [settings, setSettings] = useState<MultiplierSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { adminSettings, loading, errors, updateAdminSettings, refetchAdminSettings } = usePortfolio();
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [buyMultiplier, setBuyMultiplier] = useState('');
   const [sellMultiplier, setSellMultiplier] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
-  const { token } = useAuth();
 
-  const fetchSettings = useCallback(async () => {
-    if (!token) {
-      setError('Authentication required');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await fetch(`${getApiUrl()}/api/admin/settings`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      setSettings(data);
-      setBuyMultiplier(data.buy_multiplier?.value?.toString() || '');
-      setSellMultiplier(data.sell_multiplier?.value?.toString() || '');
-      setError(null);
-      setHasChanges(false);
-    } catch (error) {
-      console.error('Error fetching admin settings:', error);
-      setError('Failed to load settings');
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
+  // Initialize form values from context data
   useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+    if (adminSettings) {
+      setBuyMultiplier(adminSettings.buy_multiplier?.value?.toString() || '');
+      setSellMultiplier(adminSettings.sell_multiplier?.value?.toString() || '');
+    }
+  }, [adminSettings]);
 
+  // Check for changes
   useEffect(() => {
-    if (settings) {
-      const currentBuy = settings.buy_multiplier?.value?.toString() || '';
-      const currentSell = settings.sell_multiplier?.value?.toString() || '';
+    if (adminSettings) {
+      const currentBuy = adminSettings.buy_multiplier?.value?.toString() || '';
+      const currentSell = adminSettings.sell_multiplier?.value?.toString() || '';
       setHasChanges(buyMultiplier !== currentBuy || sellMultiplier !== currentSell);
     }
-  }, [buyMultiplier, sellMultiplier, settings]);
+  }, [buyMultiplier, sellMultiplier, adminSettings]);
 
   const handleSave = async () => {
-    if (!token || saving) return;
+    if (saving) return;
 
     const buyValue = parseFloat(buyMultiplier);
     const sellValue = parseFloat(sellMultiplier);
 
     if (isNaN(buyValue) || buyValue <= 0) {
-      setError('Buy multiplier must be a positive number');
+      // Handle validation error through context if possible
       return;
     }
 
     if (isNaN(sellValue) || sellValue <= 0) {
-      setError('Sell multiplier must be a positive number');
+      // Handle validation error through context if possible
       return;
     }
 
     try {
       setSaving(true);
-      setError(null);
-
-      const response = await fetch(`${getApiUrl()}/api/admin/settings`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          settings: {
-            buy_multiplier: buyValue,
-            sell_multiplier: sellValue
-          }
-        })
+      await updateAdminSettings({
+        buy_multiplier: buyValue,
+        sell_multiplier: sellValue
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-      }
-
-      // Refresh settings after successful update
-      await fetchSettings();
     } catch (error) {
       console.error('Error updating settings:', error);
-      setError(error instanceof Error ? error.message : 'Failed to update settings');
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = () => {
-    if (settings) {
-      setBuyMultiplier(settings.buy_multiplier?.value?.toString() || '');
-      setSellMultiplier(settings.sell_multiplier?.value?.toString() || '');
+    if (adminSettings) {
+      setBuyMultiplier(adminSettings.buy_multiplier?.value?.toString() || '');
+      setSellMultiplier(adminSettings.sell_multiplier?.value?.toString() || '');
     }
   };
 
-  if (loading) {
+  if (loading.adminSettings) {
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-4 ${className}`}>
         <div className="mb-4">
@@ -159,7 +91,7 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
     );
   }
 
-  if (error && !settings) {
+  if (errors.adminSettings && !adminSettings) {
     return (
       <div className={`bg-gray-900 border border-gray-800 rounded-xl p-4 ${className}`}>
         <div className="mb-4">
@@ -170,9 +102,9 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
         </div>
         
         <div className="text-center py-8">
-          <p className="text-red-400 text-sm mb-2">{error}</p>
+          <p className="text-red-400 text-sm mb-2">{errors.adminSettings}</p>
           <button
-            onClick={fetchSettings}
+            onClick={refetchAdminSettings}
             className="text-xs text-gray-400 hover:text-white transition-colors"
           >
             Retry
@@ -190,17 +122,17 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
           USD-INR Multipliers
         </h3>
         <button
-          onClick={fetchSettings}
-          disabled={loading}
+          onClick={refetchAdminSettings}
+          disabled={loading.adminSettings}
           className="text-xs text-gray-400 hover:text-white transition-colors disabled:opacity-50"
         >
-          <RefreshCcw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+          <RefreshCcw className={`w-3 h-3 ${loading.adminSettings ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
-      {error && (
+      {errors.adminSettings && (
         <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-          <p className="text-red-400 text-sm">{error}</p>
+          <p className="text-red-400 text-sm">{errors.adminSettings}</p>
         </div>
       )}
       
@@ -215,7 +147,7 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
               <span className="text-sm font-medium text-white">Buy Multiplier</span>
             </div>
             <span className="text-xs text-gray-400">
-              Current: {settings?.buy_multiplier?.value || 'N/A'}
+              Current: {adminSettings?.buy_multiplier?.value || 'N/A'}
             </span>
           </div>
           <input
@@ -242,7 +174,7 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
               <span className="text-sm font-medium text-white">Sell Multiplier</span>
             </div>
             <span className="text-xs text-gray-400">
-              Current: {settings?.sell_multiplier?.value || 'N/A'}
+              Current: {adminSettings?.sell_multiplier?.value || 'N/A'}
             </span>
           </div>
           <input
@@ -265,10 +197,10 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
         <button
           onClick={handleSave}
           disabled={!hasChanges || saving}
-          className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-gray-700 disabled:text-gray-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+          className="flex-1 btn-strike-primary rounded-lg flex items-center justify-center gap-2"
         >
           <Save className="w-4 h-4" />
-          {saving ? 'Saving...' : 'Save Changes'}
+          <span className="font-medium">{saving ? 'Saving...' : 'Save Changes'}</span>
         </button>
         
         <button
@@ -281,11 +213,11 @@ const AdminMultiplier: React.FC<AdminMultiplierProps> = ({ className = '' }) => 
       </div>
 
       {/* Last Updated Info */}
-      {settings && (
+      {adminSettings && (
         <div className="mt-4 pt-3 border-t border-gray-800">
           <div className="text-xs text-gray-500">
-            <div>Buy: Last updated {new Date(settings.buy_multiplier?.updated_at).toLocaleString()}</div>
-            <div>Sell: Last updated {new Date(settings.sell_multiplier?.updated_at).toLocaleString()}</div>
+            <div>Buy: Last updated {new Date(adminSettings.buy_multiplier?.updated_at).toLocaleString()}</div>
+            <div>Sell: Last updated {new Date(adminSettings.sell_multiplier?.updated_at).toLocaleString()}</div>
           </div>
         </div>
       )}

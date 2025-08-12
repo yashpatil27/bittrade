@@ -22,6 +22,18 @@ async function initDB() {
 // Initialize database connection
 initDB();
 
+// Helper function to invalidate admin metrics cache
+async function invalidateAdminMetricsCache() {
+  if (global.dataService && global.dataService.redis) {
+    try {
+      await global.dataService.redis.del('admin_metrics');
+      logger.cache('INVALIDATE', 'admin_metrics');
+    } catch (redisError) {
+      logger.error('Error invalidating admin metrics cache', redisError, 'CACHE');
+    }
+  }
+}
+
 // Get all transactions for admin
 router.get('/transactions', authenticateToken, async (req, res) => {
   try {
@@ -391,6 +403,9 @@ router.post('/users/:userId/deposit-bitcoin', authenticateToken, async (req, res
       await global.sendAdminTransactionUpdate();
     }
 
+    // Invalidate admin metrics cache since transaction data changed
+    await invalidateAdminMetricsCache();
+
     res.json({
       success: true,
       message: 'Bitcoin deposited successfully',
@@ -480,6 +495,9 @@ router.post('/users/:userId/deposit-cash', authenticateToken, async (req, res) =
     if (global.sendAdminTransactionUpdate) {
       await global.sendAdminTransactionUpdate();
     }
+
+    // Invalidate admin metrics cache since transaction data changed
+    await invalidateAdminMetricsCache();
 
     res.json({
       success: true,
@@ -576,6 +594,9 @@ router.post('/users/:userId/withdraw-bitcoin', authenticateToken, async (req, re
       await global.sendAdminTransactionUpdate();
     }
 
+    // Invalidate admin metrics cache since transaction data changed
+    await invalidateAdminMetricsCache();
+
     res.json({
       success: true,
       message: 'Bitcoin withdrawn successfully',
@@ -602,6 +623,24 @@ router.get('/metrics', authenticateToken, async (req, res) => {
     
     if (userRows.length === 0 || !userRows[0].is_admin) {
       return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
+    // Try Redis cache first for instant response
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cacheKey = 'admin_metrics';
+        const cachedMetrics = await global.dataService.redis.get(cacheKey);
+        if (cachedMetrics) {
+          const metricsData = JSON.parse(cachedMetrics);
+          logger.cache('SERVE', cacheKey, true);
+          return res.json({
+            ...metricsData,
+            cached: true
+          });
+        }
+      } catch (redisError) {
+        logger.warn('Redis cache error for admin metrics, falling back to database', 'CACHE');
+      }
     }
 
     // Get total trades count (excluding admin users)
@@ -721,7 +760,24 @@ router.get('/metrics', authenticateToken, async (req, res) => {
       total_bitcoin_withdrawals: totalBitcoinWithdrawalsRows[0]?.total_bitcoin_withdrawals || 0
     };
 
-    res.json(metrics);
+    // Cache the metrics data in Redis for future requests
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cacheKey = 'admin_metrics';
+        const ttl = 600; // 10 minutes cache
+        
+        await global.dataService.redis.set(cacheKey, JSON.stringify(metrics), 'EX', ttl);
+        logger.cache('STORE', cacheKey);
+      } catch (redisError) {
+        logger.error('Error caching admin metrics', redisError, 'CACHE');
+      }
+    }
+
+    logger.database('SELECT', 'admin_metrics (multiple queries)');
+    res.json({
+      ...metrics,
+      cached: false
+    });
   } catch (error) {
     logger.error('Error fetching admin metrics', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
@@ -810,6 +866,9 @@ router.post('/users/:userId/withdraw-cash', authenticateToken, async (req, res) 
       await global.sendAdminTransactionUpdate();
     }
 
+    // Invalidate admin metrics cache since transaction data changed
+    await invalidateAdminMetricsCache();
+
     res.json({
       success: true,
       message: 'Cash withdrawn successfully',
@@ -895,6 +954,24 @@ router.get('/settings', authenticateToken, async (req, res) => {
       return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
     }
 
+    // Try Redis cache first for instant response
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cacheKey = 'admin_settings';
+        const cachedSettings = await global.dataService.redis.get(cacheKey);
+        if (cachedSettings) {
+          const settingsData = JSON.parse(cachedSettings);
+          logger.cache('SERVE', cacheKey, true);
+          return res.json({
+            ...settingsData,
+            cached: true
+          });
+        }
+      } catch (redisError) {
+        logger.warn('Redis cache error for admin settings, falling back to database', 'CACHE');
+      }
+    }
+
     // Get all settings
     const [settings] = await db.execute(
       'SELECT `key`, value, updated_at FROM settings ORDER BY `key`'
@@ -909,7 +986,24 @@ router.get('/settings', authenticateToken, async (req, res) => {
       };
     });
 
-    res.json(settingsObj);
+    // Cache the settings data in Redis for future requests
+    if (global.dataService && global.dataService.redis) {
+      try {
+        const cacheKey = 'admin_settings';
+        const ttl = 3600; // 1 hour cache for settings
+        
+        await global.dataService.redis.set(cacheKey, JSON.stringify(settingsObj), 'EX', ttl);
+        logger.cache('STORE', cacheKey);
+      } catch (redisError) {
+        logger.error('Error caching admin settings', redisError, 'CACHE');
+      }
+    }
+
+    logger.database('SELECT', 'admin_settings');
+    res.json({
+      ...settingsObj,
+      cached: false
+    });
   } catch (error) {
     logger.error('Error fetching settings', error, 'ADMIN');
     res.status(500).json({ error: 'Internal server error' });
@@ -959,6 +1053,16 @@ router.put('/settings', authenticateToken, async (req, res) => {
     }
 
     logger.success(`Settings updated by admin ${userId}`, 'ADMIN', JSON.stringify(updatedSettings));
+
+    // Invalidate settings cache
+    if (global.dataService && global.dataService.redis) {
+      try {
+        await global.dataService.redis.del('admin_settings');
+        logger.cache('INVALIDATE', 'admin_settings');
+      } catch (redisError) {
+        logger.error('Error invalidating admin settings cache', redisError, 'CACHE');
+      }
+    }
 
     // Reload settings in DataService to update cached multipliers
     if (global.dataService && global.dataService.reloadSettings) {
@@ -1150,6 +1254,9 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
       if (global.sendAdminUserUpdate) {
         await global.sendAdminUserUpdate();
       }
+
+      // Invalidate admin metrics cache since transaction was deleted/reversed
+      await invalidateAdminMetricsCache();
 
       res.json({
         success: true,

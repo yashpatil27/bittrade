@@ -41,6 +41,36 @@ interface UserWithBalance {
   created_at?: string;
 }
 
+// Admin Settings Types
+interface AdminSettingsData {
+  buy_multiplier: {
+    value: number;
+    updated_at: string;
+  };
+  sell_multiplier: {
+    value: number;
+    updated_at: string;
+  };
+  loan_interest_rate?: {
+    value: number;
+    updated_at: string;
+  };
+}
+
+// Admin Metrics Types
+interface AdminMetricsData {
+  total_trades: number;
+  total_volume: number;
+  buy_volume: number;
+  sell_volume: number;
+  active_dca_plans: number;
+  avg_daily_dca_amount: number;
+  total_cash_deposits: number;
+  total_cash_withdrawals: number;
+  total_bitcoin_deposits: number;
+  total_bitcoin_withdrawals: number;
+}
+
 // DCA Plans Types
 interface DCAPlansData {
   plans: DCAPlan[];
@@ -91,6 +121,8 @@ interface PortfolioLoadingStates {
   adminTransactions: boolean;
   adminDCAPlans: boolean;
   adminUsers: boolean;
+  adminSettings: boolean;
+  adminMetrics: boolean;
 }
 
 // Error States
@@ -102,6 +134,8 @@ interface PortfolioErrorStates {
   adminTransactions: string | null;
   adminDCAPlans: string | null;
   adminUsers: string | null;
+  adminSettings: string | null;
+  adminMetrics: string | null;
 }
 
 // Main Context Type
@@ -116,6 +150,8 @@ interface PortfolioContextType {
   adminTransactions: Transaction[];
   adminDCAPlans: AdminDCAPlansData | null;
   adminUsers: UserWithBalance[];
+  adminSettings: AdminSettingsData | null;
+  adminMetrics: AdminMetricsData | null;
   
   // ============= LOADING STATES =============
   loading: PortfolioLoadingStates;
@@ -133,6 +169,9 @@ interface PortfolioContextType {
   refetchAdminTransactions: () => Promise<void>;
   refetchAdminDCAPlans: () => Promise<void>;
   refetchAdminUsers: () => Promise<void>;
+  refetchAdminSettings: () => Promise<void>;
+  refetchAdminMetrics: () => Promise<void>;
+  updateAdminSettings: (settings: { buy_multiplier?: number; sell_multiplier?: number }) => Promise<void>;
   
   // ============= BATCH ACTIONS =============
   refetchUserData: () => Promise<void>;
@@ -184,6 +223,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   const [adminTransactions, setAdminTransactions] = useState<Transaction[]>([]);
   const [adminDCAPlans, setAdminDCAPlans] = useState<AdminDCAPlansData | null>(null);
   const [adminUsers, setAdminUsers] = useState<UserWithBalance[]>([]);
+  const [adminSettings, setAdminSettings] = useState<AdminSettingsData | null>(null);
+  const [adminMetrics, setAdminMetrics] = useState<AdminMetricsData | null>(null);
   
   // Pagination States
   const [hasMoreUserTransactions, setHasMoreUserTransactions] = useState(true);
@@ -198,6 +239,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     adminTransactions: false,
     adminDCAPlans: false,
     adminUsers: false,
+    adminSettings: false,
+    adminMetrics: false,
   });
   
   // Error States
@@ -209,6 +252,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     adminTransactions: null,
     adminDCAPlans: null,
     adminUsers: null,
+    adminSettings: null,
+    adminMetrics: null,
   });
   
   const { isAuthenticated, token, user } = useAuth();
@@ -468,6 +513,96 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     }
   }, [isAuthenticated, token, createAuthHeaders, setLoadingState, setErrorState]);
   
+  // Fetch Admin Settings
+  const fetchAdminSettings = useCallback(async () => {
+    if (!isAuthenticated || !token) {
+      setAdminSettings(null);
+      return;
+    }
+    
+    setLoadingState('adminSettings', true);
+    setErrorState('adminSettings', null);
+    
+    try {
+      const response = await fetch(`${getApiUrl()}/api/admin/settings`, {
+        headers: createAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch admin settings');
+      }
+      
+      const data = await response.json();
+      setAdminSettings(data);
+    } catch (err) {
+      logger.error('Admin settings fetch failed', err, { component: 'PortfolioContext' });
+      setErrorState('adminSettings', err instanceof Error ? err.message : 'Failed to fetch admin settings');
+    } finally {
+      setLoadingState('adminSettings', false);
+    }
+  }, [isAuthenticated, token, createAuthHeaders, setLoadingState, setErrorState]);
+  
+  // Fetch Admin Metrics
+  const fetchAdminMetrics = useCallback(async () => {
+    if (!isAuthenticated || !token) {
+      setAdminMetrics(null);
+      return;
+    }
+    
+    setLoadingState('adminMetrics', true);
+    setErrorState('adminMetrics', null);
+    
+    try {
+      const response = await fetch(`${getApiUrl()}/api/admin/metrics`, {
+        headers: createAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch admin metrics');
+      }
+      
+      const data = await response.json();
+      setAdminMetrics(data);
+    } catch (err) {
+      logger.error('Admin metrics fetch failed', err, { component: 'PortfolioContext' });
+      setErrorState('adminMetrics', err instanceof Error ? err.message : 'Failed to fetch admin metrics');
+    } finally {
+      setLoadingState('adminMetrics', false);
+    }
+  }, [isAuthenticated, token, createAuthHeaders, setLoadingState, setErrorState]);
+  
+  // Update Admin Settings
+  const updateAdminSettings = useCallback(async (settings: { buy_multiplier?: number; sell_multiplier?: number }) => {
+    if (!isAuthenticated || !token) {
+      throw new Error('Authentication required');
+    }
+    
+    setLoadingState('adminSettings', true);
+    setErrorState('adminSettings', null);
+    
+    try {
+      const response = await fetch(`${getApiUrl()}/api/admin/settings`, {
+        method: 'PUT',
+        headers: createAuthHeaders(),
+        body: JSON.stringify({ settings })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update admin settings');
+      }
+      
+      // Refresh settings after successful update
+      await fetchAdminSettings();
+    } catch (err) {
+      logger.error('Admin settings update failed', err, { component: 'PortfolioContext' });
+      setErrorState('adminSettings', err instanceof Error ? err.message : 'Failed to update admin settings');
+      throw err; // Re-throw so the component can handle it
+    } finally {
+      setLoadingState('adminSettings', false);
+    }
+  }, [isAuthenticated, token, createAuthHeaders, setLoadingState, setErrorState, fetchAdminSettings]);
+  
   // ============= BATCH ACTIONS =============
   
   const fetchUserData = useCallback(async () => {
@@ -483,9 +618,11 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       fetchAdminBalance(),
       fetchAdminTransactions(),
       fetchAdminDCAPlans(),
-      fetchAdminUsers()
+      fetchAdminUsers(),
+      fetchAdminSettings(),
+      fetchAdminMetrics()
     ]);
-  }, [fetchAdminBalance, fetchAdminTransactions, fetchAdminDCAPlans, fetchAdminUsers]);
+  }, [fetchAdminBalance, fetchAdminTransactions, fetchAdminDCAPlans, fetchAdminUsers, fetchAdminSettings, fetchAdminMetrics]);
   
   const fetchAllData = useCallback(async () => {
     await Promise.all([
@@ -573,6 +710,24 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     }
   });
   
+  // Handle Admin Settings Updates
+  useWebSocketEvent<AdminSettingsData>('admin_settings_update', (data) => {
+    if (data) {
+      setAdminSettings(data);
+      setErrorState('adminSettings', null);
+      setLoadingState('adminSettings', false);
+    }
+  });
+  
+  // Handle Admin Metrics Updates
+  useWebSocketEvent<AdminMetricsData>('admin_metrics_update', (data) => {
+    if (data) {
+      setAdminMetrics(data);
+      setErrorState('adminMetrics', null);
+      setLoadingState('adminMetrics', false);
+    }
+  });
+  
   // ============= TRANSACTION UTILITIES =============
   
   const getPendingOrders = useCallback((isAdmin: boolean = false): Transaction[] => {
@@ -631,6 +786,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       setAdminTransactions([]);
       setAdminDCAPlans(null);
       setAdminUsers([]);
+      setAdminSettings(null);
+      setAdminMetrics(null);
       setLoading({
         userBalance: false,
         userTransactions: false,
@@ -639,6 +796,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         adminTransactions: false,
         adminDCAPlans: false,
         adminUsers: false,
+        adminSettings: false,
+        adminMetrics: false,
       });
     }
   }, [isAuthenticated, user?.is_admin, fetchUserData, fetchAdminData]);
@@ -656,6 +815,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     adminTransactions,
     adminDCAPlans,
     adminUsers,
+    adminSettings,
+    adminMetrics,
     
     // Loading States
     loading,
@@ -673,6 +834,9 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     refetchAdminTransactions: fetchAdminTransactions,
     refetchAdminDCAPlans: fetchAdminDCAPlans,
     refetchAdminUsers: fetchAdminUsers,
+    refetchAdminSettings: fetchAdminSettings,
+    refetchAdminMetrics: fetchAdminMetrics,
+    updateAdminSettings: updateAdminSettings,
     
     // Batch Actions
     refetchUserData: fetchUserData,
