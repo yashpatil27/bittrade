@@ -21,16 +21,11 @@ interface AdminBalanceProps {
 
 const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
   const [showBalances, setShowBalances] = useState(true);
-  
-  // Stable state for NumberFlow to prevent re-mounting during refreshes
-  const [stableInrValue, setStableInrValue] = useState(0);
-  const [stableBtcValue, setStableBtcValue] = useState(0);
   const [hasInitialData, setHasInitialData] = useState(false);
   
   // Use new PortfolioContext
   const { 
     adminBalance: balanceData, 
-    loading: { adminBalance: loading }, 
     refetchAdminBalance 
   } = usePortfolio();
   const { sellRateInr } = usePrice();
@@ -62,24 +57,10 @@ const AdminBalance: React.FC<AdminBalanceProps> = ({ className = '' }) => {
     });
   }
 
-  // Update stable values when data changes
+  // Track if we have initial data to prevent showing loading on refreshes
   useEffect(() => {
-    if (balanceData) {
-      const newInrValue = Number((balanceData as AdminTotalBalanceData)?.total_available_inr || 0);
-      const newBtcValue = Number((balanceData as AdminTotalBalanceData).total_available_btc || 0);
-      
-      setStableInrValue(newInrValue);
-      setStableBtcValue(newBtcValue);
-      
-      if (!hasInitialData) {
-        setHasInitialData(true);
-      }
-      
-      console.log('🔄 AdminBalance: Updated stable values', {
-        newInrValue,
-        newBtcValue,
-        hasInitialData
-      });
+    if (balanceData && !hasInitialData) {
+      setHasInitialData(true);
     }
   }, [balanceData, hasInitialData]);
 
