@@ -96,6 +96,39 @@ html, body {
   font-weight: 600;
 }
 
+/* Custom loading animations */
+@keyframes pulse-smooth {
+  0%, 100% { 
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes breathe-bg {
+  0%, 100% { 
+    background: #000000;
+  }
+  50% { 
+    background: #000000;
+  }
+}
+
+.animate-pulse-smooth {
+  animation: pulse-smooth 2s ease-in-out infinite;
+}
+
+.animate-breathe {
+  animation: breathe-bg 4s ease-in-out infinite;
+}
+
+.bitcoin-glow {
+  text-shadow: 0 0 20px rgba(255, 212, 212, 0.3), 0 0 40px rgba(255, 212, 212, 0.1);
+}
+
 /* Strike-inspired component classes */
 @layer components {
   /* Strike button styles */

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import AdminLayout from './components/AdminLayout';
 import ProtectedRoute from './components/ProtectedRoute';
+import PageLoadingScreen from './components/PageLoadingScreen';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { AuthProvider } from './context/AuthContext';
 import { PriceProvider } from './context/PriceContext';
@@ -24,15 +25,6 @@ const AdminUsers = React.lazy(() => import('./pages/admin/AdminUsers'));
 const AdminHistory = React.lazy(() => import('./pages/admin/AdminHistory'));
 const AdminSettings = React.lazy(() => import('./pages/admin/AdminSettings'));
 
-// Loading component for Suspense fallback
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen bg-black">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto mb-4"></div>
-      <p className="text-gray-400 text-sm">Loading...</p>
-    </div>
-  </div>
-);
 
 function App() {
   const [modalOpen, setModalOpen] = React.useState(false);
@@ -44,7 +36,7 @@ function App() {
           <PortfolioProvider>
             <WebSocketAuthenticator />
             <Router>
-          <Suspense fallback={<PageLoader />}>
+          <Suspense fallback={<PageLoadingScreen />}>
             <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
