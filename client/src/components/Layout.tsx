@@ -43,7 +43,7 @@ const Layout: React.FC<LayoutProps> = ({ children, showBottomNav = true }) => {
       )}
       
       {/* Main Content */}
-      <div className={`flex flex-col ${!isAuthPage ? 'pt-16' : ''} ${showBottomNav && !isAuthPage ? 'pb-12' : ''} ${isModalOpen ? 'overflow-hidden' : ''}`}>
+      <div className={`flex flex-col ${!isAuthPage ? 'pt-12' : ''} ${showBottomNav && !isAuthPage ? 'pb-12' : ''} ${isModalOpen ? 'overflow-hidden' : ''}`}>
         {children}
       </div>
       

@@ -25,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-black">
-      <div className="flex items-center justify-between px-4 py-2">
+      <div className="flex items-center justify-between px-4 py-1">
         {/* Left side */}
         <div className="flex items-center space-x-3">
           {showMenu && (

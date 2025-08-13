@@ -44,7 +44,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       />
       
       {/* Main Content */}
-      <div className="flex flex-col pt-16 pb-12">
+      <div className="flex flex-col pt-12 pb-12">
         {children}
       </div>
       
