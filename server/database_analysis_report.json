@@ -1,0 +1,61 @@
+{
+  "emptyTables": [],
+  "unusedColumns": {
+    "users": [
+      "created_at",
+      "updated_at"
+    ],
+    "transactions": [
+      "scheduled_at",
+      "expires_at",
+      "cancelled_at",
+      "cancellation_reason",
+      "notes"
+    ],
+    "active_plans": [
+      "completed_at"
+    ],
+    "loans": [
+      "created_at",
+      "repaid_at",
+      "liquidated_at"
+    ],
+    "settings": [
+      "id",
+      "updated_at"
+    ],
+    "bitcoin_data": [
+      "id",
+      "last_updated"
+    ],
+    "bitcoin_sentiment": [
+      "id",
+      "last_updated"
+    ],
+    "bitcoin_chart_data": [
+      "id"
+    ],
+    "migration_log": [
+      "id"
+    ]
+  },
+  "nullOnlyColumns": [
+    "transactions.parent_id",
+    "transactions.scheduled_at",
+    "transactions.expires_at",
+    "transactions.notes",
+    "active_plans.remaining_executions",
+    "active_plans.max_price",
+    "active_plans.min_price",
+    "active_plans.completed_at"
+  ],
+  "highlyNullColumns": [],
+  "summary": {
+    "totalTables": 9,
+    "emptyTableCount": 0,
+    "tablesWithUnusedColumns": 9,
+    "totalUnusedColumns": 19,
+    "nullOnlyColumnCount": 8,
+    "highlyNullColumnCount": 0
+  }
+}

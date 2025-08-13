@@ -159,10 +159,7 @@ router.get('/total-balance', authenticateToken, async (req, res) => {
          SUM(available_inr) as total_available_inr,
          SUM(available_btc) as total_available_btc,
          SUM(reserved_inr) as total_reserved_inr,
-         SUM(reserved_btc) as total_reserved_btc,
-         SUM(collateral_btc) as total_collateral_btc,
-         SUM(borrowed_inr) as total_borrowed_inr,
-         SUM(interest_accrued) as total_interest_accrued
+         SUM(reserved_btc) as total_reserved_btc
        FROM users 
        WHERE is_admin = false OR is_admin IS NULL`
     );
@@ -171,10 +168,7 @@ router.get('/total-balance', authenticateToken, async (req, res) => {
       total_available_inr: 0,
       total_available_btc: 0,
       total_reserved_inr: 0,
-      total_reserved_btc: 0,
-      total_collateral_btc: 0,
-      total_borrowed_inr: 0,
-      total_interest_accrued: 0
+      total_reserved_btc: 0
     };
 
     // Convert nulls to 0
@@ -208,8 +202,8 @@ router.get('/users', authenticateToken, async (req, res) => {
 
     const [users] = await db.execute(
       `SELECT id, name, email, 
-              available_inr + reserved_inr + borrowed_inr as inrBalance,
-              available_btc + reserved_btc + collateral_btc as btcBalance,
+              available_inr + reserved_inr as inrBalance,
+              available_btc + reserved_btc as btcBalance,
               is_admin,
               created_at
        FROM users 
@@ -278,10 +272,7 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
            available_btc = 0, 
            available_inr = 0, 
            reserved_btc = 0, 
-           reserved_inr = 0, 
-           collateral_btc = 0, 
-           borrowed_inr = 0, 
-           interest_accrued = 0
+           reserved_inr = 0
            WHERE id = ?`,
           [targetUserId]
         );

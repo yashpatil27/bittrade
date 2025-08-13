@@ -114,16 +114,6 @@ const TransactionListComponent = ({
       case 'WITHDRAW_INR':
       case 'WITHDRAW_BTC':
         return <ArrowUp className="w-4 h-4" />;
-      case 'LOAN_BORROW':
-        return <ArrowDown className="w-4 h-4" />;
-      case 'LOAN_REPAY':
-        return <ArrowUp className="w-4 h-4" />;
-      case 'LIQUIDATION':
-      case 'PARTIAL_LIQUIDATION':
-      case 'FULL_LIQUIDATION':
-        return <Zap className="w-4 h-4" />;
-      case 'INTEREST_ACCRUAL':
-        return <Plus className="w-4 h-4" />;
       default: return <div className="w-4 h-4" />;
     }
   };
@@ -172,22 +162,6 @@ const TransactionListComponent = ({
         return 'DCA Bitcoin Purchase';
       case 'DCA_SELL':
         return 'DCA Bitcoin Sale';
-      case 'LOAN_CREATE':
-        return 'Collateral Deposit';
-      case 'LOAN_BORROW':
-        return 'Cash Borrowed';
-      case 'LOAN_REPAY':
-        return 'Loan Repaid';
-      case 'LOAN_ADD_COLLATERAL':
-        return 'Collateral Added';
-      case 'LIQUIDATION':
-        return 'Loan Liquidation (Auto)';
-      case 'PARTIAL_LIQUIDATION':
-        return 'Loan Liquidation (Manual)';
-      case 'FULL_LIQUIDATION':
-        return 'Loan Liquidation (Manual)';
-      case 'INTEREST_ACCRUAL':
-        return 'Interest Accrued';
       case 'DEPOSIT_INR':
         return 'Cash Deposit';
       case 'WITHDRAW_INR':
@@ -225,15 +199,7 @@ const TransactionListComponent = ({
       case 'LIMIT_SELL':
       case 'DCA_BUY':
       case 'DCA_SELL':
-      case 'LIQUIDATION':
-      case 'PARTIAL_LIQUIDATION':
-      case 'FULL_LIQUIDATION':
         return formatRupeesForDisplay(txn.inr_amount || 0);
-      case 'LOAN_CREATE':
-      case 'LOAN_ADD_COLLATERAL':
-      case 'LOAN_BORROW':
-      case 'LOAN_REPAY':
-      case 'INTEREST_ACCRUAL':
       case 'DEPOSIT_INR':
       case 'WITHDRAW_INR':
       case 'DEPOSIT_BTC':

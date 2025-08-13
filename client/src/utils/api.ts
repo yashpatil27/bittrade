@@ -14,8 +14,8 @@ export const API_CONFIG = {
     // Bitcoin data
     BITCOIN_CURRENT: `${API_BASE_URL}/api/bitcoin/current`,
     BITCOIN_CHART: `${API_BASE_URL}/api/bitcoin/chart`,
-    BITCOIN_SENTIMENT: `${API_BASE_URL}/api/bitcoin/sentiment`,
     BITCOIN_HISTORY: `${API_BASE_URL}/api/bitcoin/history`,
+    // Note: BITCOIN_SENTIMENT endpoint removed - table dropped during database cleanup
     
     // Trading
     MARKET_RATES: `${API_BASE_URL}/api/market-rates`,

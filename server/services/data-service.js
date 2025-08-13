@@ -364,13 +364,7 @@ async fetchBitcoinData() {
       const marketData = data.market_data;
 
       return {
-        btc_usd_price: Math.round(marketData.current_price.usd), // Store as dollars
-        market_cap_usd: marketData.market_cap.usd,
-        volume_24h_usd: marketData.total_volume.usd,
-        high_24h_usd: Math.round(marketData.high_24h.usd),
-        ath_usd: Math.round(marketData.ath.usd),
-        ath_date: marketData.ath_date.usd ? new Date(marketData.ath_date.usd).toISOString().split('T')[0] : null,
-        ath_change_pct: marketData.ath_change_percentage.usd
+        btc_usd_price: Math.round(marketData.current_price.usd) // Store as dollars - only field we need
       };
     } catch (error) {
       logger.error('Error fetching Bitcoin data', error, 'DATA');
@@ -383,25 +377,16 @@ async fetchBitcoinData() {
     try {
       const bitcoinData = await this.fetchBitcoinData();
       
-// Check and execute limit orders
+      // Check and execute limit orders
       await this.checkAndExecuteLimitOrders(bitcoinData.btc_usd_price);
 
-      // Insert new data
+      // Insert new data (only btc_usd_price - other columns were dropped)
       const insertQuery = `
-        INSERT INTO bitcoin_data (
-          btc_usd_price, market_cap_usd, volume_24h_usd, high_24h_usd,
-          ath_usd, ath_date, ath_change_pct
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO bitcoin_data (btc_usd_price) VALUES (?)
       `;
 
       await this.db.execute(insertQuery, [
-        bitcoinData.btc_usd_price,
-        bitcoinData.market_cap_usd,
-        bitcoinData.volume_24h_usd,
-        bitcoinData.high_24h_usd,
-        bitcoinData.ath_usd,
-        bitcoinData.ath_date,
-        bitcoinData.ath_change_pct
+        bitcoinData.btc_usd_price
       ]);
       
       // Cache the latest Bitcoin price in Redis
@@ -436,74 +421,8 @@ async fetchBitcoinData() {
     }
   }
 
-  // Fetch Fear & Greed Index from Alternative.me
-  async fetchFearGreedData() {
-    try {
-      const response = await axios.get(`${config.apis.fearGreed}?limit=1`);
-      const data = response.data.data[0];
-
-      return {
-        fear_greed_value: parseInt(data.value),
-        fear_greed_classification: data.value_classification,
-        data_date: new Date(parseInt(data.timestamp) * 1000).toISOString().split('T')[0]
-      };
-    } catch (error) {
-      logger.error('Error fetching Fear & Greed data', error, 'DATA');
-      throw error;
-    }
-  }
-
-  // Update Bitcoin sentiment and keep only last 5 records
-  async updateBitcoinSentiment() {
-    try {
-      const sentimentData = await this.fetchFearGreedData();
-      
-      // Check if data for this date already exists
-      const [existing] = await this.db.execute(
-        'SELECT id FROM bitcoin_sentiment WHERE data_date = ?',
-        [sentimentData.data_date]
-      );
-
-      if (existing.length > 0) {
-        // Update existing record
-        await this.db.execute(`
-          UPDATE bitcoin_sentiment 
-          SET fear_greed_value = ?, fear_greed_classification = ?
-          WHERE data_date = ?
-        `, [
-          sentimentData.fear_greed_value,
-          sentimentData.fear_greed_classification,
-          sentimentData.data_date
-        ]);
-      } else {
-        // Insert new record
-        await this.db.execute(`
-          INSERT INTO bitcoin_sentiment (fear_greed_value, fear_greed_classification, data_date)
-          VALUES (?, ?, ?)
-        `, [
-          sentimentData.fear_greed_value,
-          sentimentData.fear_greed_classification,
-          sentimentData.data_date
-        ]);
-      }
-
-      // Keep only last 5 records
-      await this.db.execute(`
-        DELETE FROM bitcoin_sentiment 
-        WHERE id NOT IN (
-          SELECT * FROM (
-            SELECT id FROM bitcoin_sentiment 
-            ORDER BY data_date DESC 
-            LIMIT 5
-          ) as t
-        )
-      `);
-
-      logger.success('Bitcoin sentiment updated', 'DATA');
-    } catch (error) {
-      logger.error('Error updating Bitcoin sentiment', error, 'DATA');
-    }
-  }
+  // NOTE: Bitcoin sentiment functionality removed - bitcoin_sentiment table was dropped
+  // Fear & Greed Index is no longer tracked to keep the database lean
 
   // Fetch Bitcoin chart data from CoinGecko
   // NOTE: CoinGecko automatically determines intervals based on days parameter:
@@ -648,28 +567,21 @@ chartData.price_change_pct,
       await this.updateBitcoinData();
     });
 
-    // Update Bitcoin sentiment once per day at 12:00 AM
-    cron.schedule('0 0 * * *', async () => {
-      logger.info('Updating Bitcoin sentiment', 'CRON');
-      await this.updateBitcoinSentiment();
-    });
-
     // Schedule chart data updates
     this.scheduleChartDataUpdates();
 
-    logger.success('Data service started', 'DATA');
-    logger.info('- Bitcoin data updates every 30 seconds', 'DATA');
-    logger.info('- Bitcoin sentiment updates daily at midnight', 'DATA');
+    logger.success('Data service started (LEAN VERSION)', 'DATA');
+    logger.info('- Bitcoin price updates every 30 seconds', 'DATA');
     logger.info('- Chart data updates scheduled with staggered startup:', 'DATA');
     logger.info('  * 1d chart: 5 min startup delay, then every hour', 'DATA');
     logger.info('  * 7d chart: 10 min startup delay, then every 6 hours', 'DATA');
     logger.info('  * 30d chart: 15 min startup delay, then every 12 hours', 'DATA');
     logger.info('  * 90d chart: 20 min startup delay, then every 18 hours', 'DATA');
     logger.info('  * 365d chart: 25 min startup delay, then daily', 'DATA');
+    logger.info('- Bitcoin sentiment tracking removed (database cleanup)', 'DATA');
 
     // Initial data fetch
     await this.updateBitcoinData();
-    await this.updateBitcoinSentiment();
   }
 
   // Stop the service

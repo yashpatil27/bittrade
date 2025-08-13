@@ -59,7 +59,7 @@ app.get('/api/bitcoin/current', async (req, res) => {
           const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
           
           return res.json({
-            ...bitcoinData,
+            btc_usd_price: bitcoinData.btc_usd_price,
             buy_rate_inr: rates.buy_rate_inr,
             sell_rate_inr: rates.sell_rate_inr,
             cached: true
@@ -72,14 +72,23 @@ app.get('/api/bitcoin/current', async (req, res) => {
     
     // Fallback to database
     const [rows] = await db.execute(
-      'SELECT * FROM bitcoin_data ORDER BY created_at DESC LIMIT 1'
+      'SELECT btc_usd_price, created_at FROM bitcoin_data ORDER BY created_at DESC LIMIT 1'
     );
     
     if (rows.length === 0) {
       return res.status(404).json({ error: 'No Bitcoin data found' });
     }
     
-    res.json(rows[0]);
+    const bitcoinData = rows[0];
+    const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
+    
+    res.json({
+      btc_usd_price: bitcoinData.btc_usd_price,
+      buy_rate_inr: rates.buy_rate_inr,
+      sell_rate_inr: rates.sell_rate_inr,
+      created_at: bitcoinData.created_at,
+      cached: false
+    });
   } catch (error) {
     logger.error('Error fetching Bitcoin data', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
@@ -224,30 +233,15 @@ app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
   }
 });
 
-// Get Bitcoin sentiment data
-app.get('/api/bitcoin/sentiment', async (req, res) => {
-  try {
-    const [rows] = await db.execute(
-      'SELECT * FROM bitcoin_sentiment ORDER BY data_date DESC LIMIT 1'
-    );
-    
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'No sentiment data found' });
-    }
-    
-    res.json(rows[0]);
-  } catch (error) {
-    logger.error('Error fetching sentiment data', error, 'API');
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+// Bitcoin sentiment endpoint removed - table was dropped during database cleanup
+// The bitcoin_sentiment table no longer exists as part of the lean database structure
 
 // Get recent Bitcoin data history
 app.get('/api/bitcoin/history', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const [rows] = await db.execute(
-      'SELECT * FROM bitcoin_data ORDER BY created_at DESC LIMIT ?',
+      'SELECT id, btc_usd_price, created_at FROM bitcoin_data ORDER BY created_at DESC LIMIT ?',
       [limit]
     );
     
@@ -1059,7 +1053,7 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
       
       // Get updated balance
       const [updatedBalanceRows] = await db.execute(
-        'SELECT available_inr, available_btc, reserved_inr, reserved_btc, collateral_btc, borrowed_inr, interest_accrued FROM users WHERE id = ?',
+        'SELECT available_inr, available_btc, reserved_inr, reserved_btc FROM users WHERE id = ?',
         [userId]
       );
       
@@ -1340,7 +1334,7 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
     
     // If not cached, fetch real balance data from database
     const [rows] = await db.execute(
-      'SELECT available_inr, available_btc, reserved_inr, reserved_btc, collateral_btc, borrowed_inr, interest_accrued FROM users WHERE id = ?',
+      'SELECT available_inr, available_btc, reserved_inr, reserved_btc FROM users WHERE id = ?',
       [userId]
     );
     
@@ -1366,10 +1360,7 @@ app.get('/api/balance', authenticateToken, async (req, res) => {
       available_inr: balanceData.available_inr,
       available_btc: balanceData.available_btc,
       reserved_inr: balanceData.reserved_inr,
-      reserved_btc: balanceData.reserved_btc,
-      collateral_btc: balanceData.collateral_btc,
-      borrowed_inr: balanceData.borrowed_inr,
-      interest_accrued: balanceData.interest_accrued
+      reserved_btc: balanceData.reserved_btc
     });
   } catch (error) {
     logger.error('Error fetching balance', error, 'API');
@@ -1508,7 +1499,7 @@ async function sendUserBalanceUpdate(userId) {
     
     // Fetch balance data from database
     const [rows] = await db.execute(
-      'SELECT available_inr, available_btc, reserved_inr, reserved_btc, collateral_btc, borrowed_inr, interest_accrued FROM users WHERE id = ?',
+      'SELECT available_inr, available_btc, reserved_inr, reserved_btc FROM users WHERE id = ?',
       [userId]
     );
     
@@ -1911,8 +1902,8 @@ async function sendAdminUserUpdate() {
         id,
         name,
         email,
-        available_inr + reserved_inr + borrowed_inr as inrBalance,
-        available_btc + reserved_btc + collateral_btc as btcBalance,
+        available_inr + reserved_inr as inrBalance,
+        available_btc + reserved_btc as btcBalance,
         is_admin,
         created_at
        FROM users 

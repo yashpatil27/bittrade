@@ -1,0 +1,20 @@
+users
+1. collateral_btc
+2. borrowed_inr
+3. interest_accrued
+
+transactions
+1. loan_id
+2. cancellation_reason
+3. cancelled_at
+
+bitcoin_data
+1. market_cap_usd
+2. volume_24h_usd
+3. high_24h_usd
+4. ath_usd
+5. ath_date
+6. ath_change_pct
+
+bitcoin sentiment - drop completete table
+
