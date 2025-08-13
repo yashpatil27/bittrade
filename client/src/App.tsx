@@ -11,8 +11,10 @@ import { PortfolioProvider } from './context/PortfolioContext';
 import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
 
-// Lazy load page components for code splitting
-const Home = React.lazy(() => import('./pages/Home'));
+// Import Home directly to prevent double loading with auth
+import Home from './pages/Home';
+
+// Lazy load other page components for code splitting
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
 const History = React.lazy(() => import('./pages/History'));

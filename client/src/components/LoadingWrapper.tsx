@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import LoadingScreen from './LoadingScreen';
+import BitcoinLoader from './BitcoinLoader';
 
 interface LoadingWrapperProps {
   isLoading: boolean;
   message?: string;
-  minDisplayTime?: number; // milliseconds
+  minDisplayTime?: number;
   children: React.ReactNode;
 }
 
 const LoadingWrapper: React.FC<LoadingWrapperProps> = ({ 
   isLoading,
   message = "Loading...",
-  minDisplayTime = 1500, // 1.5 seconds default
+  minDisplayTime = 2200,
   children
 }) => {
   const [showLoading, setShowLoading] = useState(isLoading);
@@ -44,7 +44,7 @@ const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
   }, [isLoading, startTime, minDisplayTime]);
 
   if (showLoading) {
-    return <LoadingScreen message={message} />;
+    return <BitcoinLoader key={`loading-${startTime}`} />;
   }
 
   return <>{children}</>;

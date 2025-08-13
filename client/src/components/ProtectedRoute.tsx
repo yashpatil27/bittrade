@@ -18,7 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     <LoadingWrapper 
       isLoading={isLoading} 
       message="Authenticating..."
-      minDisplayTime={1500}
+      minDisplayTime={2200}
     >
       {children}
     </LoadingWrapper>

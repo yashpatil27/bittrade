@@ -96,66 +96,7 @@ html, body {
   font-weight: 600;
 }
 
-/* Custom loading animations */
-@keyframes pulse-smooth {
-  0% { 
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  12.5% {
-    opacity: 0.7;
-    transform: scale(1.025);
-  }
-  25% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-  37.5% {
-    opacity: 0.9;
-    transform: scale(1.075);
-  }
-  50% { 
-    opacity: 1;
-    transform: scale(1.1);
-  }
-  62.5% {
-    opacity: 0.9;
-    transform: scale(1.075);
-  }
-  75% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
-  87.5% {
-    opacity: 0.7;
-    transform: scale(1.025);
-  }
-  100% { 
-    opacity: 0.6;
-    transform: scale(1);
-  }
-}
-
-@keyframes breathe-bg {
-  0%, 100% { 
-    background: #000000;
-  }
-  50% { 
-    background: #000000;
-  }
-}
-
-.animate-pulse-smooth {
-  animation: pulse-smooth 2s ease-in-out infinite;
-}
-
-.animate-breathe {
-  animation: breathe-bg 4s ease-in-out infinite;
-}
-
-.bitcoin-glow {
-  text-shadow: 0 0 20px rgba(255, 212, 212, 0.3), 0 0 40px rgba(255, 212, 212, 0.1);
-}
+/* Old loading animations removed - now using Framer Motion */
 
 /* Strike-inspired component classes */
 @layer components {
