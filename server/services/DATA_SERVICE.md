@@ -82,10 +82,7 @@ The service populates three main tables:
 
 1. **bitcoin_data**: Real-time price and market data
    - `btc_usd_price`: Current Bitcoin price in USD
-   - `price_change_24h`: 24-hour price change
-   - `market_cap_usd`: Market capitalization
-   - `volume_24h_usd`: 24-hour trading volume
-   - And more...
+   - `created_at`: Timestamp of when the data was created
 
 2. **bitcoin_sentiment**: Daily sentiment data
    - `fear_greed_value`: Index value (0-100)
