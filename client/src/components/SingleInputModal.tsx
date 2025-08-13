@@ -460,7 +460,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             {/* Left section */}
             <button
               onClick={animateClose}
-              className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+              className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               {showXIcon ? <X className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
             </button>
@@ -470,7 +470,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
               {showOrbitIcon && (
                 <button
                   onClick={handleOrbitIconClick}
-                  className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+                  className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
                 >
                   <Orbit className="w-5 h-5" />
                 </button>
@@ -478,7 +478,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
               {showSettingsIcon && onSettingsClick && (
                 <button
                   onClick={onSettingsClick}
-                  className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+                  className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
                 >
                   <SlidersVertical className="w-5 h-5" />
                 </button>

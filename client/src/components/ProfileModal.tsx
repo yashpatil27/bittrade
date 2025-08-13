@@ -208,7 +208,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
-              className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+              className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -217,10 +217,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
               <div className="w-12 h-12 flex items-center justify-center">
                 <button
                   onClick={handleAdminToggle}
-                  className="text-secondary hover:text-brand p-2 w-12 h-12 flex items-center justify-center transition-all duration-200 transform hover:scale-110 hover:bg-gray-800/50 rounded-lg"
+                  className="text-primary hover:text-brand p-2 w-12 h-12 flex items-center justify-center transition-all duration-200 transform hover:scale-110 hover:bg-gray-800/50 rounded-lg"
                   title={window.location.pathname.startsWith('/admin') ? 'Switch to User View' : 'Switch to Admin View'}
                 >
-                  <Shield className={`w-5 h-5 transition-all duration-200 ${window.location.pathname.startsWith('/admin') ? 'text-brand' : 'text-gray-400 hover:text-brand'}`} />
+                  <Shield className={`w-5 h-5 transition-all duration-200 ${window.location.pathname.startsWith('/admin') ? 'text-brand' : 'text-white hover:text-brand'}`} />
                 </button>
               </div>
             ) : (
