@@ -195,7 +195,7 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
-              className="text-secondary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+              className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
