@@ -22,9 +22,6 @@ interface TradeResponse {
     available_btc: number;
     reserved_inr: number;
     reserved_btc: number;
-    collateral_btc: number;
-    borrowed_inr: number;
-    interest_accrued: number;
   };
 }
 

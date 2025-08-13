@@ -64,8 +64,7 @@ const tableSchema = {
 const usedColumns = {
   users: [
     'id', 'email', 'name', 'password_hash', 'is_admin',
-    'available_inr', 'available_btc', 'reserved_inr', 'reserved_btc',
-    'collateral_btc', 'borrowed_inr', 'interest_accrued'
+    'available_inr', 'available_btc', 'reserved_inr', 'reserved_btc'
   ],
   transactions: [
     'id', 'user_id', 'type', 'status', 'btc_amount', 'inr_amount',

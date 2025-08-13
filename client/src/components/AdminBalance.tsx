@@ -10,9 +10,6 @@ interface AdminTotalBalanceData {
   total_available_btc: number;
   total_reserved_inr: number;
   total_reserved_btc: number;
-  total_collateral_btc: number;
-  total_borrowed_inr: number;
-  total_interest_accrued: number;
 }
 
 interface AdminBalanceProps {

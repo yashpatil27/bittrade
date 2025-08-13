@@ -15,9 +15,6 @@ interface BalanceData {
   available_btc: number;
   reserved_inr: number;
   reserved_btc: number;
-  collateral_btc: number;
-  borrowed_inr: number;
-  interest_accrued: number;
 }
 
 interface AdminTotalBalanceData {
@@ -25,9 +22,6 @@ interface AdminTotalBalanceData {
   total_available_btc: number;
   total_reserved_inr: number;
   total_reserved_btc: number;
-  total_collateral_btc: number;
-  total_borrowed_inr: number;
-  total_interest_accrued: number;
 }
 
 // User Management Types
