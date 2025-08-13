@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useWebSocket, useWebSocketEvent } from '../context/WebSocketContext';
-import { Wifi, WifiOff, Loader2, Zap } from 'lucide-react';
 
 interface WebSocketStatusProps {
   className?: string;
@@ -33,40 +32,43 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({ className = '' }) => 
   const getStatusColor = () => {
     switch (connectionStatus) {
       case 'connected':
-        return 'text-brand';
+        return 'bg-brand';
       case 'connecting':
       case 'reconnecting':
-        return 'text-yellow-400';
+        return 'bg-yellow-400';
       case 'disconnected':
-        return 'text-red-400';
+        return 'bg-red-400';
       default:
-        return 'text-gray-400';
+        return 'bg-gray-400';
     }
   };
 
-  const getStatusIcon = () => {
+  const getDotAnimation = () => {
     if (isReceivingData && connectionStatus === 'connected') {
-      return <Zap className="w-4 h-4 animate-pulse" />;
+      return 'animate-pulse';
     }
     
     switch (connectionStatus) {
-      case 'connected':
-        return <Wifi className="w-4 h-4" />;
       case 'connecting':
       case 'reconnecting':
-        return <Loader2 className="w-4 h-4 animate-spin" />;
-      case 'disconnected':
-        return <WifiOff className="w-4 h-4" />;
+        return 'animate-pulse';
       default:
-        return <WifiOff className="w-4 h-4" />;
+        return '';
     }
   };
 
 
+  // Don't show anything when connected and idle
+  if (connectionStatus === 'connected' && !isReceivingData) {
+    return null;
+  }
+
   return (
     <div className={`flex items-center ${className}`}>
-      <div className={getStatusColor()}>
-        {getStatusIcon()}
+      <div 
+        className={`w-2 h-2 rounded-full ${getStatusColor()} ${getDotAnimation()}`}
+        title={`WebSocket: ${connectionStatus}`}
+      >
       </div>
     </div>
   );
