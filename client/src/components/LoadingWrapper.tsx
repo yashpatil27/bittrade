@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import BitcoinLoader from './BitcoinLoader';
+import React, { useState, useEffect, Suspense } from 'react';
+
+// Lazy load BitcoinLoader to keep framer-motion out of main bundle (saves ~160kb)
+const BitcoinLoader = React.lazy(() => import('./BitcoinLoader'));
 
 interface LoadingWrapperProps {
   isLoading: boolean;
@@ -44,7 +46,15 @@ const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
   }, [isLoading, startTime, minDisplayTime]);
 
   if (showLoading) {
-    return <BitcoinLoader key={`loading-${startTime}`} />;
+    return (
+      <Suspense fallback={
+        <div className="fixed inset-0 bg-black flex items-center justify-center">
+          <div className="text-7xl font-bold text-white">₿</div>
+        </div>
+      }>
+        <BitcoinLoader key={`loading-${startTime}`} />
+      </Suspense>
+    );
   }
 
   return <>{children}</>;

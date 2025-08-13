@@ -11,15 +11,15 @@ import { PortfolioProvider } from './context/PortfolioContext';
 import WebSocketAuthenticator from './components/WebSocketAuthenticator';
 import './App.css';
 
-// Import Home directly to prevent double loading with auth
+// Import core pages directly to prevent double loading with auth
 import Home from './pages/Home';
+import History from './pages/History';
+import Loans from './pages/Loans';
+import DCA from './pages/DCA';
 
 // Lazy load other page components for code splitting
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
-const History = React.lazy(() => import('./pages/History'));
-const Loans = React.lazy(() => import('./pages/Loans'));
-const DCA = React.lazy(() => import('./pages/DCA'));
 
 // Lazy load admin pages (only loaded when admin routes are accessed)
 const AdminHome = React.lazy(() => import('./pages/admin/AdminHome'));
@@ -66,31 +66,10 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
-            <Route path="/portfolio" element={
-              <ProtectedRoute>
-                <Layout showBottomNav={!modalOpen}>
-                  <div className="p-4 text-white">Portfolio Page Coming Soon</div>
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/trade" element={
-              <ProtectedRoute>
-                <Layout showBottomNav={!modalOpen}>
-                  <div className="p-4 text-white">Trade Page Coming Soon</div>
-                </Layout>
-              </ProtectedRoute>
-            } />
             <Route path="/history" element={
               <ProtectedRoute>
                 <Layout showBottomNav={!modalOpen}>
                   <History />
-                </Layout>
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <Layout showBottomNav={!modalOpen}>
-                  <div className="p-4 text-white">Profile Page Coming Soon</div>
                 </Layout>
               </ProtectedRoute>
             } />
