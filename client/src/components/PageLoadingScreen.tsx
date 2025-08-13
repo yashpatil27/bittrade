@@ -9,7 +9,7 @@ const PageLoadingScreen: React.FC = () => {
   // No need for internal timing logic since Suspense handles the lifecycle
   return (
     <Suspense fallback={
-      <div className="fixed inset-0 bg-black flex items-center justify-center">
+      <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ paddingBottom: '5vh' }}>
         <div className="text-7xl font-bold text-white">₿</div>
       </div>
     }>

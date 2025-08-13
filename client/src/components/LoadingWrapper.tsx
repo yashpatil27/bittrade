@@ -48,7 +48,7 @@ const LoadingWrapper: React.FC<LoadingWrapperProps> = ({
   if (showLoading) {
     return (
       <Suspense fallback={
-        <div className="fixed inset-0 bg-black flex items-center justify-center">
+        <div className="fixed inset-0 bg-black flex items-center justify-center" style={{ paddingBottom: '5vh' }}>
           <div className="text-7xl font-bold text-white">₿</div>
         </div>
       }>
