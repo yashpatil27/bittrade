@@ -53,7 +53,7 @@ const Header: React.FC<HeaderProps> = ({
               onClick={onProfileClick}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <User className="w-5 h-5 text-gray-400" />
+              <User className="w-5 h-5 text-white" />
             </button>
           )}
           
