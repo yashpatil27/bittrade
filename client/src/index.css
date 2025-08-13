@@ -98,13 +98,41 @@ html, body {
 
 /* Custom loading animations */
 @keyframes pulse-smooth {
-  0%, 100% { 
+  0% { 
     opacity: 0.6;
     transform: scale(1);
   }
+  12.5% {
+    opacity: 0.7;
+    transform: scale(1.025);
+  }
+  25% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+  37.5% {
+    opacity: 0.9;
+    transform: scale(1.075);
+  }
   50% { 
     opacity: 1;
+    transform: scale(1.1);
+  }
+  62.5% {
+    opacity: 0.9;
+    transform: scale(1.075);
+  }
+  75% {
+    opacity: 0.8;
     transform: scale(1.05);
+  }
+  87.5% {
+    opacity: 0.7;
+    transform: scale(1.025);
+  }
+  100% { 
+    opacity: 0.6;
+    transform: scale(1);
   }
 }
 
