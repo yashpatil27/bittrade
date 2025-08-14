@@ -496,7 +496,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         <div className="flex flex-col h-full px-6">
           {/* Input Display Area */}
           <div 
-            className="flex flex-col justify-start items-center pt-4" 
+            className="flex flex-col justify-center items-center" 
             style={{ height: `${contentHeight}px` }}
           >
             <div className="text-center w-full">
@@ -517,7 +517,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             {maxButtonText && (
               <button
                 onClick={handleMaxAmount}
-                className="bg-btn-secondary text-white px-4 py-2 text-xs font-normal mb-2 inline-flex items-center justify-center min-w-fit rounded-xl hover:bg-btn-secondary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black"
+                className="bg-btn-secondary text-white px-4 py-2 text-xs font-normal inline-flex items-center justify-center min-w-fit rounded-xl hover:bg-btn-secondary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black"
               >
                 {maxButtonText}
               </button>
@@ -527,25 +527,27 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 
           {/* Optional Section */}
           {sectionTitle && (onSectionClick || sectionAmount || sectionDetail) && (
-            <div 
-              data-clickable-section
-              onClick={onSectionClick} 
-              className="mb-2 bg-gray-900 border border-brand/30 rounded-lg p-4 cursor-pointer hover:bg-gray-800 transition-colors"
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <span className="text-white text-sm">{sectionTitle}</span>
-                  {sectionDetail && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      {typeof sectionDetail === 'string' ? <p>{sectionDetail}</p> : sectionDetail}
-                    </div>
+            <div className="mb-2 flex justify-center px-4">
+              <div 
+                data-clickable-section
+                onClick={onSectionClick} 
+                className="w-full max-w-xs bg-gray-900 border border-brand/30 rounded-lg p-4 cursor-pointer hover:bg-gray-800 transition-colors"
+              >
+                <div className="flex justify-between items-center">
+                  <div>
+                    <span className="text-white text-sm">{sectionTitle}</span>
+                    {sectionDetail && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        {typeof sectionDetail === 'string' ? <p>{sectionDetail}</p> : sectionDetail}
+                      </div>
+                    )}
+                  </div>
+                  {sectionAmount && (
+                    <span className="text-sm font-medium text-gray-300">
+                      {sectionAmount}
+                    </span>
                   )}
                 </div>
-                {sectionAmount && (
-                  <span className="text-sm font-medium text-gray-300">
-                    {sectionAmount}
-                  </span>
-                )}
               </div>
             </div>
           )}
