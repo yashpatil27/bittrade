@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X, SlidersVertical, Infinity, Orbit } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { formatRupeesForDisplay } from '../utils/formatters';
 
 interface SingleInputModalProps {
@@ -66,6 +67,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [screenHeight] = useState(window.innerHeight);
+  const [previousValue, setPreviousValue] = useState('');
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Layout calculations
@@ -343,6 +345,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
       newValue = testValue;
     }
     
+    // Store previous value for animation
+    setPreviousValue(value);
     setValue(newValue);
     
     // Call the real-time value change callback
@@ -363,6 +367,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         maxValueStr = maxValue.toString();
       }
       
+      // Store previous value for animation
+      setPreviousValue(value);
       setValue(maxValueStr);
       
       // Call the real-time value change callback
@@ -407,6 +413,79 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     
     // No decimal point, just return with Bitcoin symbol
     return `₿${processedVal}`;
+  };
+
+  // Animated Display Component
+  const AnimatedDigitDisplay: React.FC<{ value: string; previousValue: string }> = ({ value, previousValue }) => {
+    const formattedValue = formatDisplayValue(value);
+    const formattedPrevious = formatDisplayValue(previousValue);
+    
+    // Split the formatted value into characters for individual animation
+    const currentChars = formattedValue.split('');
+    const previousChars = formattedPrevious.split('');
+    
+    // Create stable keys for existing characters to maintain their identity
+    const getStableKey = (char: string, index: number) => {
+      // For existing characters that haven't changed, use a stable key
+      if (index < previousChars.length && char === previousChars[index]) {
+        return `stable-${index}-${char}`;
+      }
+      // For new or changed characters, use a unique key
+      return `${Date.now()}-${index}-${char}`;
+    };
+    
+    const getCharacterState = (index: number) => {
+      const currentChar = currentChars[index];
+      const prevChar = previousChars[index];
+      
+      if (index >= previousChars.length) {
+        return 'new'; // New character added
+      } else if (currentChar !== prevChar) {
+        return 'changed'; // Character changed
+      } else {
+        return 'same'; // Character unchanged
+      }
+    };
+    
+    return (
+      <div className="flex items-center justify-center relative" style={{ minHeight: '1.2em' }}>
+        <AnimatePresence mode="popLayout">
+          {currentChars.map((char, index) => {
+            const state = getCharacterState(index);
+            const key = getStableKey(char, index);
+            
+            return (
+              <motion.span
+                key={key}
+                layout
+                className="inline-block text-white text-5xl font-normal"
+                initial={state === 'new' ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25,
+                  duration: 0.3,
+                  layout: {
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30,
+                    duration: 0.4
+                  }
+                }}
+                style={{
+                  display: 'inline-block',
+                  transformOrigin: 'center'
+                }}
+              >
+                {char}
+              </motion.span>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    );
   };
 
   // Format display value
@@ -505,9 +584,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                     <Infinity className="w-16 h-16 text-gray-400" />
                   </div>
                 ) : (
-                  <span className="text-white text-5xl font-normal">
-                    {formatDisplayValue(value)}
-                  </span>
+                  <AnimatedDigitDisplay value={value} previousValue={previousValue} />
                 )}
               </div>
               
