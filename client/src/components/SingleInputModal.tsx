@@ -334,15 +334,12 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
       const testValue = value + keyValue;
       const numValue = parseFloat(testValue);
       
-      // Don't allow negative values or values exceeding max (unless skipMaxValidation is true)
+      // Don't allow negative values
       if (numValue < 0) {
         return; // Don't update if it would create a negative value
       }
       
-      if (maxValue !== undefined && numValue > maxValue && !skipMaxValidation) {
-        return; // Don't update if it would exceed max value (unless validation is skipped)
-      }
-      
+      // Allow all positive values - max validation now happens in button disable logic
       newValue = testValue;
     }
     
@@ -426,7 +423,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 
   const isConfirmDisabled = isLoading || (
     currentType === 'number' && showInfinityPlaceholder ? false : 
-    (!value || parseFloat(value) <= 0)
+    (!value || parseFloat(value) <= 0 || 
+     (maxValue !== undefined && !skipMaxValidation && parseFloat(value) > maxValue))
   );
 
   if (!isOpen) return null;
@@ -517,7 +515,11 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             {maxButtonText && (
               <button
                 onClick={handleMaxAmount}
-                className="bg-btn-secondary text-white px-4 py-2 text-xs font-normal inline-flex items-center justify-center min-w-fit rounded-xl hover:bg-btn-secondary-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black"
+                className={`px-4 py-2 text-xs font-normal inline-flex items-center justify-center min-w-fit rounded-xl transition-colors duration-200 focus:outline-none ${
+                  maxValue !== undefined && !skipMaxValidation && value && parseFloat(value) > maxValue
+                    ? 'bg-black hover:bg-gray-900 text-red-400 border border-red-500/30 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-black'
+                    : 'bg-btn-secondary text-white hover:bg-btn-secondary-hover focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black'
+                }`}
               >
                 {maxButtonText}
               </button>
