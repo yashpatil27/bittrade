@@ -143,25 +143,6 @@ Response:
 
 ### Market Data Routes
 
-#### GET /api/bitcoin/current
-```javascript
-// Get current Bitcoin market data
-Response:
-{
-  "id": 1,
-  "btc_usd_price": 45000,
-  "market_cap_usd": 850000000000,
-  "volume_24h_usd": 25000000000,
-  "high_24h_usd": 46000,
-  "ath_usd": 69000,
-  "ath_date": "2021-11-10",
-  "ath_change_pct": -34.78,
-  "last_updated": "2024-07-20T10:30:00.000Z",
-  "buy_rate_inr": 4095000,    // btc_usd_price * 91
-  "sell_rate_inr": 3960000,   // btc_usd_price * 88
-  "cached": true
-}
-```
 
 #### GET /api/market-rates
 ```javascript
@@ -213,23 +194,6 @@ Response:
 }
 ```
 
-#### GET /api/bitcoin/history
-```javascript
-// Get recent Bitcoin price history
-Query Parameters:
-- limit: Number of records (default: 10)
-
-Response:
-[
-  {
-    "id": 1,
-    "btc_usd_price": 45000,
-    "market_cap_usd": 850000000000,
-    "created_at": "2024-07-20T10:30:00.000Z"
-  },
-  // ... more records
-]
-```
 
 ### Trading Routes (Protected)
 

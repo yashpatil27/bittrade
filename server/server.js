@@ -47,53 +47,6 @@ app.use('/api/admin', adminRoutes);
 
 // API Routes
 
-// Get current Bitcoin data (with Redis cache fallback)
-app.get('/api/bitcoin/current', async (req, res) => {
-  try {
-    // Try Redis cache first for instant response
-    if (global.dataService && global.dataService.redis) {
-      try {
-        const cachedPrice = await global.dataService.redis.get('latest_btc_price');
-        if (cachedPrice) {
-          const bitcoinData = JSON.parse(cachedPrice);
-          const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
-          
-          return res.json({
-            btc_usd_price: bitcoinData.btc_usd_price,
-            buy_rate_inr: rates.buy_rate_inr,
-            sell_rate_inr: rates.sell_rate_inr,
-            cached: true
-          });
-        }
-      } catch (redisError) {
-        logger.warn('Redis cache error, falling back to database', 'CACHE');
-      }
-    }
-    
-    // Fallback to database
-    const [rows] = await db.execute(
-      'SELECT btc_usd_price, created_at FROM bitcoin_data ORDER BY created_at DESC LIMIT 1'
-    );
-    
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'No Bitcoin data found' });
-    }
-    
-    const bitcoinData = rows[0];
-    const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
-    
-    res.json({
-      btc_usd_price: bitcoinData.btc_usd_price,
-      buy_rate_inr: rates.buy_rate_inr,
-      sell_rate_inr: rates.sell_rate_inr,
-      created_at: bitcoinData.created_at,
-      cached: false
-    });
-  } catch (error) {
-    logger.error('Error fetching Bitcoin data', error, 'API');
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Get market rates (instant from Redis cache)
 app.get('/api/market-rates', async (req, res) => {
@@ -235,22 +188,6 @@ app.get('/api/bitcoin/chart/:timeframe', async (req, res) => {
 
 // Bitcoin sentiment endpoint removed - table was dropped during database cleanup
 // The bitcoin_sentiment table no longer exists as part of the lean database structure
-
-// Get recent Bitcoin data history
-app.get('/api/bitcoin/history', async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 10;
-    const [rows] = await db.execute(
-      'SELECT id, btc_usd_price, created_at FROM bitcoin_data ORDER BY created_at DESC LIMIT ?',
-      [limit]
-    );
-    
-    res.json(rows);
-  } catch (error) {
-    logger.error('Error fetching Bitcoin history', error, 'API');
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

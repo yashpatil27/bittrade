@@ -12,10 +12,8 @@ export const API_CONFIG = {
     VERIFY: `${API_BASE_URL}/api/auth/verify`,
     
     // Bitcoin data
-    BITCOIN_CURRENT: `${API_BASE_URL}/api/bitcoin/current`,
     BITCOIN_CHART: `${API_BASE_URL}/api/bitcoin/chart`,
-    BITCOIN_HISTORY: `${API_BASE_URL}/api/bitcoin/history`,
-    // Note: BITCOIN_SENTIMENT endpoint removed - table dropped during database cleanup
+    // Note: BITCOIN_CURRENT, BITCOIN_SENTIMENT and BITCOIN_HISTORY endpoints removed - unused/table dropped during database cleanup
     
     // Trading
     MARKET_RATES: `${API_BASE_URL}/api/market-rates`,
