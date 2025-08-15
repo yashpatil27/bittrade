@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { motion, AnimatePresence, stagger, useAnimate } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DetailItem {
   label: string;

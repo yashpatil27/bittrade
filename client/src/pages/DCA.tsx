@@ -16,7 +16,7 @@ const DCA: React.FC = () => {
   const [selectedPlanType, setSelectedPlanType] = useState<'DCA_BUY' | 'DCA_SELL'>('DCA_BUY');
   
   // Use centralized contexts
-  const { userBalance: balanceData, hasAnyPlans, refetchUserDCAPlans } = usePortfolio();
+  const { userBalance: balanceData, hasAnyPlans } = usePortfolio();
 
   const handleStartDCA = () => {
     // Open type selection modal first

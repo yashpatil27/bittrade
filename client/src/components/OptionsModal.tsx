@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 interface OptionsModalProps {
   isOpen: boolean;

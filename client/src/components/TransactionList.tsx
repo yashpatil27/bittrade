@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Target, CalendarSync, ArrowDown, ArrowUp, Bitcoin, IndianRupee } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { formatRelativeTime } from '../utils/dateUtils';
