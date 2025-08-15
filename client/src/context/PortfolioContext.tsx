@@ -673,10 +673,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       setErrorState('userDCAPlans', null);
       setLoadingState('userDCAPlans', false);
       
-      // Refresh admin DCA plans if they exist
-      if (adminDCAPlans) {
-        fetchAdminDCAPlans();
-      }
+      // No need to refetch admin DCA plans - admin will get its own WebSocket event
     }
   });
   

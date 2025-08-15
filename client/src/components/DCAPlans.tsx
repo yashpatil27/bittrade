@@ -190,11 +190,12 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
     try {
       const newStatus = plan.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
       await updateDCAPlanStatus(plan.id, newStatus);
-      // Refresh plans
-      fetchDCAPlans();
+      // No manual refresh needed - WebSocket will handle the update
     } catch (error) {
       console.error('Failed to update plan status:', error);
       // TODO: Show error message to user
+      // Only refetch on error to ensure UI stays in sync
+      fetchDCAPlans();
     }
   };
 
@@ -391,11 +392,12 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
               onClick: async () => {
                 try {
                   await deleteDCAPlan(selectedPlan.id);
-                  // Refresh plans list
-                  fetchDCAPlans();
+                  // No manual refresh needed - WebSocket will handle the update
                   setIsDetailsModalOpen(false);
                 } catch (error) {
                   console.error('Failed to delete DCA plan:', error);
+                  // Only refetch on error to ensure UI stays in sync
+                  fetchDCAPlans();
                   // TODO: Show error message to user
                 }
               },

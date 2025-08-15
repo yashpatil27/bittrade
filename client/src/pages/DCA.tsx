@@ -40,8 +40,7 @@ const DCA: React.FC = () => {
 
   const handleDCAComplete = (dcaPlan: any) => {
     setIsDCAModalOpen(false);
-    // Refresh DCA plans through context
-    refetchUserDCAPlans();
+    // No manual refresh needed - WebSocket will handle the update
   };
 
 
