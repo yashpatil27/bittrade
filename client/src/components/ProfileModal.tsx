@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Mail, ChevronRight, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { DraggableModal, useModalDragHandling } from './modal/DraggableModal';
 import ProfileUpdateModal from './ProfileUpdateModal';
 
 interface ProfileModalProps {
@@ -24,127 +24,24 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [userState, setUserState] = useState(user);
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
   const [isProfileUpdateOpen, setProfileUpdateOpen] = useState(false);
   const [updateType, setUpdateType] = useState<'name' | 'email' | 'password'>();
-  const [isDragging, setIsDragging] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const [screenHeight] = useState(window.innerHeight);
-  const modalRef = useRef<HTMLDivElement>(null);
+  
+  // Use drag handling hook
+  const { isAnimating } = useModalDragHandling({
+    isOpen,
+    onClose
+  });
 
   // Update local user state when auth user changes
   useEffect(() => {
     setUserState(user);
   }, [user]);
 
-  // Animation control
-  useEffect(() => {
-    if (isOpen) {
-      setDragOffset(0);
-      setIsAnimating(false);
-      setTimeout(() => {
-        setIsAnimating(true);
-      }, 50);
-    } else {
-      setIsAnimating(false);
-    }
-  }, [isOpen]);
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      // Store current scroll position
-      const scrollY = window.scrollY;
-      
-      // Prevent scrolling
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      
-      // Store scroll position for restoration
-      document.body.setAttribute('data-scroll-y', scrollY.toString());
-    } else {
-      // Restore scroll position
-      const scrollY = document.body.getAttribute('data-scroll-y');
-      
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.removeAttribute('data-scroll-y');
-      
-      // Restore scroll position
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY));
-      }
-    }
-
-    return () => {
-      const scrollY = document.body.getAttribute('data-scroll-y');
-      
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.removeAttribute('data-scroll-y');
-      
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY));
-      }
-    };
-  }, [isOpen]);
-
-  // Close animation function
-  const animateClose = () => {
-    setIsClosing(true);
-    setIsAnimating(false);
-    setTimeout(() => {
-      setIsClosing(false);
-      onClose();
-    }, 300);
-  };
-
-  // Touch handlers for drag-to-close
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.tagName === 'BUTTON' || target.closest('button') || target.closest('[data-clickable]')) {
-      return;
-    }
-    
-    const touch = e.touches[0];
-    setDragStartY(touch.clientY);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    const touch = e.touches[0];
-    const deltaY = touch.clientY - dragStartY;
-    
-    if (deltaY > 0) {
-      setDragOffset(deltaY);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    const closeThreshold = screenHeight * 0.3;
-    
-    if (dragOffset > closeThreshold) {
-      animateClose();
-    } else {
-      setDragOffset(0);
-    }
-  };
 
   const handleLogout = () => {
     logout();
-    animateClose();
+    onClose();
     // Navigate to login page after logout
     setTimeout(() => {
       navigate('/login');
@@ -174,45 +71,29 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
       navigate('/admin');
     }
     
-    animateClose();
+    onClose();
   };
 
   if (!isOpen) return null;
 
-  const modalContent = (
-    <div className="fixed inset-0 z-50" style={{ touchAction: 'none' }}>
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={animateClose}
-        onTouchMove={(e) => e.preventDefault()}
-        style={{ touchAction: 'none' }}
-      />
-      
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col pb-safe"
-        style={{
-          maxHeight: '90vh',
-          minHeight: '60vh',
-          transform: `translateY(${isClosing ? '100%' : isAnimating ? `${dragOffset}px` : '100%'})`,
-          transition: isDragging ? 'none' : (isAnimating || isClosing) ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none',
-          touchAction: 'none'
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
+  return (
+    <>
+      <DraggableModal 
+        isOpen={isOpen} 
+        onClose={onClose}
+        maxHeight="90vh"
+        minHeight="60vh"
       >
-        {/* Header */}
-        <div className="px-2 pt-2 pb-8">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={animateClose}
-              className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+        <div className="absolute inset-x-0 bottom-0 bg-black max-w-md mx-auto rounded-t-3xl flex flex-col pb-safe" style={{ maxHeight: '90vh', minHeight: '60vh' }}>
+          {/* Header */}
+          <div className="px-2 pt-2 pb-8">
+            <div className="flex items-center justify-between">
+              <button
+                onClick={onClose}
+                className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             <h2 className="text-white text-sm font-medium text-center flex-1">Profile</h2>
             {userState?.is_admin ? (
               <div className="w-12 h-12 flex items-center justify-center">
@@ -224,15 +105,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   <Shield className={`w-5 h-5 transition-all duration-200 ${window.location.pathname.startsWith('/admin') ? 'text-brand' : 'text-white hover:text-brand'}`} />
                 </button>
               </div>
-            ) : (
-              <div className="w-10" />
-            )}
+              ) : (
+                <div className="w-10" />
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Content */}
-        <AnimatePresence mode="wait">
-          {isAnimating && (
+          {/* Content */}
+          <AnimatePresence mode="wait">
+            {isAnimating && (
             <motion.div 
               className="flex flex-col h-full"
               initial={{ opacity: 0 }}
@@ -502,16 +383,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
                   </motion.button>
                 </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
-  );
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </DraggableModal>
 
-  return (
-    <>
-      {createPortal(modalContent, document.body)}
       <ProfileUpdateModal
         isOpen={isProfileUpdateOpen}
         onRequestClose={() => setProfileUpdateOpen(false)}

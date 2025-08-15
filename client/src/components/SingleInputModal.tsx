@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { ChevronLeft, X, SlidersVertical, Infinity, Orbit } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatRupeesForDisplay } from '../utils/formatters';
+import { DraggableModal, useModalDragHandling } from './modal/DraggableModal';
 
 interface SingleInputModalProps {
   isOpen: boolean;
@@ -61,14 +61,14 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 }) => {
   const [value, setValue] = useState('');
   const [currentType, setCurrentType] = useState<'inr' | 'btc' | 'number'>(type);
-  const [dragStartY, setDragStartY] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [isClosing, setIsClosing] = useState(false);
-  const [screenHeight] = useState(window.innerHeight);
   const [previousValue, setPreviousValue] = useState('');
-  const modalRef = useRef<HTMLDivElement>(null);
+  
+  // Use drag handling hook for keyboard close functionality
+  const { animateClose, isAnimating } = useModalDragHandling({
+    isOpen,
+    onClose,
+    excludeAdditionalSelectors: ['[data-clickable-section]']
+  });
 
   // Layout calculations
   const layoutConfig = {
@@ -88,7 +88,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                           layoutConfig.maxButton + 
                           layoutConfig.section;
 
-  const availableContentHeight = screenHeight - totalFixedHeight;
+  const availableContentHeight = window.innerHeight - totalFixedHeight;
   const contentHeight = Math.max(availableContentHeight, 200);
 
   // Initialize currentType when modal opens
@@ -120,17 +120,10 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     }
   };
 
-  // Animation control
+  // Initialize value when modal opens
   useEffect(() => {
     if (isOpen) {
-      setDragOffset(0);
-      setIsAnimating(false);
       setValue(initialValue);
-      setTimeout(() => {
-        setIsAnimating(true);
-      }, 50);
-    } else {
-      setIsAnimating(false);
     }
   }, [isOpen, initialValue]);
 
@@ -188,98 +181,6 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, disableKeyboardHandling, type, value, maxValue, isLoading]); // Functions are stable, dependency warning disabled
 
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      // Store current scroll position
-      const scrollY = window.scrollY;
-      
-      // Prevent scrolling
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      
-      // Store scroll position for restoration
-      document.body.setAttribute('data-scroll-y', scrollY.toString());
-    } else {
-      // Restore scroll position
-      const scrollY = document.body.getAttribute('data-scroll-y');
-      
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.removeAttribute('data-scroll-y');
-      
-      // Restore scroll position
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY));
-      }
-    }
-
-    return () => {
-      const scrollY = document.body.getAttribute('data-scroll-y');
-      
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.removeAttribute('data-scroll-y');
-      
-      if (scrollY) {
-        window.scrollTo(0, parseInt(scrollY));
-      }
-    };
-  }, [isOpen]);
-
-  // Close animation function
-  const animateClose = () => {
-    setIsClosing(true);
-    setIsAnimating(false);
-    setTimeout(() => {
-      setIsClosing(false);
-      onClose();
-    }, 300);
-  };
-
-  // Touch handlers for drag-to-close
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const target = e.target as HTMLElement;
-    
-    if (target.tagName === 'BUTTON' || 
-        target.closest('button') || 
-        target.closest('[data-clickable-section]')) {
-      return;
-    }
-    
-    const touch = e.touches[0];
-    setDragStartY(touch.clientY);
-    setIsDragging(true);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging) return;
-    
-    e.preventDefault();
-    const touch = e.touches[0];
-    const deltaY = touch.clientY - dragStartY;
-    
-    if (deltaY > 0) {
-      setDragOffset(deltaY);
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    const closeThreshold = screenHeight * 0.3;
-    
-    if (dragOffset > closeThreshold) {
-      animateClose();
-    } else {
-      setDragOffset(0);
-    }
-  };
 
   // Keypad component
   const KeypadButton: React.FC<{ value: string; onPress: () => void; className?: string }> = ({ 
@@ -551,37 +452,19 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
      (maxValue !== undefined && !skipMaxValidation && parseFloat(value) > maxValue))
   );
 
-  if (!isOpen) return null;
-
-  const modalContent = (
-    <div className="fixed inset-0 z-50" style={{ touchAction: 'none' }}>
-      {/* Backdrop */}
-      <div 
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={animateClose}
-        onTouchMove={(e) => e.preventDefault()}
-        style={{ touchAction: 'none' }}
-      />
-      
-      {/* Modal */}
-      <div
-        ref={modalRef}
-        className="absolute inset-x-0 bottom-0 top-0 bg-black max-w-md mx-auto pb-safe"
-        style={{
-          transform: `translateY(${isClosing ? '100%' : isAnimating ? `${dragOffset}px` : '100%'})`,
-          transition: isDragging ? 'none' : (isAnimating || isClosing) ? 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)' : 'none',
-          touchAction: 'none'
-        }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+  return (
+    <DraggableModal
+      isOpen={isOpen}
+      onClose={onClose}
+      fullHeight={true}
+      excludeAdditionalSelectors={['[data-clickable-section]']}
+    >
         {/* Header */}
         <div className="px-2 pt-2 pb-8 relative">
           <div className="flex items-center justify-between h-12">
             {/* Left section */}
             <button
-              onClick={animateClose}
+              onClick={onClose}
               className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               {showXIcon ? <X className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -658,7 +541,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                     <Infinity className="w-16 h-16 text-gray-400" />
                   </motion.div>
                 ) : (
-                  <AnimatedDigitDisplay value={value} previousValue={previousValue} isDragging={isDragging} />
+                  <AnimatedDigitDisplay value={value} previousValue={previousValue} isDragging={false} />
                 )}
               </motion.div>
               
@@ -818,11 +701,8 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             </motion.button>
           </motion.div>
         </div>
-      </div>
-    </div>
+    </DraggableModal>
   );
-
-  return createPortal(modalContent, document.body);
 };
 
 export default SingleInputModal;
