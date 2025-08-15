@@ -288,16 +288,37 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     className = '' 
   }) => {
     const [touchHandled, setTouchHandled] = useState(false);
+    const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+    const touchStartTime = useRef<number>(0);
     
     const handleTouchStart = (e: React.TouchEvent) => {
       e.stopPropagation();
+      e.preventDefault();
       setTouchHandled(true);
+      touchStartTime.current = Date.now();
+      
+      // Clear any existing long press timer
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
     };
     
     const handleTouchEnd = (e: React.TouchEvent) => {
       e.stopPropagation();
-      e.preventDefault(); // Prevent synthetic click event
-      onPress();
+      e.preventDefault();
+      
+      // Clear long press timer
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+      
+      // Only trigger if it's a short tap (not a long press)
+      const touchDuration = Date.now() - touchStartTime.current;
+      if (touchDuration < 500) { // Less than 500ms is considered a tap
+        onPress();
+      }
+      
       // Reset after a short delay to allow for mouse users
       setTimeout(() => setTouchHandled(false), 300);
     };
@@ -310,16 +331,27 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
       }
     };
     
+    // Cleanup timer on unmount
+    React.useEffect(() => {
+      return () => {
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+        }
+      };
+    }, []);
+    
     return (
       <button
         onClick={handleClick}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onContextMenu={(e) => e.preventDefault()} // Prevent long press context menu
         className={`h-16 bg-black text-white text-xl font-medium select-none ${className}`}
         style={{
           WebkitTouchCallout: 'none',
           WebkitUserSelect: 'none',
-          touchAction: 'manipulation'
+          touchAction: 'manipulation',
+          WebkitTapHighlightColor: 'transparent'
         }}
       >
         {value}
