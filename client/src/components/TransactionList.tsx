@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Target, CalendarSync, ArrowDown, ArrowUp, Bitcoin, IndianRupee } from 'lucide-react';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { formatRelativeTime } from '../utils/dateUtils';
 import { formatRupeesForDisplay, formatBitcoinForDisplay } from '../utils/formatters';
 import { cancelLimitOrder, reverseTransaction } from '../utils/api';
@@ -312,48 +313,122 @@ const TransactionListComponent = ({
         )}
       </div>
       
-      <div className="space-y-0">
-        {displayTransactions.map((txn, index) => (
-          <div key={txn.id}>
-            <div 
-              className={`flex items-center justify-between py-3 ${onTransactionClick ? 'cursor-pointer hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors' : ''}`}
-              onClick={() => handleTransactionClick(txn)}
-            >
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 ${getTransactionColor(txn.type, txn.status)} rounded-lg flex items-center justify-center`}>
-                  {getTransactionIcon(txn.type)}
-                </div>
-                <div>
-                  <p className="text-sm font-light text-white">{getTransactionLabel(txn.type, txn.status)}</p>
-                  {showTargetPrice && txn.status === 'PENDING' && txn.execution_price ? (
-                    <div className="flex items-center space-x-2 text-xs text-gray-400">
-                      <span>Target: {formatRupeesForDisplay(txn.execution_price)}</span>
-                      <span>•</span>
-                      <span>{formatRelativeTime(txn.created_at || '')}</span>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400">{formatRelativeTime(txn.executed_at || txn.created_at || '')}</p>
-                  )}
-                </div>
-              </div>
-              
-              <div className="text-right">
-                <p className="text-sm font-light text-white">
-                  {getTransactionAmount(txn)}
-                </p>
-                {getTransactionSubAmount(txn) && (
-                  <p className="text-xs text-gray-400">
-                    {getTransactionSubAmount(txn)}
-                  </p>
+      <LayoutGroup>
+        <div className="space-y-0 relative">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {displayTransactions.map((txn, index) => (
+              <motion.div
+                key={txn.id}
+                layout
+                initial={{ 
+                  opacity: 0, 
+                  x: -50,
+                  scale: 0.95
+                }}
+                animate={{ 
+                  opacity: 1, 
+                  x: 0,
+                  scale: 1
+                }}
+                exit={{ 
+                  opacity: 0, 
+                  x: 50,
+                  scale: 0.95,
+                  transition: {
+                    duration: 0.2,
+                    ease: "easeOut"
+                  }
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 35,
+                  mass: 1,
+                  layout: {
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 40,
+                    duration: 0.3
+                  }
+                }}
+                style={{ 
+                  position: "relative",
+                  zIndex: displayTransactions.length - index // Stack new items on top
+                }}
+              >
+                <motion.div 
+                  className={`flex items-center justify-between py-3 ${onTransactionClick ? 'cursor-pointer hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors' : ''}`}
+                  onClick={() => handleTransactionClick(txn)}
+                  whileHover={{ 
+                    backgroundColor: onTransactionClick ? "rgba(55, 65, 81, 0.5)" : "transparent",
+                    transition: { duration: 0.15 }
+                  }}
+                  whileTap={{ 
+                    scale: onTransactionClick ? 0.98 : 1,
+                    transition: { duration: 0.1 }
+                  }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <motion.div 
+                      className={`w-8 h-8 ${getTransactionColor(txn.type, txn.status)} rounded-lg flex items-center justify-center`}
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ 
+                        delay: 0.1,
+                        type: "spring",
+                        stiffness: 600,
+                        damping: 25
+                      }}
+                    >
+                      {getTransactionIcon(txn.type)}
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                    >
+                      <p className="text-sm font-light text-white">{getTransactionLabel(txn.type, txn.status)}</p>
+                      {showTargetPrice && txn.status === 'PENDING' && txn.execution_price ? (
+                        <div className="flex items-center space-x-2 text-xs text-gray-400">
+                          <span>Target: {formatRupeesForDisplay(txn.execution_price)}</span>
+                          <span>•</span>
+                          <span>{formatRelativeTime(txn.created_at || '')}</span>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400">{formatRelativeTime(txn.executed_at || txn.created_at || '')}</p>
+                      )}
+                    </motion.div>
+                  </div>
+                  
+                  <motion.div 
+                    className="text-right"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <p className="text-sm font-light text-white">
+                      {getTransactionAmount(txn)}
+                    </p>
+                    {getTransactionSubAmount(txn) && (
+                      <p className="text-xs text-gray-400">
+                        {getTransactionSubAmount(txn)}
+                      </p>
+                    )}
+                  </motion.div>
+                </motion.div>
+                {index < displayTransactions.length - 1 && (
+                  <motion.div 
+                    className="border-b border-gray-800"
+                    initial={{ scaleX: 0, originX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: 0.25, duration: 0.2 }}
+                  ></motion.div>
                 )}
-              </div>
-            </div>
-            {index < displayTransactions.length - 1 && (
-              <div className="border-b border-gray-800"></div>
-            )}
-          </div>
-        ))}
-      </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </LayoutGroup>
       
       {/* Load More Button */}
       {hasMoreTransactions && (
