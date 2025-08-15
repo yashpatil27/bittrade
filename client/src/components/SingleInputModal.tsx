@@ -457,7 +457,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   };
 
   // Animated Display Component with proper stable key generation
-  const AnimatedDigitDisplay = React.useCallback(({ value, previousValue }: { value: string; previousValue: string }) => {
+  const AnimatedDigitDisplay = React.useCallback(({ value, previousValue, isDragging }: { value: string; previousValue: string; isDragging: boolean }) => {
     // Format values directly inside the component to avoid external dependencies
     const formatValue = (val: string) => {
       if (currentType === 'btc') {
@@ -525,10 +525,9 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                   damping: 25,
                   duration: 0.3,
                   layout: {
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                    duration: 0.4
+                    type: "tween",
+                    duration: isDragging ? 0 : 0.2,
+                    ease: "linear"
                   }
                 }}
                 style={{
@@ -659,7 +658,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
                     <Infinity className="w-16 h-16 text-gray-400" />
                   </motion.div>
                 ) : (
-                  <AnimatedDigitDisplay value={value} previousValue={previousValue} />
+                  <AnimatedDigitDisplay value={value} previousValue={previousValue} isDragging={isDragging} />
                 )}
               </motion.div>
               
