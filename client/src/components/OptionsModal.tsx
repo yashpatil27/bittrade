@@ -25,6 +25,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   const [isClosing, setIsClosing] = useState(false);
   const [screenHeight] = useState(window.innerHeight);
   const modalRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Animation control
   useEffect(() => {
@@ -33,11 +34,38 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
       setIsAnimating(false);
       setTimeout(() => {
         setIsAnimating(true);
-      }, 50);
+        // Apply staggered animations to child elements
+        animateChildren();
+      }, 100);
     } else {
       setIsAnimating(false);
     }
   }, [isOpen]);
+
+  // Function to animate children with stagger effect
+  const animateChildren = () => {
+    if (!contentRef.current) return;
+    
+    // Find all child elements that should be animated
+    const spaceContainer = contentRef.current.querySelector('.space-y-4, .space-y-3');
+    if (!spaceContainer) return;
+    
+    const childElements = Array.from(spaceContainer.children) as HTMLElement[];
+    
+    childElements.forEach((child, index) => {
+      // Reset initial state
+      child.style.opacity = '0';
+      child.style.transform = 'translateY(20px) scale(0.95)';
+      child.style.transition = 'none';
+      
+      // Apply staggered animation
+      setTimeout(() => {
+        child.style.transition = 'all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1)';
+        child.style.opacity = '1';
+        child.style.transform = 'translateY(0px) scale(1)';
+      }, 100 + (index * 80)); // 80ms stagger delay
+    });
+  };
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -158,7 +186,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-2 pt-0 pb-8">
+        <div className="px-2 pt-2 pb-4">
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
@@ -173,21 +201,9 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
 
         {/* Content Area - Animated */}
         <div className="flex-1 px-6 pb-8 overflow-y-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ 
-              opacity: isAnimating ? 1 : 0, 
-              y: isAnimating ? 0 : 20 
-            }}
-            transition={{ 
-              delay: 0.1,
-              type: "spring",
-              stiffness: 400,
-              damping: 25
-            }}
-          >
+          <div ref={contentRef}>
             {children}
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
