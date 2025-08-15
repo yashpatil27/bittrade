@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const BITCOIN_QUOTES = [
   "Saving is a virtue.",
@@ -89,10 +90,50 @@ const BitcoinQuote: React.FC<BitcoinQuoteProps> = ({ className = '' }) => {
   }, [isVisible, hasScrolledAway]);
 
   return (
-    <div className={`mt-24 mb-16 text-center transition-opacity duration-500 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0'} ${className}`}>
-      <p className="text-xs text-gray-400 px-4 max-w-2xl mx-auto pb-safe">
-        {quote}
-      </p>
+    <div className={`mt-24 mb-16 text-center ${className}`}>
+      <AnimatePresence mode="wait">
+        {isVisible && quote && (
+          <motion.div
+            key={quote} // This ensures re-animation when quote changes
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ 
+              opacity: 1, 
+              y: 0, 
+              scale: 1,
+              transition: {
+                duration: 0.6,
+                type: "spring",
+                stiffness: 400,
+                damping: 25
+              }
+            }}
+            exit={{ 
+              opacity: 0, 
+              y: -10, 
+              scale: 0.98,
+              transition: {
+                duration: 0.3,
+                ease: "easeInOut"
+              }
+            }}
+            className="px-4 max-w-2xl mx-auto pb-safe"
+          >
+            <motion.p 
+              className="text-xs text-gray-400"
+              initial={{ opacity: 0 }}
+              animate={{ 
+                opacity: 1,
+                transition: {
+                  delay: 0.2,
+                  duration: 0.4
+                }
+              }}
+            >
+              {quote}
+            </motion.p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
