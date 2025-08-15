@@ -424,78 +424,85 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     return `₿${processedVal}`;
   };
 
-  // Animated Display Component
-  const AnimatedDigitDisplay: React.FC<{ value: string; previousValue: string }> = ({ value, previousValue }) => {
-    const formattedValue = formatDisplayValue(value);
-    const formattedPrevious = formatDisplayValue(previousValue);
-    
-    // Split the formatted value into characters for individual animation
-    const currentChars = formattedValue.split('');
-    const previousChars = formattedPrevious.split('');
-    
-    // Create stable keys for existing characters to maintain their identity
-    const getStableKey = (char: string, index: number) => {
-      // For existing characters that haven't changed, use a stable key
-      if (index < previousChars.length && char === previousChars[index]) {
-        return `stable-${index}-${char}`;
-      }
-      // For new or changed characters, use a unique key
-      return `${Date.now()}-${index}-${char}`;
-    };
-    
-    const getCharacterState = (index: number) => {
-      const currentChar = currentChars[index];
-      const prevChar = previousChars[index];
+  // Animated Display Component with proper stable key generation
+  const AnimatedDigitDisplay = React.useMemo(() => {
+    const Component = ({ value, previousValue }: { value: string; previousValue: string }) => {
+      const formattedValue = formatDisplayValue(value);
+      const formattedPrevious = formatDisplayValue(previousValue);
       
-      if (index >= previousChars.length) {
-        return 'new'; // New character added
-      } else if (currentChar !== prevChar) {
-        return 'changed'; // Character changed
-      } else {
-        return 'same'; // Character unchanged
-      }
-    };
-    
-    return (
-      <div className="flex items-center justify-center relative" style={{ minHeight: '1.2em' }}>
-        <AnimatePresence mode="popLayout">
-          {currentChars.map((char, index) => {
-            const state = getCharacterState(index);
-            const key = getStableKey(char, index);
-            
-            return (
-              <motion.span
-                key={key}
-                layout
-                className="inline-block text-white text-5xl font-normal"
-                initial={state === 'new' ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 400,
-                  damping: 25,
-                  duration: 0.3,
-                  layout: {
+      // Split the formatted value into characters for individual animation
+      const currentChars = formattedValue.split('');
+      const previousChars = formattedPrevious.split('');
+      
+      // Use a more stable key generation approach
+      const getStableKey = (char: string, index: number) => {
+        // For existing characters that haven't changed, use a stable key
+        if (index < previousChars.length && char === previousChars[index]) {
+          return `stable-${index}-${char}`;
+        }
+        // For new or changed characters, use a key based on current value hash
+        // This ensures the key is stable for the same value but different for different values
+        const valueHash = value.split('').reduce((hash, c, i) => {
+          return hash + c.charCodeAt(0) * (i + 1);
+        }, 0);
+        return `new-${index}-${char}-${valueHash}`;
+      };
+      
+      const getCharacterState = (index: number) => {
+        const currentChar = currentChars[index];
+        const prevChar = previousChars[index];
+        
+        if (index >= previousChars.length) {
+          return 'new'; // New character added
+        } else if (currentChar !== prevChar) {
+          return 'changed'; // Character changed
+        } else {
+          return 'same'; // Character unchanged
+        }
+      };
+      
+      return (
+        <div className="flex items-center justify-center relative" style={{ minHeight: '1.2em' }}>
+          <AnimatePresence mode="popLayout">
+            {currentChars.map((char, index) => {
+              const state = getCharacterState(index);
+              const key = getStableKey(char, index);
+              
+              return (
+                <motion.span
+                  key={key}
+                  layout
+                  className="inline-block text-white text-5xl font-normal"
+                  initial={state === 'new' ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{
                     type: "spring",
-                    stiffness: 300,
-                    damping: 30,
-                    duration: 0.4
-                  }
-                }}
-                style={{
-                  display: 'inline-block',
-                  transformOrigin: 'center'
-                }}
-              >
-                {char}
-              </motion.span>
-            );
-          })}
-        </AnimatePresence>
-      </div>
-    );
-  };
+                    stiffness: 400,
+                    damping: 25,
+                    duration: 0.3,
+                    layout: {
+                      type: "spring",
+                      stiffness: 300,
+                      damping: 30,
+                      duration: 0.4
+                    }
+                  }}
+                  style={{
+                    display: 'inline-block',
+                    transformOrigin: 'center'
+                  }}
+                >
+                  {char}
+                </motion.span>
+              );
+            })}
+          </AnimatePresence>
+        </div>
+      );
+    };
+    return Component;
+  }, [currentType, showInfinityPlaceholder]); // Only recreate when dependencies that affect formatting change
 
   // Format display value
   const formatDisplayValue = (val: string) => {
