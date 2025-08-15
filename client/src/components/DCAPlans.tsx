@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Bitcoin, IndianRupee, Clock, BarChart3 } from 'lucide-react';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { updateDCAPlanStatus, deleteDCAPlan } from '../utils/api';
 import { DCAPlan } from '../types';
 import Card from './Card';
@@ -320,53 +321,127 @@ const DCAPlans: React.FC<DCAPlansProps> = ({
         )}
       </div>
       
-      <div className="space-y-0">
-        {dcaPlans.plans.map((plan, index) => (
-          <div key={plan.id}>
-            <div 
-              className={`flex items-center justify-between py-4 ${onPlanClick ? 'cursor-pointer hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors' : ''}`}
-              onClick={() => handlePlanClick(plan)}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  {getPlanIcon(plan.plan_type)}
-                </div>
-                <div>
-                  <p className="text-sm font-light text-white">{getPlanLabel(plan)}</p>
-                  <p className="text-xs text-gray-400">{getPlanSubLabel(plan)}</p>
-                  <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-3 h-3" />
-                      <span>Next: {formatTimeUntilNext(plan.next_execution_at, plan.status)}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <BarChart3 className="w-3 h-3" />
-                      <span>{formatExecutionsRemaining(plan)}</span>
-                    </div>
+      <LayoutGroup>
+        <div className="space-y-0 relative">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {dcaPlans.plans.map((plan, index) => (
+              <motion.div
+                key={plan.id}
+                layout
+                initial={{ 
+                  opacity: 0, 
+                  x: -50,
+                  scale: 0.95
+                }}
+                animate={{ 
+                  opacity: 1, 
+                  x: 0,
+                  scale: 1
+                }}
+                exit={{ 
+                  opacity: 0, 
+                  x: 50,
+                  scale: 0.95,
+                  transition: {
+                    duration: 0.2,
+                    ease: "easeOut"
+                  }
+                }}
+                transition={{
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 35,
+                  mass: 1,
+                  layout: {
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 40,
+                    duration: 0.3
+                  }
+                }}
+                style={{ 
+                  position: "relative",
+                  zIndex: dcaPlans.plans.length - index // Stack new items on top
+                }}
+              >
+                <motion.div 
+                  className={`flex items-center justify-between py-4 ${onPlanClick ? 'cursor-pointer hover:bg-gray-800/50 -mx-2 px-2 rounded-lg transition-colors' : ''}`}
+                  onClick={() => handlePlanClick(plan)}
+                  whileHover={{ 
+                    backgroundColor: onPlanClick ? "rgba(55, 65, 81, 0.5)" : "transparent",
+                    transition: { duration: 0.15 }
+                  }}
+                  whileTap={{ 
+                    scale: onPlanClick ? 0.98 : 1,
+                    transition: { duration: 0.1 }
+                  }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <motion.div 
+                      className="flex-shrink-0"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ 
+                        delay: 0.1,
+                        type: "spring",
+                        stiffness: 600,
+                        damping: 25
+                      }}
+                    >
+                      {getPlanIcon(plan.plan_type)}
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.15 }}
+                    >
+                      <p className="text-sm font-light text-white">{getPlanLabel(plan)}</p>
+                      <p className="text-xs text-gray-400">{getPlanSubLabel(plan)}</p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-3 h-3" />
+                          <span>Next: {formatTimeUntilNext(plan.next_execution_at, plan.status)}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <BarChart3 className="w-3 h-3" />
+                          <span>{formatExecutionsRemaining(plan)}</span>
+                        </div>
+                      </div>
+                    </motion.div>
                   </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  plan.status === 'ACTIVE' 
-                    ? 'bg-green-500/10 text-green-400' 
-                    : plan.status === 'PAUSED' 
-                    ? 'bg-yellow-500/10 text-yellow-400'
-                    : plan.status === 'COMPLETED'
-                    ? 'bg-blue-500/10 text-blue-400'
-                    : 'bg-gray-500/10 text-gray-400'
-                }`}>
-                  {plan.status.toLowerCase()}
-                </div>
-              </div>
-            </div>
-            {index < dcaPlans.plans.length - 1 && (
-              <div className="border-b border-gray-800"></div>
-            )}
-          </div>
-        ))}
-      </div>
+                  
+                  <motion.div 
+                    className="flex items-center space-x-2"
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      plan.status === 'ACTIVE' 
+                        ? 'bg-green-500/10 text-green-400' 
+                        : plan.status === 'PAUSED' 
+                        ? 'bg-yellow-500/10 text-yellow-400'
+                        : plan.status === 'COMPLETED'
+                        ? 'bg-blue-500/10 text-blue-400'
+                        : 'bg-gray-500/10 text-gray-400'
+                    }`}>
+                      {plan.status.toLowerCase()}
+                    </div>
+                  </motion.div>
+                </motion.div>
+                {index < dcaPlans.plans.length - 1 && (
+                  <motion.div 
+                    className="border-b border-gray-800"
+                    initial={{ scaleX: 0, originX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ delay: 0.25, duration: 0.2 }}
+                  ></motion.div>
+                )}
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </div>
+      </LayoutGroup>
       
       {/* Details Modal */}
       {selectedPlan && isDetailsModalOpen && (
