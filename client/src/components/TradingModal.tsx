@@ -432,7 +432,6 @@ const TradingModal: React.FC<TradingModalProps> = ({
         isOpen={isOpen && showOrderTypeModal}
         onClose={handleOrderTypeModalClose}
         title="Order Type"
-        type="custom"
       >
         <div className="space-y-3">
           {/* Market Order Option */}

@@ -1,24 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
-
-interface NotificationItem {
-  id: string;
-  title: string;
-  description: string;
-  timestamp: string;
-  type: 'success' | 'warning' | 'info' | 'error';
-  clickable?: boolean;
-  onClick?: () => void;
-}
+import { motion } from 'framer-motion';
 
 interface OptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  type?: 'notifications' | 'custom';
-  notifications?: NotificationItem[];
-  children?: React.ReactNode;
+  children: React.ReactNode;
   showXIcon?: boolean; // Show X icon instead of ChevronLeft (default: false)
 }
 
@@ -26,8 +15,6 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   isOpen,
   onClose,
   title,
-  type = 'custom',
-  notifications = [],
   children,
   showXIcon = false
 }) => {
@@ -142,52 +129,6 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
     }
   };
 
-  // Get notification dot color based on type
-  const getNotificationColor = (notificationType: string) => {
-    switch (notificationType) {
-      case 'success': return 'bg-green-500';
-      case 'warning': return 'bg-orange-500';
-      case 'error': return 'bg-red-500';
-      case 'info': return 'bg-brand';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  // Render notifications content
-  const renderNotifications = () => {
-    if (notifications.length === 0) {
-      return (
-        <div className="flex items-center justify-center py-8">
-          <p className="text-gray-400 text-sm">No notifications</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="bg-gray-900 rounded-lg">
-        {notifications.map((notification, index) => (
-          <div key={notification.id}>
-            <div 
-              className={`p-3 ${notification.clickable ? 'cursor-pointer hover:bg-gray-800 transition-colors' : ''}`}
-              onClick={notification.clickable ? notification.onClick : undefined}
-              data-clickable={notification.clickable ? 'true' : undefined}
-            >
-              <div className="flex items-start space-x-2">
-                <div className={`w-1.5 h-1.5 ${getNotificationColor(notification.type)} rounded-full mt-1.5 flex-shrink-0`}></div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-xs font-medium leading-tight">{notification.title}</p>
-                  <p className="text-gray-400 text-xs mt-0.5 leading-tight">{notification.description} • {notification.timestamp}</p>
-                </div>
-              </div>
-            </div>
-            {index < notifications.length - 1 && (
-              <div className="border-b border-gray-800 mx-3"></div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   if (!isOpen) return null;
 
@@ -230,9 +171,23 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
           </div>
         </div>
 
-        {/* Content Area */}
+        {/* Content Area - Animated */}
         <div className="flex-1 px-6 pb-8 overflow-y-auto">
-          {type === 'notifications' ? renderNotifications() : children}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ 
+              opacity: isAnimating ? 1 : 0, 
+              y: isAnimating ? 0 : 20 
+            }}
+            transition={{ 
+              delay: 0.1,
+              type: "spring",
+              stiffness: 400,
+              damping: 25
+            }}
+          >
+            {children}
+          </motion.div>
         </div>
       </div>
     </div>

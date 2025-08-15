@@ -356,7 +356,6 @@ const DCAModal: React.FC<DCAModalProps> = ({
         isOpen={isOpen && showFrequencyModal}
         onClose={handleFrequencyModalClose}
         title="Execution Frequency"
-        type="custom"
       >
         <div className="space-y-3">
           {[
@@ -393,7 +392,6 @@ const DCAModal: React.FC<DCAModalProps> = ({
         isOpen={isOpen && showOptionalSettingsModal}
         onClose={handleOptionalSettingsClose}
         title="Optional Settings"
-        type="custom"
       >
         <div className="space-y-3">
           <div 

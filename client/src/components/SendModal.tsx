@@ -205,7 +205,6 @@ const SendModal: React.FC<SendModalProps> = ({ isOpen, onRequestClose }) => {
         isOpen={isOpen && showEmailModal}
         onClose={handleEmailModalClose}
         title="Recipient Email"
-        type="custom"
       >
         <div className="space-y-4">
           {validationError && (

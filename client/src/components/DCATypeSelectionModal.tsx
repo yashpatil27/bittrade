@@ -20,7 +20,6 @@ const DCATypeSelectionModal: React.FC<DCATypeSelectionModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Choose Plan Type"
-      type="custom"
       showXIcon={true}
     >
       <div className="space-y-3">

@@ -157,7 +157,6 @@ const AdminUsers: React.FC = () => {
         isOpen={isOptionsModalOpen}
         onClose={handleCloseModal}
         title={selectedUser ? `${selectedUser.name}` : 'User Actions'}
-        type="custom"
       >
         <div className="space-y-3">
           {/* Deposit Bitcoin Option */}

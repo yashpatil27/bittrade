@@ -149,7 +149,6 @@ onViewAllClick={() => navigate('/history')}
           isOpen={balanceOptionsOpen}
           onClose={handleBalanceOptionsClose}
           title="Your Balance"
-          type="custom"
           showXIcon={true}
         >
           <div className="space-y-4">
