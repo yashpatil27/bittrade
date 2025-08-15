@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface DetailItem {
   label: string;
@@ -241,69 +242,150 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-col h-full px-6 ">
-          {/* Amount Display Area */}
-          <div className="flex flex-col justify-start items-center pt-4">
-            <div className="text-center w-full">
-              {/* Main Amount Display */}
-              {amount && amountType && (
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <span className="text-white text-5xl font-normal">
-                    {amount}
-                  </span>
-                </div>
-              )}
-              
-              {/* Sub Amount Display - always maintain space */}
-              <div className="flex items-center justify-center gap-2 mb-8">
-                {subAmount && subAmountType ? (
-                  <span className="text-white text-sm font-normal">
-                    {subAmount}
-                  </span>
-                ) : (
-                  <span className="text-transparent text-sm font-normal">placeholder</span>
-                )}
-              </div>
-              
-              
-            </div>
-          </div>
-
-          {/* Details Section - positioned exactly like SingleInputModal section */}
-          {details.length > 0 && (
-            <div className="mb-4 bg-black border border-brand/30 rounded-2xl p-4">
-              <div className="divide-y divide-brand/30">
-                {details.map((detail, index) => (
-                  <div key={index} className="flex justify-between items-center py-4 first:pt-0 last:pb-0">
-                    <span className="text-zinc-400 text-sm">{detail.label}</span>
-                    <span className="text-sm font-normal text-white">
-                      {detail.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-
-          {/* Spacer to maintain button position */}
-          <div className="flex-1"></div>
-
-          {/* Confirm/Close Button */}
-          <div className="mb-8 pb-20 flex justify-center">
-            <button
-              onClick={handleConfirm}
-              disabled={isLoading}
-              className={`px-6 h-12 text-sm font-medium rounded-xl ${
-                mode === 'display' 
-                  ? 'btn-strike-secondary' 
-                  : 'btn-strike-primary'
-              }`}
+        <AnimatePresence mode="wait">
+          {isAnimating && (
+            <motion.div 
+              className="flex flex-col h-full px-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
-              {getButtonText()}
-            </button>
-          </div>
-        </div>
+              {/* Amount Display Area */}
+              <motion.div 
+                className="flex flex-col justify-start items-center pt-4"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: 0.1,
+                  type: "spring",
+                  stiffness: 400,
+                  damping: 25
+                }}
+              >
+                <div className="text-center w-full">
+                  {/* Main Amount Display */}
+                  {amount && amountType && (
+                    <motion.div 
+                      className="flex items-center justify-center gap-2 mb-4"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ 
+                        delay: 0.2,
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 20
+                      }}
+                    >
+                      <motion.span 
+                        className="text-white text-5xl font-normal"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.4 }}
+                      >
+                        {amount}
+                      </motion.span>
+                    </motion.div>
+                  )}
+                  
+                  {/* Sub Amount Display - always maintain space */}
+                  <motion.div 
+                    className="flex items-center justify-center gap-2 mb-8"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.3 }}
+                  >
+                    {subAmount && subAmountType ? (
+                      <span className="text-white text-sm font-normal">
+                        {subAmount}
+                      </span>
+                    ) : (
+                      <span className="text-transparent text-sm font-normal">placeholder</span>
+                    )}
+                  </motion.div>
+                </div>
+              </motion.div>
+
+              {/* Details Section - positioned exactly like SingleInputModal section */}
+              {details.length > 0 && (
+                <motion.div 
+                  className="mb-4 bg-black border border-brand/30 rounded-2xl p-4"
+                  initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ 
+                    delay: 0.5,
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 25
+                  }}
+                >
+                  <motion.div className="divide-y divide-brand/30">
+                    {details.map((detail, index) => (
+                      <motion.div 
+                        key={index} 
+                        className="flex justify-between items-center py-4 first:pt-0 last:pb-0"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ 
+                          delay: 0.6 + (index * 0.05),
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30
+                        }}
+                      >
+                        <motion.span 
+                          className="text-zinc-400 text-sm"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.65 + (index * 0.05) }}
+                        >
+                          {detail.label}
+                        </motion.span>
+                        <motion.span 
+                          className={`text-sm font-normal text-white ${detail.highlight ? 'font-bold' : ''}`}
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.7 + (index * 0.05) }}
+                        >
+                          {detail.value}
+                        </motion.span>
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                </motion.div>
+              )}
+
+              {/* Spacer to maintain button position */}
+              <div className="flex-1"></div>
+
+              {/* Confirm/Close Button */}
+              <motion.div 
+                className="mb-8 pb-20 flex justify-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  delay: 0.8 + (details.length * 0.05),
+                  duration: 0.3
+                }}
+              >
+                <motion.button
+                  onClick={handleConfirm}
+                  disabled={isLoading}
+                  className={`px-6 h-12 text-sm font-medium rounded-xl ${
+                    mode === 'display' 
+                      ? 'btn-strike-secondary' 
+                      : 'btn-strike-primary'
+                  }`}
+                  whileHover={{ scale: !isLoading ? 1.02 : 1 }}
+                  whileTap={{ scale: !isLoading ? 0.98 : 1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  {getButtonText()}
+                </motion.button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
