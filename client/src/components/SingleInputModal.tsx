@@ -580,74 +580,167 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
 
         {/* Content */}
         <div className="flex flex-col h-full px-6">
-          {/* Input Display Area */}
-          <div 
+          {/* Input Display Area - Animated */}
+          <motion.div 
             className="flex flex-col justify-center items-center" 
             style={{ height: `${contentHeight}px` }}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isAnimating ? 1 : 0, y: isAnimating ? 0 : 30 }}
+            transition={{ 
+              delay: 0.1,
+              type: "spring",
+              stiffness: 400,
+              damping: 25
+            }}
           >
             <div className="text-center w-full">
               {/* Input Display */}
-              <div className="flex items-center justify-center gap-2 mb-4">
+              <motion.div 
+                className="flex items-center justify-center gap-2 mb-4"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ 
+                  opacity: isAnimating ? 1 : 0, 
+                  scale: isAnimating ? 1 : 0.8 
+                }}
+                transition={{ 
+                  delay: 0.2,
+                  type: "spring",
+                  stiffness: 500,
+                  damping: 20
+                }}
+              >
                 {!value && showInfinityPlaceholder ? (
-                  <div className="flex items-center justify-center">
+                  <motion.div 
+                    className="flex items-center justify-center"
+                    initial={{ opacity: 0, rotate: -90 }}
+                    animate={{ 
+                      opacity: isAnimating ? 1 : 0, 
+                      rotate: isAnimating ? 0 : -90 
+                    }}
+                    transition={{ delay: 0.3, duration: 0.4 }}
+                  >
                     <Infinity className="w-16 h-16 text-gray-400" />
-                  </div>
+                  </motion.div>
                 ) : (
                   <AnimatedDigitDisplay value={value} previousValue={previousValue} />
                 )}
-              </div>
+              </motion.div>
               
-            {/* Max Button */}
+            {/* Max Button - Animated */}
             {maxButtonText && (
-              <button
+              <motion.button
                 onClick={handleMaxAmount}
                 className={`px-4 py-2 text-xs font-normal inline-flex items-center justify-center min-w-fit rounded-xl transition-colors duration-200 focus:outline-none ${
                   maxValue !== undefined && !skipMaxValidation && value && parseFloat(value) > maxValue
                     ? 'bg-black hover:bg-gray-900 text-red-400 border border-red-500/30 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-black'
                     : 'bg-btn-secondary text-white hover:bg-btn-secondary-hover focus:ring-2 focus:ring-brand focus:ring-offset-2 focus:ring-offset-black'
                 }`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ 
+                  opacity: isAnimating ? 1 : 0, 
+                  y: isAnimating ? 0 : 10 
+                }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 {maxButtonText}
-              </button>
+              </motion.button>
             )}
             </div>
-          </div>
+          </motion.div>
 
-          {/* Optional Section */}
+          {/* Optional Section - Animated */}
           {sectionTitle && (onSectionClick || sectionAmount || sectionDetail) && (
-            <div className="mb-2 flex justify-center px-4">
-              <div 
+            <motion.div 
+              className="mb-2 flex justify-center px-4"
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ 
+                opacity: isAnimating ? 1 : 0, 
+                y: isAnimating ? 0 : 20, 
+                scale: isAnimating ? 1 : 0.95 
+              }}
+              transition={{ 
+                delay: 0.4,
+                type: "spring",
+                stiffness: 400,
+                damping: 25
+              }}
+            >
+              <motion.div 
                 data-clickable-section
                 onClick={onSectionClick} 
                 className="w-full max-w-xs bg-gray-900 border border-brand/30 rounded-lg p-4 cursor-pointer hover:bg-gray-800 transition-colors"
+                whileHover={{ scale: 1.02, backgroundColor: "rgba(31, 41, 55, 1)" }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                <div className="flex justify-between items-center">
+                <motion.div 
+                  className="flex justify-between items-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: isAnimating ? 1 : 0 }}
+                  transition={{ delay: 0.5 }}
+                >
                   <div>
-                    <span className="text-white text-sm">{sectionTitle}</span>
+                    <motion.span 
+                      className="text-white text-sm"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ 
+                        opacity: isAnimating ? 1 : 0, 
+                        x: isAnimating ? 0 : -10 
+                      }}
+                      transition={{ delay: 0.55 }}
+                    >
+                      {sectionTitle}
+                    </motion.span>
                     {sectionDetail && (
-                      <div className="text-xs text-gray-500 mt-1">
+                      <motion.div 
+                        className="text-xs text-gray-500 mt-1"
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ 
+                          opacity: isAnimating ? 1 : 0, 
+                          y: isAnimating ? 0 : 5 
+                        }}
+                        transition={{ delay: 0.6 }}
+                      >
                         {typeof sectionDetail === 'string' ? <p>{sectionDetail}</p> : sectionDetail}
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                   {sectionAmount && (
-                    <span className="text-sm font-medium text-gray-300">
+                    <motion.span 
+                      className="text-sm font-medium text-gray-300"
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ 
+                        opacity: isAnimating ? 1 : 0, 
+                        x: isAnimating ? 0 : 10 
+                      }}
+                      transition={{ delay: 0.55 }}
+                    >
                       {sectionAmount}
-                    </span>
+                    </motion.span>
                   )}
-                </div>
-              </div>
-            </div>
+                </motion.div>
+              </motion.div>
+            </motion.div>
           )}
 
-          {/* Optional Tab Switcher */}
+          {/* Optional Tab Switcher - Animated */}
           {tabSwitcher && (
-            <div className="mb-3">
+            <motion.div 
+              className="mb-3"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ 
+                opacity: isAnimating ? 1 : 0, 
+                y: isAnimating ? 0 : 15 
+              }}
+              transition={{ delay: 0.5, duration: 0.3 }}
+            >
               {tabSwitcher}
-            </div>
+            </motion.div>
           )}
 
-          {/* Keypad */}
+          {/* Keypad - No animations to prevent issues */}
           <div className="mb-6">
             <div className="grid grid-cols-3 gap-1">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9', currentType === 'btc' ? '.' : (currentType === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
@@ -664,16 +757,30 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
             </div>
           </div>
 
-          {/* Confirm Button */}
-          <div className="mb-6 pb-20 flex justify-center">
-            <button
+          {/* Confirm Button - Animated */}
+          <motion.div 
+            className="mb-6 pb-20 flex justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ 
+              opacity: isAnimating ? 1 : 0, 
+              y: isAnimating ? 0 : 20 
+            }}
+            transition={{ 
+              delay: 0.6,
+              duration: 0.3
+            }}
+          >
+            <motion.button
               onClick={handleConfirm}
               disabled={isConfirmDisabled}
               className="px-6 h-12 btn-strike-primary text-sm font-medium rounded-xl"
+              whileHover={{ scale: !isConfirmDisabled ? 1.02 : 1 }}
+              whileTap={{ scale: !isConfirmDisabled ? 0.98 : 1 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
               {isLoading ? 'Processing...' : confirmText}
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
       </div>
     </div>
