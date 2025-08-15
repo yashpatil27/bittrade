@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, User, Mail, Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { getApiUrl } from '../utils/api';
 
@@ -208,159 +209,286 @@ const ProfileUpdateModal: React.FC<ProfileUpdateModalProps> = ({ isOpen, onReque
           </div>
         </div>
 
-        {/* Form Content */}
-        <div className="flex-1 px-6 pb-8 overflow-y-auto">
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-              <span className="text-red-200 text-sm">{error}</span>
-            </div>
-          )}
+        {/* Content */}
+        <AnimatePresence mode="wait">
+          {isAnimating && (
+            <motion.div 
+              className="flex-1 px-6 pb-8 overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Error Message */}
+              {error && (
+                <motion.div 
+                  className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg flex items-center space-x-2"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                >
+                  <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <span className="text-red-200 text-sm">{error}</span>
+                </motion.div>
+              )}
 
-          {/* Success Message */}
-          {success && (
-            <div className="mb-4 p-3 bg-green-900/50 border border-green-700 rounded-lg flex items-center space-x-2">
-              <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-              <span className="text-green-200 text-sm">Profile updated successfully!</span>
-            </div>
-          )}
+              {/* Success Message */}
+              {success && (
+                <motion.div 
+                  className="mb-4 p-3 bg-green-900/50 border border-green-700 rounded-lg flex items-center space-x-2"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1, duration: 0.3 }}
+                >
+                  <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <span className="text-green-200 text-sm">Profile updated successfully!</span>
+                </motion.div>
+              )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name Update Form */}
-            {updateType === 'name' && (
-              <>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
-                    <User className="w-4 h-4 text-brand" />
-                    <span>New Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                    placeholder="Enter your new name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
-                    <Lock className="w-4 h-4 text-brand" />
-                    <span>Current Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                    placeholder="Enter your current password"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Email Update Form */}
-            {updateType === 'email' && (
-              <>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
-                    <Mail className="w-4 h-4 text-brand" />
-                    <span>New Email Address</span>
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                    placeholder="Enter your new email"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
-                    <Lock className="w-4 h-4 text-brand" />
-                    <span>Current Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                    placeholder="Enter your current password"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Password Update Form */}
-            {updateType === 'password' && (
-              <>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
-                    <Lock className="w-4 h-4 text-brand" />
-                    <span>Current Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                    placeholder="Enter your current password"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
-                    <Lock className="w-4 h-4 text-brand" />
-                    <span>New Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                    placeholder="Enter new password"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="flex items-center space-x-3 text-white text-sm font-medium">
-                    <Lock className="w-4 h-4 text-brand" />
-                    <span>Confirm New Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
-                    placeholder="Confirm new password"
-                    required
-                  />
-                </div>
-              </>
-            )}
-
-            {/* Submit Button */}
-            <div className="pt-6">
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-brand hover:bg-brand/90 disabled:bg-brand/50 disabled:cursor-not-allowed text-black font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+              <motion.form 
+                onSubmit={handleSubmit} 
+                className="space-y-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.3 }}
               >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                <span>
-                  {loading ? 'Updating...' :
-                   updateType === 'name' ? 'Update Name' : 
-                   updateType === 'email' ? 'Update Email' : 
-                   updateType === 'password' ? 'Change Password' : 'Update Profile'}
-                </span>
-              </button>
-            </div>
-          </form>
-        </div>
+                {/* Name Update Form */}
+                {updateType === 'name' && (
+                  <>
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                    >
+                      <motion.label 
+                        className="flex items-center space-x-3 text-white text-sm font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.35 }}
+                      >
+                        <User className="w-4 h-4 text-brand" />
+                        <span>New Name</span>
+                      </motion.label>
+                      <motion.input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        placeholder="Enter your new name"
+                        required
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.3 }}
+                      />
+                    </motion.div>
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.45, duration: 0.3 }}
+                    >
+                      <motion.label 
+                        className="flex items-center space-x-3 text-white text-sm font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <Lock className="w-4 h-4 text-brand" />
+                        <span>Current Password</span>
+                      </motion.label>
+                      <motion.input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        placeholder="Enter your current password"
+                        required
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.55, duration: 0.3 }}
+                      />
+                    </motion.div>
+                  </>
+                )}
+
+                {/* Email Update Form */}
+                {updateType === 'email' && (
+                  <>
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                    >
+                      <motion.label 
+                        className="flex items-center space-x-3 text-white text-sm font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.35 }}
+                      >
+                        <Mail className="w-4 h-4 text-brand" />
+                        <span>New Email Address</span>
+                      </motion.label>
+                      <motion.input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        placeholder="Enter your new email"
+                        required
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.3 }}
+                      />
+                    </motion.div>
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.45, duration: 0.3 }}
+                    >
+                      <motion.label 
+                        className="flex items-center space-x-3 text-white text-sm font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <Lock className="w-4 h-4 text-brand" />
+                        <span>Current Password</span>
+                      </motion.label>
+                      <motion.input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        placeholder="Enter your current password"
+                        required
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.55, duration: 0.3 }}
+                      />
+                    </motion.div>
+                  </>
+                )}
+
+                {/* Password Update Form */}
+                {updateType === 'password' && (
+                  <>
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3, duration: 0.3 }}
+                    >
+                      <motion.label 
+                        className="flex items-center space-x-3 text-white text-sm font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.35 }}
+                      >
+                        <Lock className="w-4 h-4 text-brand" />
+                        <span>Current Password</span>
+                      </motion.label>
+                      <motion.input
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        placeholder="Enter your current password"
+                        required
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4, duration: 0.3 }}
+                      />
+                    </motion.div>
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4, duration: 0.3 }}
+                    >
+                      <motion.label 
+                        className="flex items-center space-x-3 text-white text-sm font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.45 }}
+                      >
+                        <Lock className="w-4 h-4 text-brand" />
+                        <span>New Password</span>
+                      </motion.label>
+                      <motion.input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        placeholder="Enter new password"
+                        required
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5, duration: 0.3 }}
+                      />
+                    </motion.div>
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5, duration: 0.3 }}
+                    >
+                      <motion.label 
+                        className="flex items-center space-x-3 text-white text-sm font-medium"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.55 }}
+                      >
+                        <Lock className="w-4 h-4 text-brand" />
+                        <span>Confirm New Password</span>
+                      </motion.label>
+                      <motion.input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-colors"
+                        placeholder="Confirm new password"
+                        required
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.6, duration: 0.3 }}
+                      />
+                    </motion.div>
+                  </>
+                )}
+
+                {/* Submit Button */}
+                <motion.div 
+                  className="pt-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.3 }}
+                >
+                  <motion.button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-brand hover:bg-brand/90 disabled:bg-brand/50 disabled:cursor-not-allowed text-black font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                    whileHover={{ scale: loading ? 1 : 1.02 }}
+                    whileTap={{ scale: loading ? 1 : 0.98 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.65, duration: 0.3 }}
+                  >
+                    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    <span>
+                      {loading ? 'Updating...' :
+                       updateType === 'name' ? 'Update Name' : 
+                       updateType === 'email' ? 'Update Email' : 
+                       updateType === 'password' ? 'Change Password' : 'Update Profile'}
+                    </span>
+                  </motion.button>
+                </motion.div>
+              </motion.form>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
