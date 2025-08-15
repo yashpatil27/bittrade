@@ -112,7 +112,12 @@ const DCAModal: React.FC<DCAModalProps> = ({
     }
     
     setAmountInput(value);
-    // Since frequency is already selected, go directly to optional settings
+    // Since frequency is already selected, go directly to review
+    setShowReviewModal(true);
+  };
+  
+  // Handle settings icon click (like TradingModal)
+  const handleSettingsClick = () => {
     setShowOptionalSettingsModal(true);
   };
 
@@ -187,7 +192,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
   // Handle review modal close
   const handleReviewModalClose = () => {
     setShowReviewModal(false);
-    setShowOptionalSettingsModal(true);
+    // Go back to amount input step, not optional settings
   };
 
   // Handle final submission
@@ -342,10 +347,12 @@ const DCAModal: React.FC<DCAModalProps> = ({
         type={inputCurrency}
         confirmText="Next"
         onConfirm={handleAmountConfirm}
-        sectionTitle={`${dcaPlan.plan_type === 'DCA_BUY' ? 'Buy' : 'Sell'} Amount`}
-        sectionDetail={`Amount to ${dcaPlan.plan_type === 'DCA_BUY' ? 'invest' : 'sell'} each time the plan executes`}
+        sectionTitle="Frequency"
+        sectionAmount={formatFrequency(dcaPlan.frequency!)}
         initialValue={initialAmount}
         showOrbitIcon={true}
+        showSettingsIcon={true}
+        onSettingsClick={handleSettingsClick}
         onCurrencyChange={handleCurrencyChange}
         maxValue={getMaxValue()}
         maxButtonText={getMaxButtonText()}
@@ -444,19 +451,6 @@ const DCAModal: React.FC<DCAModalProps> = ({
             </div>
           </div>
           
-          <div 
-            className="bg-brand/10 hover:bg-brand/20 border border-brand rounded-lg p-4 cursor-pointer transition-colors"
-            onClick={handleReviewPlan}
-            data-clickable="true"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-brand text-sm font-medium">Review DCA Plan</h3>
-                <p className="text-gray-400 text-xs mt-1">Proceed to review and create your plan</p>
-              </div>
-              <div className="text-brand text-xs">→</div>
-            </div>
-          </div>
         </div>
       </OptionsModal>
       
@@ -477,7 +471,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
           const filteredDetails = getConfirmationDetails().filter(detail => !['Rate', 'You will receive', 'You will get', 'Amount per execution'].includes(detail.label));
           return filteredDetails;
         })()}
-        confirmText="Create Plan"
+        confirmText="Confirm"
         onConfirm={handleCreatePlan}
         isLoading={isLoading}
         mode="confirm"
