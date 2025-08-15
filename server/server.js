@@ -245,10 +245,7 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
       `SELECT id, type, status, btc_amount, inr_amount, execution_price, 
               created_at, executed_at FROM transactions 
        WHERE user_id = ? AND status IN ('PENDING', 'EXECUTED') 
-       ORDER BY 
-         CASE WHEN status = 'PENDING' THEN 0 ELSE 1 END,
-         COALESCE(executed_at, created_at) DESC, 
-         created_at DESC 
+       ORDER BY id DESC 
        LIMIT ? OFFSET ?`,
       [userId, limit + 1, offset] // Fetch one extra to check if there are more
     );
@@ -1503,10 +1500,7 @@ async function sendUserTransactionUpdate(userId) {
       `SELECT id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at 
        FROM transactions 
        WHERE user_id = ? AND status IN ('PENDING', 'EXECUTED') 
-       ORDER BY 
-         CASE WHEN status = 'PENDING' THEN 0 ELSE 1 END,
-         COALESCE(executed_at, created_at) DESC, 
-         created_at DESC 
+       ORDER BY id DESC 
        LIMIT 15`,
       [userId]
     );
@@ -1575,7 +1569,7 @@ async function sendAdminTransactionUpdate() {
        FROM transactions t
        JOIN users u ON t.user_id = u.id
        WHERE (u.is_admin = false OR u.is_admin IS NULL)
-       ORDER BY t.created_at DESC 
+       ORDER BY t.id DESC 
        LIMIT 100`
     );
     

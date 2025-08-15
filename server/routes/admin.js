@@ -55,7 +55,7 @@ router.get('/transactions', authenticateToken, async (req, res) => {
        FROM transactions t
        JOIN users u ON t.user_id = u.id
        WHERE (u.is_admin = false OR u.is_admin IS NULL)
-       ORDER BY t.created_at DESC 
+       ORDER BY t.id DESC 
        LIMIT 1000`
     );
 
