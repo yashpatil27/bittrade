@@ -226,7 +226,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-2 pt-0 pb-8">
+        <div className="px-2 pt-2 pb-8">
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}

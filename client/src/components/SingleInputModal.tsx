@@ -541,7 +541,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-2 pt-0 pb-8 relative">
+        <div className="px-2 pt-2 pb-8 relative">
           <div className="flex items-center justify-between h-12">
             {/* Left section */}
             <button
@@ -573,7 +573,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           </div>
           
           {/* Title - absolutely positioned and centered relative to entire header */}
-          <div className="px-2 pt-0 pb-8 absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="px-2 pt-2 pb-8 absolute inset-0 flex items-center justify-center pointer-events-none">
             <h2 className="text-white text-sm font-medium">{title}</h2>
           </div>
         </div>
