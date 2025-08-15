@@ -21,6 +21,7 @@ interface DCAModalProps {
   onComplete?: (dcaPlan: DCAPlanData) => void;
   initialAmount?: string;
   planType: 'DCA_BUY' | 'DCA_SELL'; // Required - no longer optional
+  initialFrequency?: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY'; // New prop for pre-selected frequency
 }
 
 interface DCAPlanData {
@@ -41,11 +42,12 @@ const DCAModal: React.FC<DCAModalProps> = ({
   onComplete,
   initialAmount = '',
   planType,
+  initialFrequency = 'DAILY',
 }) => {
   // Modal state management - following TradingModal pattern (no type selection needed)
   const [dcaPlan, setDcaPlan] = useState<DCAPlanData>({
     plan_type: planType,
-    frequency: 'DAILY', // Default frequency
+    frequency: initialFrequency, // Use provided frequency
   });
   const [amountInput, setAmountInput] = useState('');
   const [executionsInput, setExecutionsInput] = useState('');
@@ -66,7 +68,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       // Initialize with provided initial values
-      setDcaPlan({ plan_type: planType, frequency: 'DAILY' });
+      setDcaPlan({ plan_type: planType, frequency: initialFrequency });
       setAmountInput(initialAmount);
       setExecutionsInput('');
       setMaxPriceInput('');
@@ -82,7 +84,7 @@ const DCAModal: React.FC<DCAModalProps> = ({
       setShowMinPriceModal(false);
       setShowReviewModal(false);
     }
-  }, [isOpen, initialAmount, planType]);
+  }, [isOpen, initialAmount, planType, initialFrequency]);
 
   // Modal navigation handlers - TradingModal style
   const handleAmountModalClose = () => {
@@ -110,8 +112,8 @@ const DCAModal: React.FC<DCAModalProps> = ({
     }
     
     setAmountInput(value);
-    // Don't hide the base modal - just show frequency overlay
-    setShowFrequencyModal(true);
+    // Since frequency is already selected, go directly to optional settings
+    setShowOptionalSettingsModal(true);
   };
 
   // Handle currency change from SingleInputModal
@@ -122,8 +124,8 @@ const DCAModal: React.FC<DCAModalProps> = ({
   // Handle optional settings handlers
   const handleOptionalSettingsClose = () => {
     setShowOptionalSettingsModal(false);
-    // Go back to frequency step to preserve state
-    setShowFrequencyModal(true);
+    // Since frequency selection is now done in type selection modal,
+    // going back should close the optional settings and return to amount input
   };
 
   const handleSetDuration = () => {

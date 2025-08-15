@@ -14,6 +14,7 @@ const DCA: React.FC = () => {
   const [isTypeSelectionModalOpen, setIsTypeSelectionModalOpen] = useState(false);
   const [isDCAModalOpen, setIsDCAModalOpen] = useState(false);
   const [selectedPlanType, setSelectedPlanType] = useState<'DCA_BUY' | 'DCA_SELL'>('DCA_BUY');
+  const [selectedFrequency, setSelectedFrequency] = useState<'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY'>('DAILY');
   
   // Use centralized contexts
   const { userBalance: balanceData, hasAnyPlans } = usePortfolio();
@@ -27,10 +28,11 @@ const DCA: React.FC = () => {
     setIsTypeSelectionModalOpen(false);
   };
 
-  const handlePlanTypeSelect = (planType: 'DCA_BUY' | 'DCA_SELL') => {
+  const handlePlanTypeSelect = (planType: 'DCA_BUY' | 'DCA_SELL', frequency: 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY') => {
     setSelectedPlanType(planType);
+    setSelectedFrequency(frequency);
     setIsTypeSelectionModalOpen(false);
-    // Open DCA modal with selected plan type
+    // Open DCA modal with selected plan type and frequency
     setIsDCAModalOpen(true);
   };
 
@@ -213,6 +215,7 @@ const DCA: React.FC = () => {
         onClose={handleTypeSelectionClose}
         onSelect={handlePlanTypeSelect}
         selectedType={selectedPlanType}
+        selectedFrequency={selectedFrequency}
       />
       
       {/* DCA Modal */}
@@ -220,6 +223,7 @@ const DCA: React.FC = () => {
         isOpen={isDCAModalOpen} 
         onClose={handleCloseDCAModal}
         planType={selectedPlanType}
+        initialFrequency={selectedFrequency}
         balanceData={balanceData}
         onComplete={handleDCAComplete}
       />
