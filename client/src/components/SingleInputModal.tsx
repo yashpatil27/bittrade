@@ -182,13 +182,14 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
   }, [isOpen, disableKeyboardHandling, type, value, maxValue, isLoading]); // Functions are stable, dependency warning disabled
 
 
-  // Keypad component
+  // Keypad component with framer motion animations
   const KeypadButton: React.FC<{ value: string; onPress: () => void; className?: string }> = ({ 
     value, 
     onPress, 
     className = '' 
   }) => {
     const [touchHandled, setTouchHandled] = useState(false);
+    const [isPressed, setIsPressed] = useState(false);
     const longPressTimer = useRef<NodeJS.Timeout | null>(null);
     const touchStartTime = useRef<number>(0);
     
@@ -196,6 +197,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
       e.stopPropagation();
       e.preventDefault();
       setTouchHandled(true);
+      setIsPressed(true);
       touchStartTime.current = Date.now();
       
       // Clear any existing long press timer
@@ -207,6 +209,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     const handleTouchEnd = (e: React.TouchEvent) => {
       e.stopPropagation();
       e.preventDefault();
+      setIsPressed(false);
       
       // Clear long press timer
       if (longPressTimer.current) {
@@ -222,6 +225,20 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
       
       // Reset after a short delay to allow for mouse users
       setTimeout(() => setTouchHandled(false), 300);
+    };
+    
+    const handleMouseDown = () => {
+      if (!touchHandled) {
+        setIsPressed(true);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsPressed(false);
+    };
+    
+    const handleMouseLeave = () => {
+      setIsPressed(false);
     };
     
     const handleClick = (e: React.MouseEvent) => {
@@ -246,6 +263,9 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         onClick={handleClick}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         onContextMenu={(e) => e.preventDefault()} // Prevent long press context menu
         className={`h-16 bg-black text-white text-xl font-medium select-none ${className}`}
         style={{
@@ -255,7 +275,23 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           WebkitTapHighlightColor: 'transparent'
         }}
       >
-        {value}
+        <motion.span
+          animate={{
+            scale: isPressed ? 0.85 : 1,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+            duration: 0.15
+          }}
+          style={{
+            display: 'inline-block',
+            transformOrigin: 'center'
+          }}
+        >
+          {value}
+        </motion.span>
       </button>
     );
   };
