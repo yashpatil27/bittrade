@@ -148,10 +148,6 @@ const DCAModal: React.FC<DCAModalProps> = ({
     setShowMinPriceModal(true);
   };
 
-  const handleReviewPlan = () => {
-    setShowOptionalSettingsModal(false);
-    setShowReviewModal(true);
-  };
 
   // Handle executions input confirmation
   const handleExecutionsConfirm = (value: string) => {
