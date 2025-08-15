@@ -287,18 +287,27 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
     onPress, 
     className = '' 
   }) => {
+    const [touchHandled, setTouchHandled] = useState(false);
+    
     const handleTouchStart = (e: React.TouchEvent) => {
       e.stopPropagation();
+      setTouchHandled(true);
     };
     
     const handleTouchEnd = (e: React.TouchEvent) => {
       e.stopPropagation();
+      e.preventDefault(); // Prevent synthetic click event
       onPress();
+      // Reset after a short delay to allow for mouse users
+      setTimeout(() => setTouchHandled(false), 300);
     };
     
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      onPress();
+      // Only handle click if not already handled by touch
+      if (!touchHandled) {
+        onPress();
+      }
     };
     
     return (
