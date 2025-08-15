@@ -541,7 +541,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-6 pt-4 pb-4 relative">
+        <div className="px-2 pt-0 pb-8 relative">
           <div className="flex items-center justify-between h-12">
             {/* Left section */}
             <button
@@ -573,13 +573,13 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           </div>
           
           {/* Title - absolutely positioned and centered relative to entire header */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="px-2 pt-0 pb-8 absolute inset-0 flex items-center justify-center pointer-events-none">
             <h2 className="text-white text-sm font-medium">{title}</h2>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex flex-col h-full px-6">
+        <div className="flex flex-col h-full px-2">
           {/* Input Display Area - Animated */}
           <motion.div 
             className="flex flex-col justify-center items-center" 
@@ -653,7 +653,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           {/* Optional Section - Animated */}
           {sectionTitle && (onSectionClick || sectionAmount || sectionDetail) && (
             <motion.div 
-              className="mb-2 flex justify-center px-4"
+              className="mb-2 flex justify-center px-2"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ 
                 opacity: isAnimating ? 1 : 0, 
@@ -741,7 +741,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           )}
 
           {/* Keypad - No animations to prevent issues */}
-          <div className="mb-6">
+          <div className="mb-6 px-2">
             <div className="grid grid-cols-3 gap-1">
               {['1', '2', '3', '4', '5', '6', '7', '8', '9', currentType === 'btc' ? '.' : (currentType === 'number') ? '' : '', '0', 'backspace'].map((key, index) => (
                 key === '' ? (

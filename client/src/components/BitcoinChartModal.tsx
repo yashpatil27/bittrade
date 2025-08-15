@@ -219,7 +219,7 @@ const BitcoinChartModal: React.FC<BitcoinChartModalProps> = ({
         onTouchEnd={handleTouchEnd}
       >
         {/* Header */}
-        <div className="px-4 sm:px-6 pb-6 flex-shrink-0">
+        <div className="px-2 sm:px-4 pb-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <button
               onClick={animateClose}
