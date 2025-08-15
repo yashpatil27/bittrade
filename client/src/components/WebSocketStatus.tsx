@@ -134,7 +134,7 @@ const WebSocketStatus: React.FC<WebSocketStatusProps> = ({ className = '' }) => 
     },
     active: {
       scale: [1, 1.2, 1],
-      rotateY: [0, 180, 360],
+      rotate: [0, 360],
       transition: { 
         duration: 0.8,
         ease: [0.68, -0.55, 0.265, 1.55] as const
