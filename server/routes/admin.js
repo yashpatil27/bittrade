@@ -1,26 +1,16 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
 const bcrypt = require('bcrypt');
+const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const router = express.Router();
 
-// Database connection
-let db;
+// Use shared database connection pool
+const db = pool;
 
-async function initDB() {
-  try {
-    db = await mysql.createConnection(require('../config/config').database);
-    logger.success('Admin routes: Database connected', 'ADMIN');
-  } catch (error) {
-    logger.error('Admin routes: Database connection failed', error, 'ADMIN');
-    throw error;
-  }
-}
-
-// Initialize database connection
-initDB();
+// Log that routes are using the shared pool
+logger.success('Admin routes: Using shared database pool', 'ADMIN');
 
 // Helper function to invalidate admin metrics cache
 async function invalidateAdminMetricsCache() {

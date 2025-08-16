@@ -1,27 +1,16 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const mysql = require('mysql2/promise');
-const config = require('../config/config');
+const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const router = express.Router();
 
-// Database connection
-let db;
+// Use shared database connection pool
+const db = pool;
 
-async function initDB() {
-  try {
-    db = await mysql.createConnection(config.database);
-    logger.success('User routes: Database connected', 'USER');
-  } catch (error) {
-    logger.error('User routes: Database connection failed', error, 'USER');
-    throw error;
-  }
-}
-
-// Initialize database connection
-initDB();
+// Log that routes are using the shared pool
+logger.success('User routes: Using shared database pool', 'USER');
 
 // Update user profile name
 router.put('/profile/name', authenticateToken, async (req, res) => {

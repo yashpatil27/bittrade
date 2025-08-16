@@ -4,10 +4,10 @@ require('dotenv').config({ path: `.env.${env}` });
 
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const config = require('./config/config');
+const { pool, testConnection } = require('./config/database');
 const DataService = require('./services/data-service');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
@@ -22,16 +22,20 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Database connection
-let db;
+// Database pool (shared across application)
+const db = pool;
 
-// Initialize database connection
+// Test database pool connection
 async function initDB() {
   try {
-    db = await mysql.createConnection(config.database);
-    logger.success('Database connected', 'API');
+    const isConnected = await testConnection();
+    if (isConnected) {
+      logger.success('Database pool initialized successfully', 'API');
+    } else {
+      throw new Error('Database pool connection test failed');
+    }
   } catch (error) {
-    logger.error('Database connection failed', error, 'API');
+    logger.error('Database pool initialization failed', error, 'API');
     process.exit(1);
   }
 }

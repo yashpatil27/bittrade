@@ -1,8 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const mysql = require('mysql2/promise');
-const config = require('../config/config');
+const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -10,21 +9,11 @@ const router = express.Router();
 // JWT secret key (in production, use environment variable)
 const JWT_SECRET = process.env.JWT_SECRET || 'bittrade_secret_key_2024';
 
-// Database connection
-let db;
+// Use shared database connection pool
+const db = pool;
 
-async function initDB() {
-  try {
-    db = await mysql.createConnection(config.database);
-    logger.success('Auth routes: Database connected', 'AUTH');
-  } catch (error) {
-    logger.error('Auth routes: Database connection failed', error, 'AUTH');
-    throw error;
-  }
-}
-
-// Initialize database connection
-initDB();
+// Log that routes are using the shared pool
+logger.success('Auth routes: Using shared database pool', 'AUTH');
 
 // Register new user
 router.post('/register', async (req, res) => {

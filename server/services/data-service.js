@@ -3,6 +3,7 @@ const axios = require('axios');
 const cron = require('node-cron');
 const { createClient } = require('redis');
 const config = require('../config/config');
+const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 
 class DataService {
@@ -148,7 +149,7 @@ class DataService {
     }
   }
   constructor(io = null) {
-    this.db = null;
+    this.db = pool; // Use shared connection pool
     this.redis = null;
     this.io = io; // Socket.IO instance for broadcasting
     this.lastBtcPrice = null; // Track last price to detect changes
@@ -157,9 +158,8 @@ class DataService {
 
 async connect() {
     try {
-      // Connect to MySQL
-      this.db = await mysql.createConnection(config.database);
-      logger.success('MySQL connected', 'DATA');
+      // Database pool is already initialized and available via this.db
+      logger.success('Using shared MySQL connection pool', 'DATA');
       
       // Connect to Redis
       this.redis = createClient({
@@ -182,16 +182,15 @@ async connect() {
       // Load pending limit orders into Redis cache
       await this.loadPendingLimitOrdersToCache();
     } catch (error) {
-      logger.error('Database/Redis connection failed', error, 'DATA');
+      logger.error('Redis connection failed', error, 'DATA');
       throw error;
     }
   }
 
   async disconnect() {
-    if (this.db) {
-      await this.db.end();
-      logger.info('MySQL disconnected', 'DATA');
-    }
+    // Note: We don't close the shared connection pool here
+    // The pool will be closed when the entire application shuts down
+    logger.info('DataService disconnected (pool remains active)', 'DATA');
     
     if (this.redis) {
       await this.redis.quit();

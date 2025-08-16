@@ -1,10 +1,11 @@
 const mysql = require('mysql2/promise');
 const config = require('../config/config');
+const { pool } = require('../config/database');
 const logger = require('../utils/logger');
 
 class DCAExecutionService {
   constructor() {
-    this.db = null;
+    this.db = pool; // Use shared connection pool
     this.isRunning = false;
     this.currentTimeout = null;
     this.settings = { buy_multiplier: 91, sell_multiplier: 88 }; // Default settings
@@ -17,9 +18,8 @@ class DCAExecutionService {
     }
 
     try {
-      // Initialize database connection
-      this.db = await mysql.createConnection(config.database);
-      logger.success('DCA Execution Service: Database connected', 'DCA');
+      // Database pool is already initialized and available via this.db
+      logger.success('DCA Execution Service: Using shared database pool', 'DCA');
       
       this.isRunning = true;
       logger.success('DCA Execution Service started', 'DCA');
@@ -49,11 +49,9 @@ class DCAExecutionService {
       this.currentTimeout = null;
     }
     
-    // Close database connection
-    if (this.db) {
-      await this.db.end();
-      this.db = null;
-    }
+    // Note: We don't close the shared connection pool here
+    // The pool will be closed when the entire application shuts down
+    logger.info('DCA Service disconnected (pool remains active)', 'DCA');
     
     logger.info('DCA Execution Service stopped', 'DCA');
   }
@@ -158,7 +156,8 @@ class DCAExecutionService {
   }
 
   async executeTrade(plan) {
-    const connection = await mysql.createConnection(config.database);
+    // Use the shared pool for trade execution
+    const connection = this.db;
     
     try {
       await connection.beginTransaction();
@@ -329,9 +328,8 @@ class DCAExecutionService {
       await connection.rollback();
       logger.error('Trade execution error', error, 'DCA');
       return { success: false, error: error.message };
-    } finally {
-      await connection.end();
     }
+    // Note: We don't close the connection as it's a shared pool
   }
 
   async sendUserTransactionUpdate(userId) {
