@@ -8,6 +8,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const config = require('./config/config');
 const { pool, testConnection } = require('./config/database');
+const { connect: connectRedis, getClient: getRedisClient } = require('./config/redis-client');
 const DataService = require('./services/data-service');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
@@ -55,25 +56,24 @@ app.use('/api/admin', adminRoutes);
 // Get market rates (instant from Redis cache)
 app.get('/api/market-rates', async (req, res) => {
   try {
-    // Try Redis cache first for instant response
-    if (global.dataService && global.dataService.redis) {
-      try {
-        const cachedPrice = await global.dataService.redis.get('latest_btc_price');
-        if (cachedPrice) {
-          const bitcoinData = JSON.parse(cachedPrice);
-          const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
-          
-          return res.json({
-            btc_usd_price: rates.btc_usd_price,
-            buy_rate_inr: rates.buy_rate_inr,
-            sell_rate_inr: rates.sell_rate_inr,
-            timestamp: new Date().toISOString(),
-            cached: true
-          });
-        }
-      } catch (redisError) {
-        logger.warn('Redis cache error, falling back to database', 'CACHE');
+    // Try Redis cache first for instant response using shared Redis client
+    try {
+      const redisClient = getRedisClient();
+      const cachedPrice = await redisClient.get('latest_btc_price');
+      if (cachedPrice) {
+        const bitcoinData = JSON.parse(cachedPrice);
+        const rates = global.dataService.calculateRates(bitcoinData.btc_usd_price);
+        
+        return res.json({
+          btc_usd_price: rates.btc_usd_price,
+          buy_rate_inr: rates.buy_rate_inr,
+          sell_rate_inr: rates.sell_rate_inr,
+          timestamp: new Date().toISOString(),
+          cached: true
+        });
       }
+    } catch (redisError) {
+      logger.warn('Redis cache error, falling back to database', 'CACHE');
     }
     
     // Fallback to database
@@ -1929,6 +1929,10 @@ function getLocalNetworkIP() {
 async function startServer() {
   await initDB();
   
+  // Initialize shared Redis connection
+  await connectRedis();
+  logger.success('Shared Redis connection manager initialized', 'SERVER');
+  
   // Start the data service with Socket.IO integration
   const dataService = new DataService(io);
   global.dataService = dataService;
@@ -1959,12 +1963,25 @@ async function startServer() {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   logger.server('Shutting down server...');
-  if (global.dataService) {
-    await global.dataService.stop();
+  
+  try {
+    if (global.dataService) {
+      await global.dataService.stop();
+    }
+    
+    // Disconnect shared Redis connection
+    const { disconnect: disconnectRedis } = require('./config/redis-client');
+    await disconnectRedis();
+    logger.success('Shared Redis connection closed', 'SERVER');
+    
+    if (db) {
+      await db.end();
+      logger.success('Database connection pool closed', 'SERVER');
+    }
+  } catch (error) {
+    logger.error('Error during graceful shutdown', error, 'SERVER');
   }
-  if (db) {
-    await db.end();
-  }
+  
   process.exit(0);
 });
 

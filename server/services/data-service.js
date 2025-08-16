@@ -1,9 +1,9 @@
 const mysql = require('mysql2/promise');
 const axios = require('axios');
 const cron = require('node-cron');
-const { createClient } = require('redis');
 const config = require('../config/config');
 const { pool } = require('../config/database');
+const { getClient } = require('../config/redis-client');
 const logger = require('../utils/logger');
 
 class DataService {
@@ -161,20 +161,9 @@ async connect() {
       // Database pool is already initialized and available via this.db
       logger.success('Using shared MySQL connection pool', 'DATA');
       
-      // Connect to Redis
-      this.redis = createClient({
-        host: config.redis.host,
-        port: config.redis.port,
-        password: config.redis.password,
-        db: config.redis.db
-      });
-      
-      this.redis.on('error', (err) => {
-        logger.error('Redis connection error', err, 'DATA');
-      });
-      
-      await this.redis.connect();
-      logger.success('Redis connected', 'DATA');
+      // Use shared Redis connection manager
+      this.redis = getClient();
+      logger.success('Using shared Redis connection manager', 'DATA');
       
       // Load initial settings
       await this.loadSettings();
@@ -182,7 +171,7 @@ async connect() {
       // Load pending limit orders into Redis cache
       await this.loadPendingLimitOrdersToCache();
     } catch (error) {
-      logger.error('Redis connection failed', error, 'DATA');
+      logger.error('Redis connection setup failed', error, 'DATA');
       throw error;
     }
   }
@@ -190,12 +179,12 @@ async connect() {
   async disconnect() {
     // Note: We don't close the shared connection pool here
     // The pool will be closed when the entire application shuts down
-    logger.info('DataService disconnected (pool remains active)', 'DATA');
+    logger.info('DataService disconnected (shared connections remain active)', 'DATA');
     
-    if (this.redis) {
-      await this.redis.quit();
-      logger.info('Redis disconnected', 'DATA');
-    }
+    // Note: We don't close the shared Redis connection here either
+    // The shared Redis connection manager will handle disconnection
+    // when the entire application shuts down
+    this.redis = null;
   }
 
   // Load settings from database
