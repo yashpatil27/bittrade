@@ -18,7 +18,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
   showXIcon = false
 }) => {
   // Use drag handling hook for animation state
-  const { isAnimating } = useModalDragHandling({
+  const { isAnimating, animateClose } = useModalDragHandling({
     isOpen,
     onClose
   });
@@ -117,7 +117,7 @@ const OptionsModal: React.FC<OptionsModalProps> = ({
         <div className="px-2 pt-2 pb-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={onClose}
+              onClick={animateClose}
               className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               {showXIcon ? <X className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}

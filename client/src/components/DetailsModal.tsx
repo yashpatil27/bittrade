@@ -38,7 +38,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
   actionButtons
 }) => {
   // Use drag handling hook for animation state
-  const { isAnimating } = useModalDragHandling({
+  const { isAnimating, animateClose } = useModalDragHandling({
     isOpen,
     onClose
   });
@@ -53,7 +53,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
         <div className="px-2 pt-2 pb-8">
           <div className="flex items-center justify-between">
             <button
-              onClick={onClose}
+              onClick={animateClose}
               className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               <X className="w-5 h-5" />
@@ -304,7 +304,7 @@ const DetailsModal: React.FC<DetailsModalProps> = ({
                 }}
               >
                 <motion.button
-                  onClick={onClose}
+                  onClick={animateClose}
                   className="px-6 h-12 text-sm font-medium rounded-xl btn-strike-secondary"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}

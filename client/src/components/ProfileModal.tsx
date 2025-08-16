@@ -28,7 +28,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
   const [updateType, setUpdateType] = useState<'name' | 'email' | 'password'>();
   
   // Use drag handling hook
-  const { isAnimating } = useModalDragHandling({
+  const { isAnimating, animateClose } = useModalDragHandling({
     isOpen,
     onClose
   });
@@ -89,7 +89,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({
           <div className="px-2 pt-2 pb-8">
             <div className="flex items-center justify-between">
               <button
-                onClick={onClose}
+                onClick={animateClose}
                 className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
               >
                 <X className="w-5 h-5" />

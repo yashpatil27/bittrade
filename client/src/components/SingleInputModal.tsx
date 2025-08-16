@@ -500,7 +500,7 @@ const SingleInputModal: React.FC<SingleInputModalProps> = ({
           <div className="flex items-center justify-between h-12">
             {/* Left section */}
             <button
-              onClick={onClose}
+              onClick={animateClose}
               className="text-primary hover:text-primary p-2 w-12 h-12 flex items-center justify-center transition-colors"
             >
               {showXIcon ? <X className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
