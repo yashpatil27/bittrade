@@ -237,69 +237,77 @@ router.delete('/users/:userId', authenticateToken, async (req, res) => {
 
     const isTargetAdmin = targetUserRows[0].is_admin;
 
-    // Start transaction to ensure all deletions are atomic
-    await db.beginTransaction();
+    // Get a connection from the pool for the transaction
+    const connection = await db.getConnection();
 
     try {
-      // First, delete all user's DCA plans
-      const [deletedPlansResult] = await db.execute(
-        'DELETE FROM active_plans WHERE user_id = ?',
-        [targetUserId]
-      );
+      // Start transaction to ensure all deletions are atomic
+      await connection.beginTransaction();
 
-      // Then, delete all user's transactions
-      const [deletedTransactionsResult] = await db.execute(
-        'DELETE FROM transactions WHERE user_id = ?',
-        [targetUserId]
-      );
-
-      // Finally, delete the user (or just clear balances for admins)
-      let deletedUserResult;
-      if (isTargetAdmin) {
-        // For admins: Clear all balances but keep the user record
-        deletedUserResult = await db.execute(
-          `UPDATE users SET 
-           available_btc = 0, 
-           available_inr = 0, 
-           reserved_btc = 0, 
-           reserved_inr = 0
-           WHERE id = ?`,
+      try {
+        // First, delete all user's DCA plans
+        const [deletedPlansResult] = await connection.execute(
+          'DELETE FROM active_plans WHERE user_id = ?',
           [targetUserId]
         );
-      } else {
-        // For regular users: Complete deletion
-        deletedUserResult = await db.execute(
-          'DELETE FROM users WHERE id = ?',
+
+        // Then, delete all user's transactions
+        const [deletedTransactionsResult] = await connection.execute(
+          'DELETE FROM transactions WHERE user_id = ?',
           [targetUserId]
         );
-      }
 
-      // Commit the transaction
-      await db.commit();
-
-      const actionType = isTargetAdmin ? 'cleared' : 'deleted';
-      logger.success(`User ${targetUserId} ${actionType} with cleanup`, 'ADMIN', `plans: ${deletedPlansResult.affectedRows}, transactions: ${deletedTransactionsResult.affectedRows}`);
-
-      // Send admin user update via WebSocket
-      if (global.sendAdminUserUpdate) {
-        await global.sendAdminUserUpdate();
-      }
-
-      res.json({
-        success: true,
-        message: isTargetAdmin 
-          ? 'Admin user data cleared successfully (account preserved)'
-          : 'User and all associated data deleted successfully',
-        deletedData: {
-          plans: deletedPlansResult.affectedRows,
-          transactions: deletedTransactionsResult.affectedRows,
-          userAction: isTargetAdmin ? 'balances_cleared' : 'deleted'
+        // Finally, delete the user (or just clear balances for admins)
+        let deletedUserResult;
+        if (isTargetAdmin) {
+          // For admins: Clear all balances but keep the user record
+          deletedUserResult = await connection.execute(
+            `UPDATE users SET 
+             available_btc = 0, 
+             available_inr = 0, 
+             reserved_btc = 0, 
+             reserved_inr = 0
+             WHERE id = ?`,
+            [targetUserId]
+          );
+        } else {
+          // For regular users: Complete deletion
+          deletedUserResult = await connection.execute(
+            'DELETE FROM users WHERE id = ?',
+            [targetUserId]
+          );
         }
-      });
-    } catch (error) {
-      // Rollback transaction on error
-      await db.rollback();
-      throw error;
+
+        // Commit the transaction
+        await connection.commit();
+
+        const actionType = isTargetAdmin ? 'cleared' : 'deleted';
+        logger.success(`User ${targetUserId} ${actionType} with cleanup`, 'ADMIN', `plans: ${deletedPlansResult.affectedRows}, transactions: ${deletedTransactionsResult.affectedRows}`);
+
+        // Send admin user update via WebSocket
+        if (global.sendAdminUserUpdate) {
+          await global.sendAdminUserUpdate();
+        }
+
+        res.json({
+          success: true,
+          message: isTargetAdmin 
+            ? 'Admin user data cleared successfully (account preserved)'
+            : 'User and all associated data deleted successfully',
+          deletedData: {
+            plans: deletedPlansResult.affectedRows,
+            transactions: deletedTransactionsResult.affectedRows,
+            userAction: isTargetAdmin ? 'balances_cleared' : 'deleted'
+          }
+        });
+      } catch (error) {
+        // Rollback transaction on error
+        await connection.rollback();
+        throw error;
+      }
+    } finally {
+      // Release the connection back to the pool
+      connection.release();
     }
   } catch (error) {
     logger.error('Error deleting user', error, 'ADMIN');
@@ -1078,32 +1086,36 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
       return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
     }
 
-    // Start database transaction for atomicity
-    await db.beginTransaction();
+    // Get a connection from the pool for the transaction
+    const connection = await db.getConnection();
 
     try {
-      // Get the transaction details
-      const [transactionRows] = await db.execute(
-        `SELECT t.id, t.user_id, t.type, t.status, t.btc_amount, t.inr_amount, 
-                t.execution_price, t.created_at, t.executed_at, u.name as user_name
-         FROM transactions t
-         JOIN users u ON t.user_id = u.id
-         WHERE t.id = ?`,
-        [transactionId]
-      );
+      // Start database transaction for atomicity
+      await connection.beginTransaction();
 
-      if (transactionRows.length === 0) {
-        await db.rollback();
-        return res.status(404).json({ error: 'Transaction not found' });
-      }
+      try {
+        // Get the transaction details
+        const [transactionRows] = await connection.execute(
+          `SELECT t.id, t.user_id, t.type, t.status, t.btc_amount, t.inr_amount, 
+                  t.execution_price, t.created_at, t.executed_at, u.name as user_name
+           FROM transactions t
+           JOIN users u ON t.user_id = u.id
+           WHERE t.id = ?`,
+          [transactionId]
+        );
 
-      const transaction = transactionRows[0];
+        if (transactionRows.length === 0) {
+          await connection.rollback();
+          return res.status(404).json({ error: 'Transaction not found' });
+        }
 
-      // Check if transaction can be reversed (only executed transactions)
-      if (transaction.status !== 'EXECUTED') {
-        await db.rollback();
-        return res.status(400).json({ error: 'Only executed transactions can be reversed' });
-      }
+        const transaction = transactionRows[0];
+
+        // Check if transaction can be reversed (only executed transactions)
+        if (transaction.status !== 'EXECUTED') {
+          await connection.rollback();
+          return res.status(400).json({ error: 'Only executed transactions can be reversed' });
+        }
 
       // Calculate balance adjustments based on transaction type
       let btcAdjustment = 0;
@@ -1164,18 +1176,18 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
           break;
           
         default:
-          await db.rollback();
+          await connection.rollback();
           return res.status(400).json({ error: `Transaction type '${transaction.type}' cannot be reversed` });
       }
 
       // Get current user balance to check if reversal is possible
-      const [balanceRows] = await db.execute(
+      const [balanceRows] = await connection.execute(
         'SELECT available_btc, available_inr FROM users WHERE id = ?',
         [transaction.user_id]
       );
 
       if (balanceRows.length === 0) {
-        await db.rollback();
+        await connection.rollback();
         return res.status(404).json({ error: 'User not found' });
       }
 
@@ -1185,7 +1197,7 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
 
       // Check if user would have negative balance after reversal
       if (newBtcBalance < 0 || newInrBalance < 0) {
-        await db.rollback();
+        await connection.rollback();
         return res.status(400).json({ 
           error: 'Cannot reverse transaction: would result in negative balance',
           details: {
@@ -1200,24 +1212,24 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
       }
 
       // Update user balance
-      await db.execute(
+      await connection.execute(
         'UPDATE users SET available_btc = available_btc + ?, available_inr = available_inr + ? WHERE id = ?',
         [btcAdjustment, inrAdjustment, transaction.user_id]
       );
 
       // Delete the transaction
-      const [deleteResult] = await db.execute(
+      const [deleteResult] = await connection.execute(
         'DELETE FROM transactions WHERE id = ?',
         [transactionId]
       );
 
       if (deleteResult.affectedRows === 0) {
-        await db.rollback();
+        await connection.rollback();
         return res.status(500).json({ error: 'Failed to delete transaction' });
       }
 
       // Commit the transaction
-      await db.commit();
+      await connection.commit();
 
       logger.success(`Transaction ${transactionId} reversed by admin ${adminUserId}`, 'ADMIN', `user: ${transaction.user_name}, type: ${transaction.type}, BTC adj: ${btcAdjustment}, INR adj: ${inrAdjustment}`);
 
@@ -1254,10 +1266,14 @@ router.post('/transactions/:transactionId/reverse', authenticateToken, async (re
           inr: inrAdjustment
         }
       });
-    } catch (error) {
-      // Rollback transaction on error
-      await db.rollback();
-      throw error;
+      } catch (error) {
+        // Rollback transaction on error
+        await connection.rollback();
+        throw error;
+      }
+    } finally {
+      // Release the connection back to the pool
+      connection.release();
     }
   } catch (error) {
     logger.error('Error reversing transaction', error, 'ADMIN');

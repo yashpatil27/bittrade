@@ -57,6 +57,11 @@ class DCAExecutionService {
   }
 
   async scheduleNextExecution() {
+    if (!this.isRunning) {
+      logger.debug('DCA service not running, skipping schedule', 'DCA');
+      return;
+    }
+
     // Get next execution time from all ACTIVE plans
     const [rows] = await this.db.execute(
       'SELECT MIN(next_execution_at) as next_execution FROM active_plans WHERE status = ?',
@@ -70,15 +75,19 @@ class DCAExecutionService {
     if (!nextExecution) {
       // No active plans, check again in 1 hour
       timeoutMs = 60 * 60 * 1000; // 1 hour
+      logger.debug('No active DCA plans found, next check in 1 hour', 'DCA');
     } else {
       const timeUntilExecution = new Date(nextExecution).getTime() - now.getTime();
-      // Cap at 1 hour maximum
-      timeoutMs = Math.min(Math.max(timeUntilExecution, 0), 60 * 60 * 1000);
+      // Cap at 1 hour maximum, minimum 30 seconds to prevent rapid cycling
+      timeoutMs = Math.min(Math.max(timeUntilExecution, 30000), 60 * 60 * 1000);
+      logger.debug(`Next DCA execution in ${Math.round(timeoutMs / 1000)} seconds`, 'DCA');
     }
     
     this.currentTimeout = setTimeout(async () => {
-      await this.executeDuePlans();
-      await this.scheduleNextExecution(); // Reschedule
+      if (this.isRunning) {
+        await this.executeDuePlans();
+        await this.scheduleNextExecution(); // Reschedule
+      }
     }, timeoutMs);
   }
 
@@ -156,8 +165,8 @@ class DCAExecutionService {
   }
 
   async executeTrade(plan) {
-    // Use the shared pool for trade execution
-    const connection = this.db;
+    // Get a connection from the pool for the transaction
+    const connection = await this.db.getConnection();
     
     try {
       await connection.beginTransaction();
@@ -328,8 +337,10 @@ class DCAExecutionService {
       await connection.rollback();
       logger.error('Trade execution error', error, 'DCA');
       return { success: false, error: error.message };
+    } finally {
+      // Release the connection back to the pool
+      connection.release();
     }
-    // Note: We don't close the connection as it's a shared pool
   }
 
   async sendUserTransactionUpdate(userId) {

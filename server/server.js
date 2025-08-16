@@ -305,69 +305,77 @@ app.get('/api/transactions', authenticateToken, async (req, res) => {
 
 // Function to handle trade execution
 async function executeTrade(userId, type, btcAmount, inrAmount, price, action) {
-  // Start database transaction
-  await db.beginTransaction();
+  // Get a connection from the pool for the transaction
+  const connection = await db.getConnection();
 
   try {
-    // Check user balance and reserve funds for limit orders
-    if (type.startsWith('LIMIT')) {
-      const [balanceRows] = await db.execute(
-        'SELECT available_inr, available_btc FROM users WHERE id = ?',
-        [userId]
+    // Start database transaction
+    await connection.beginTransaction();
+
+    try {
+      // Check user balance and reserve funds for limit orders
+      if (type.startsWith('LIMIT')) {
+        const [balanceRows] = await connection.execute(
+          'SELECT available_inr, available_btc FROM users WHERE id = ?',
+          [userId]
+        );
+        
+        if (balanceRows.length === 0) {
+          throw new Error('User not found');
+        }
+        
+        const balance = balanceRows[0];
+        
+        // Check and reserve funds based on order type
+        if (type === 'LIMIT_BUY') {
+          // For limit buy: need to reserve INR
+          if (balance.available_inr < inrAmount) {
+            throw new Error(`Insufficient INR balance. Required: ₹${inrAmount}, Available: ₹${balance.available_inr}`);
+          }
+          
+          // Reserve INR: move from available_inr to reserved_inr
+          await connection.execute(
+            'UPDATE users SET available_inr = available_inr - ?, reserved_inr = reserved_inr + ? WHERE id = ?',
+            [inrAmount, inrAmount, userId]
+          );
+          
+          logger.info(`Reserved ₹${inrAmount} for limit buy order`, 'ORDER');
+          
+        } else if (type === 'LIMIT_SELL') {
+          // For limit sell: need to reserve BTC
+          if (balance.available_btc < btcAmount) {
+            throw new Error(`Insufficient BTC balance. Required: ${btcAmount} satoshis, Available: ${balance.available_btc} satoshis`);
+          }
+          
+          // Reserve BTC: move from available_btc to reserved_btc
+          await connection.execute(
+            'UPDATE users SET available_btc = available_btc - ?, reserved_btc = reserved_btc + ? WHERE id = ?',
+            [btcAmount, btcAmount, userId]
+          );
+          
+          logger.info(`Reserved ${btcAmount} satoshis for limit sell order`, 'ORDER');
+        }
+      }
+      
+      // Insert transaction record
+      const [transactionResult] = await connection.execute(
+        `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at) 
+         VALUES (?, ?, 'PENDING', ?, ?, ?, UTC_TIMESTAMP())`,
+        [userId, type, btcAmount, inrAmount, price]
       );
-      
-      if (balanceRows.length === 0) {
-        throw new Error('User not found');
-      }
-      
-      const balance = balanceRows[0];
-      
-      // Check and reserve funds based on order type
-      if (type === 'LIMIT_BUY') {
-        // For limit buy: need to reserve INR
-        if (balance.available_inr < inrAmount) {
-          throw new Error(`Insufficient INR balance. Required: ₹${inrAmount}, Available: ₹${balance.available_inr}`);
-        }
-        
-        // Reserve INR: move from available_inr to reserved_inr
-        await db.execute(
-          'UPDATE users SET available_inr = available_inr - ?, reserved_inr = reserved_inr + ? WHERE id = ?',
-          [inrAmount, inrAmount, userId]
-        );
-        
-        logger.info(`Reserved ₹${inrAmount} for limit buy order`, 'ORDER');
-        
-      } else if (type === 'LIMIT_SELL') {
-        // For limit sell: need to reserve BTC
-        if (balance.available_btc < btcAmount) {
-          throw new Error(`Insufficient BTC balance. Required: ${btcAmount} satoshis, Available: ${balance.available_btc} satoshis`);
-        }
-        
-        // Reserve BTC: move from available_btc to reserved_btc
-        await db.execute(
-          'UPDATE users SET available_btc = available_btc - ?, reserved_btc = reserved_btc + ? WHERE id = ?',
-          [btcAmount, btcAmount, userId]
-        );
-        
-        logger.info(`Reserved ${btcAmount} satoshis for limit sell order`, 'ORDER');
-      }
+
+      // Commit transaction
+      await connection.commit();
+
+      return transactionResult.insertId;
+    } catch (error) {
+      // Rollback transaction on error
+      await connection.rollback();
+      throw error;
     }
-    
-    // Insert transaction record
-    const [transactionResult] = await db.execute(
-      `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, created_at) 
-       VALUES (?, ?, 'PENDING', ?, ?, ?, UTC_TIMESTAMP())`,
-      [userId, type, btcAmount, inrAmount, price]
-    );
-
-    // Commit transaction
-    await db.commit();
-
-    return transactionResult.insertId;
-  } catch (error) {
-    // Rollback transaction on error
-    await db.rollback();
-    throw error;
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
   }
 }
 
@@ -666,43 +674,46 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
   const userId = req.user.id;
   const { planId } = req.params;
 
+  // Get a connection from the pool for the transaction
+  const connection = await db.getConnection();
+
   try {
     // Start database transaction
-    await db.beginTransaction();
+    await connection.beginTransaction();
 
     try {
       // First, verify the plan exists and belongs to the user
-      const [planRows] = await db.execute(
+      const [planRows] = await connection.execute(
         'SELECT id, plan_type, status FROM active_plans WHERE id = ? AND user_id = ?',
         [planId, userId]
       );
 
       if (planRows.length === 0) {
-        await db.rollback();
+        await connection.rollback();
         return res.status(404).json({ error: 'Plan not found or unauthorized' });
       }
 
       const plan = planRows[0];
 
       // Delete related transactions first (to maintain referential integrity)
-      const [deleteTransactionsResult] = await db.execute(
+      const [deleteTransactionsResult] = await connection.execute(
         'DELETE FROM transactions WHERE parent_id = ? AND user_id = ? AND type = ?',
         [planId, userId, plan.plan_type]
       );
 
       // Delete the DCA plan
-      const [deletePlanResult] = await db.execute(
+      const [deletePlanResult] = await connection.execute(
         'DELETE FROM active_plans WHERE id = ? AND user_id = ?',
         [planId, userId]
       );
 
       if (deletePlanResult.affectedRows === 0) {
-        await db.rollback();
+        await connection.rollback();
         return res.status(404).json({ error: 'Plan not found or unauthorized' });
       }
 
       // Commit the transaction
-      await db.commit();
+      await connection.commit();
 
       logger.success('DCA plan deleted', 'DCA');
 
@@ -725,13 +736,16 @@ app.delete('/api/dca-plans/:planId', authenticateToken, async (req, res) => {
 
     } catch (error) {
       // Rollback transaction on error
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
 
   } catch (error) {
     logger.error('Error deleting DCA plan', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
   }
 });
 
@@ -740,19 +754,22 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
   const userId = req.user.id;
   const { transactionId } = req.params;
 
+  // Get a connection from the pool for the transaction
+  const connection = await db.getConnection();
+
   try {
     // Start database transaction
-    await db.beginTransaction();
+    await connection.beginTransaction();
 
     try {
       // Get the transaction details to verify ownership and get amounts for fund release
-      const [transactionRows] = await db.execute(
+      const [transactionRows] = await connection.execute(
         'SELECT id, user_id, type, status, btc_amount, inr_amount FROM transactions WHERE id = ? AND user_id = ?',
         [transactionId, userId]
       );
 
       if (transactionRows.length === 0) {
-        await db.rollback();
+        await connection.rollback();
         return res.status(404).json({ error: 'Transaction not found or unauthorized' });
       }
 
@@ -760,19 +777,19 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
 
       // Only allow cancellation of PENDING limit orders
       if (transaction.status !== 'PENDING') {
-        await db.rollback();
+        await connection.rollback();
         return res.status(400).json({ error: 'Only pending transactions can be cancelled' });
       }
 
       if (!transaction.type.startsWith('LIMIT')) {
-        await db.rollback();
+        await connection.rollback();
         return res.status(400).json({ error: 'Only limit orders can be cancelled' });
       }
 
       // Release reserved funds based on order type
       if (transaction.type === 'LIMIT_BUY') {
         // For limit buy: release reserved INR back to available INR
-        await db.execute(
+        await connection.execute(
           'UPDATE users SET available_inr = available_inr + ?, reserved_inr = reserved_inr - ? WHERE id = ?',
           [transaction.inr_amount, transaction.inr_amount, userId]
         );
@@ -780,7 +797,7 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
         
       } else if (transaction.type === 'LIMIT_SELL') {
         // For limit sell: release reserved BTC back to available BTC
-        await db.execute(
+        await connection.execute(
           'UPDATE users SET available_btc = available_btc + ?, reserved_btc = reserved_btc - ? WHERE id = ?',
           [transaction.btc_amount, transaction.btc_amount, userId]
         );
@@ -788,7 +805,7 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
       }
 
       // Delete the transaction from database
-      await db.execute(
+      await connection.execute(
         'DELETE FROM transactions WHERE id = ?',
         [transactionId]
       );
@@ -804,7 +821,7 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
       }
 
       // Commit the transaction
-      await db.commit();
+      await connection.commit();
 
       // Clear user caches
       if (global.dataService && global.dataService.redis) {
@@ -849,13 +866,16 @@ app.delete('/api/transactions/:transactionId/cancel', authenticateToken, async (
 
     } catch (error) {
       // Rollback transaction on error
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
 
   } catch (error) {
     logger.error('Error cancelling limit order', error, 'API');
     res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
   }
 });
 
@@ -938,62 +958,66 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
       }
     }
 
-    // Start database transaction
-    await db.beginTransaction();
+    // Get a connection from the pool for the transaction
+    const connection = await db.getConnection();
 
     try {
-      // Check user balance
-      const [balanceRows] = await db.execute(
-        'SELECT available_inr, available_btc FROM users WHERE id = ?',
-        [userId]
-      );
-      
-      if (balanceRows.length === 0) {
-        throw new Error('User not found');
-      }
-      
-      const balance = balanceRows[0];
-      
-      // Validate balance based on action
-      if (action === 'buy') {
-        if (balance.available_inr < inrAmount) {
-          throw new Error(`Insufficient INR balance. Required: ₹${inrAmount}, Available: ₹${balance.available_inr}`);
-        }
-        
-        // Execute buy: deduct INR, add BTC
-        await db.execute(
-          'UPDATE users SET available_inr = available_inr - ?, available_btc = available_btc + ? WHERE id = ?',
-          [inrAmount, btcAmount, userId]
+      // Start database transaction
+      await connection.beginTransaction();
+
+      try {
+        // Check user balance
+        const [balanceRows] = await connection.execute(
+          'SELECT available_inr, available_btc FROM users WHERE id = ?',
+          [userId]
         );
         
-      } else { // sell
-        if (balance.available_btc < btcAmount) {
-          throw new Error(`Insufficient BTC balance. Required: ${btcAmount} satoshis, Available: ${balance.available_btc} satoshis`);
+        if (balanceRows.length === 0) {
+          throw new Error('User not found');
         }
         
-        // Execute sell: deduct BTC, add INR
-        await db.execute(
-          'UPDATE users SET available_btc = available_btc - ?, available_inr = available_inr + ? WHERE id = ?',
-          [btcAmount, inrAmount, userId]
+        const balance = balanceRows[0];
+        
+        // Validate balance based on action
+        if (action === 'buy') {
+          if (balance.available_inr < inrAmount) {
+            throw new Error(`Insufficient INR balance. Required: ₹${inrAmount}, Available: ₹${balance.available_inr}`);
+          }
+          
+          // Execute buy: deduct INR, add BTC
+          await connection.execute(
+            'UPDATE users SET available_inr = available_inr - ?, available_btc = available_btc + ? WHERE id = ?',
+            [inrAmount, btcAmount, userId]
+          );
+          
+        } else { // sell
+          if (balance.available_btc < btcAmount) {
+            throw new Error(`Insufficient BTC balance. Required: ${btcAmount} satoshis, Available: ${balance.available_btc} satoshis`);
+          }
+          
+          // Execute sell: deduct BTC, add INR
+          await connection.execute(
+            'UPDATE users SET available_btc = available_btc - ?, available_inr = available_inr + ? WHERE id = ?',
+            [btcAmount, inrAmount, userId]
+          );
+        }
+        
+        // Insert transaction record
+        const transactionType = action === 'buy' ? 'MARKET_BUY' : 'MARKET_SELL';
+        const [transactionResult] = await connection.execute(
+          `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
+           VALUES (?, ?, 'EXECUTED', ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
+          [userId, transactionType, btcAmount, inrAmount, marketPrice]
         );
-      }
-      
-      // Insert transaction record
-      const transactionType = action === 'buy' ? 'MARKET_BUY' : 'MARKET_SELL';
-      const [transactionResult] = await db.execute(
-        `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
-         VALUES (?, ?, 'EXECUTED', ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
-        [userId, transactionType, btcAmount, inrAmount, marketPrice]
-      );
-      
-      // Commit transaction
-      await db.commit();
-      
-      // Get updated balance
-      const [updatedBalanceRows] = await db.execute(
-        'SELECT available_inr, available_btc, reserved_inr, reserved_btc FROM users WHERE id = ?',
-        [userId]
-      );
+        
+        // Commit transaction
+        await connection.commit();
+        
+        // Get updated balance
+        const [updatedBalanceRows] = await connection.execute(
+          'SELECT available_inr, available_btc, reserved_inr, reserved_btc FROM users WHERE id = ?',
+          [userId]
+        );
       
       const updatedBalance = updatedBalanceRows[0];
       
@@ -1044,9 +1068,14 @@ app.post('/api/trade', authenticateToken, async (req, res) => {
       
     } catch (error) {
       // Rollback transaction on error
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
+    
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
+  }
     
   } catch (error) {
     logger.error('Error executing trade', error, 'API');
@@ -1092,12 +1121,16 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
       inrAmount = 0;
     }
 
-    // Start database transaction
-    await db.beginTransaction();
+    // Get a connection from the pool for the transaction
+    const connection = await db.getConnection();
+
+    try {
+      // Start database transaction
+      await connection.beginTransaction();
 
     try {
       // Get sender user info and balance
-      const [senderRows] = await db.execute(
+      const [senderRows] = await connection.execute(
         'SELECT id, name, email, available_inr, available_btc FROM users WHERE id = ?',
         [userId]
       );
@@ -1109,7 +1142,7 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
       const sender = senderRows[0];
       
       // Find recipient by email
-      const [recipientRows] = await db.execute(
+      const [recipientRows] = await connection.execute(
         'SELECT id, name, email FROM users WHERE email = ?',
         [recipientEmail.toLowerCase().trim()]
       );
@@ -1132,12 +1165,12 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
         }
         
         // Execute INR transfer: deduct from sender, add to recipient
-        await db.execute(
+        await connection.execute(
           'UPDATE users SET available_inr = available_inr - ? WHERE id = ?',
           [inrAmount, userId]
         );
         
-        await db.execute(
+        await connection.execute(
           'UPDATE users SET available_inr = available_inr + ? WHERE id = ?',
           [inrAmount, recipient.id]
         );
@@ -1148,12 +1181,12 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
         }
         
         // Execute BTC transfer: deduct from sender, add to recipient
-        await db.execute(
+        await connection.execute(
           'UPDATE users SET available_btc = available_btc - ? WHERE id = ?',
           [btcAmount, userId]
         );
         
-        await db.execute(
+        await connection.execute(
           'UPDATE users SET available_btc = available_btc + ? WHERE id = ?',
           [btcAmount, recipient.id]
         );
@@ -1161,7 +1194,7 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
       
       // Create withdrawal transaction for sender
       const senderTransactionType = currency === 'inr' ? 'WITHDRAW_INR' : 'WITHDRAW_BTC';
-      const [senderTransactionResult] = await db.execute(
+      const [senderTransactionResult] = await connection.execute(
         `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
          VALUES (?, ?, 'EXECUTED', ?, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
         [userId, senderTransactionType, btcAmount, inrAmount]
@@ -1169,14 +1202,14 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
       
       // Create deposit transaction for recipient
       const recipientTransactionType = currency === 'inr' ? 'DEPOSIT_INR' : 'DEPOSIT_BTC';
-      const [recipientTransactionResult] = await db.execute(
+      const [recipientTransactionResult] = await connection.execute(
         `INSERT INTO transactions (user_id, type, status, btc_amount, inr_amount, execution_price, executed_at, created_at) 
          VALUES (?, ?, 'EXECUTED', ?, ?, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())`,
         [recipient.id, recipientTransactionType, btcAmount, inrAmount]
       );
       
       // Commit transaction
-      await db.commit();
+      await connection.commit();
       
       // Clear caches for both users
       if (global.dataService && global.dataService.redis) {
@@ -1230,9 +1263,14 @@ app.post('/api/send-transaction', authenticateToken, async (req, res) => {
       
     } catch (error) {
       // Rollback transaction on error
-      await db.rollback();
+      await connection.rollback();
       throw error;
     }
+
+  } finally {
+    // Release the connection back to the pool
+    connection.release();
+  }
     
   } catch (error) {
     logger.error('Error executing send transaction', error, 'API');
