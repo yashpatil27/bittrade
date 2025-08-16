@@ -8,7 +8,7 @@ const pool = mysql.createPool({
   
   // Pool Configuration - Optimized for BitTrade's scale
   connectionLimit: 5,           // Max 5 concurrent connections (perfect for current scale)
-  acquireTimeout: 60000,        // 60s timeout to get connection from pool
+  timeout: 60000,        // 60s timeout to get connection from pool
   idleTimeout: 300000,          // Close idle connections after 5 minutes
   
   // Database-specific settings
